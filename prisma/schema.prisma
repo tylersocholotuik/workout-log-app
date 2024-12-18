@@ -1,0 +1,74 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String          @id @default(cuid())
+  email         String          @unique
+  firstName     String
+  lastName      String
+  workouts      Workout[]
+  userExercises UserExercise[]  
+}
+
+model Exercise {
+  id                Int                 @id @default(autoincrement())
+  name              String              @unique
+  workoutExercises  WorkoutExercise[]
+}
+
+model UserExercise {
+  id                Int                 @id @default(autoincrement())
+  name              String              @unique
+  userId            String
+  user              User                @relation(fields: [userId], references: [id])
+  workoutExercises  WorkoutExercise[]
+  deleted           Boolean
+}
+
+model Workout {
+  id        Int                 @id @default(autoincrement())
+  title     String
+  notes     String?
+  date      DateTime            @default(now())
+  userId    String
+  user      User                @relation(fields: [userId], references: [id])
+  exercises WorkoutExercise[]
+  deleted   Boolean 
+}
+
+model WorkoutExercise {
+  id              Int            @id @default(autoincrement())
+  notes           String?
+  weightUnit      String
+  exerciseId      Int?
+  userExerciseId  Int?
+  workoutId       Int
+  exercise        Exercise?      @relation(fields: [exerciseId], references: [id])
+  userExercise    UserExercise?  @relation(fields: [userExerciseId], references: [id])
+  workout         Workout        @relation(fields: [workoutId], references: [id])
+  sets            Set[]
+  deleted         Boolean 
+}
+
+model Set {
+  id          Int             @id @default(autoincrement())
+  weight      Float?
+  reps        Int?
+  rpe         Float?
+  exerciseId  Int
+  exercise    WorkoutExercise @relation(fields: [exerciseId], references: [id])
+  deleted     Boolean
+}
