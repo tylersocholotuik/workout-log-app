@@ -5,13 +5,13 @@ export type User = {
     lastName: string
     workouts: Workout[] 
     userExercises: UserExercise[] 
-  }
+  } | null
   
   export type Exercise = {
     id: number
     name: string
     workoutExercises: WorkoutExercise[] 
-  }
+  } | null
   
   export type UserExercise = {
     id: number
@@ -20,7 +20,7 @@ export type User = {
     user: User 
     workoutExercises: WorkoutExercise[] 
     deleted: boolean
-  }
+  } | null
   
   export type Workout = {
     id: number
@@ -30,7 +30,7 @@ export type User = {
     userId: string
     exercises: WorkoutExercise[] 
     deleted: boolean
-  }
+  } | null
   
   export type WorkoutExercise = {
     id: number
@@ -44,7 +44,7 @@ export type User = {
     workout: Workout 
     sets: Set[] 
     deleted: boolean
-  }
+  } | null
   
   export type Set = {
     id: number
@@ -54,5 +54,5 @@ export type User = {
     exerciseId: number
     exercise: WorkoutExercise 
     deleted: boolean
-  }
+  } | null
   

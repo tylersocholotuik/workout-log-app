@@ -6,34 +6,29 @@ const prisma = new PrismaClient()
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
     try {
-      const { userId, id } = req.query
-        
+      const { userId } = req.query
+
       // Validate and cast userId to string
       if (typeof userId !== 'string') {
         return res.status(400).json({ error: 'Invalid userId parameter' });
       }
 
-      const workouts = await prisma.workout.findUnique({
+      // return all user exercises that are not deleted
+      const exercises = await prisma.userExercise.findMany({
         where: {
-          id: parseInt(id as string),  
           userId, 
           deleted: false,
         },
-        include: {
-          exercises: {
-            include: {
-              exercise: true,
-              sets: true,
-            },
-          },
-        },
+        orderBy: {
+            name: 'asc'
+        }
       });
 
-      return res.status(200).json(workouts);
+      return res.status(200).json(exercises);
 
     } catch (error) {
-      console.error('Error fetching workouts:', error);
-      res.status(500).json({ error: 'Failed to fetch workouts' });
+      console.error('Error fetching exercises:', error);
+      res.status(500).json({ error: 'Failed to fetch exercises' });
     }
   } else {
     res.setHeader('Allow', ['GET']);

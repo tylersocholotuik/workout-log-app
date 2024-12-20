@@ -13,13 +13,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ error: 'Invalid userId parameter' });
       }
 
+      // get all user workouts, ordered by date from newest to oldest
       const workouts = await prisma.workout.findMany({
         where: {
           userId: userId, 
           deleted: false,
         },
         include: {
-          user: true,
           exercises: {
             include: {
               exercise: true,
@@ -27,9 +27,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             },
           },
         },
+        orderBy: {
+          date: 'desc'
+        }
       });
 
-      res.status(200).json(workouts);
+      return res.status(200).json(workouts);
+
     } catch (error) {
       console.error('Error fetching workouts:', error);
       res.status(500).json({ error: 'Failed to fetch workouts' });
