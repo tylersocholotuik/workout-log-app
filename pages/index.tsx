@@ -2,6 +2,10 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/router"
 
 import { addUserExercise, updateUserExercise, deleteUserExercise } from "@/utils/api/exercises"
+import { addWorkout } from "@/utils/api/workouts";
+import { Workout } from "@/utils/models/models";
+
+import { workoutData } from "@/prisma/data/workoutData2";
 
 export default function Home() {
   const [exerciseName, setExerciseName] = useState('');
@@ -10,6 +14,10 @@ export default function Home() {
   const userId = 'cm4uhmfa80000prmoiywcmrlo' // test user
   const workoutId = 1
   const exerciseId = 2
+
+  useEffect(() => {
+    addNewWorkout(userId, workoutData)
+  }, [])
 
   const addNewExercise = async (userId: string, name: string) => {
     setError(null);
@@ -41,6 +49,19 @@ export default function Home() {
     setError(null);
     try {
       const data = await deleteUserExercise(userId, exerciseId);
+      console.log(data)
+    } catch (error) {
+      console.error(error);
+      if (error instanceof Error) {
+        setError(error.message)
+      }
+    }
+  }
+
+  const addNewWorkout = async (userId: string, workoutData: Workout) => {
+    setError(null);
+    try {
+      const data = await addWorkout(userId, workoutData);
       console.log(data)
     } catch (error) {
       console.error(error);

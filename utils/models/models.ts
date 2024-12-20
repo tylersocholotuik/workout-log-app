@@ -1,5 +1,5 @@
 export class User {
-    id: string = ''
+    id?: string
     email: string = ''
     firstName: string = ''
     lastName: string = ''
@@ -8,51 +8,51 @@ export class User {
   } 
   
   export class Exercise {
-    id: number = 0
+    id?: number
     name: string = ''
     workoutExercises: WorkoutExercise[] = []
   }
   
   export class UserExercise  {
-    id: number = 0
+    id?: number
     name: string = ''
-    userId: string = ''
+    userId?: string
     user: User = new User()
     workoutExercises: WorkoutExercise[] = []
     deleted: boolean = false
   }
   
   export class Workout {
-    id: number = 0
+    id?: number
     title: string = ''
-    notes: string | null = null
+    notes?: string
     date: Date = new Date()
-    userId: string = ''
+    userId?: string
     exercises: WorkoutExercise[] = [] 
     deleted: boolean = false
   } 
   
   export class WorkoutExercise {
-    id: number = 0
+    id?: number
     notes?: string
     weightUnit: WeightUnit = 'lbs'
-    exerciseId: number = 0
-    userExerciseId: number = 0
-    workoutId: number = 0
-    exercise: Exercise | null = null
-    userExercise: UserExercise | null = null
-    workout: Workout = new Workout()
+    exerciseId?: number
+    userExerciseId?: number
+    workoutId?: number
+    exercise?: Exercise | null = null
+    userExercise?: UserExercise | null = null
+    workout?: Workout = new Workout()
     sets: Set[] = [] 
     deleted: boolean = false
   }
   
   export class Set {
-    id: number = 0
+    id?: number
     weight: number | null = null
     reps: number | null = null
     rpe: number | null = null
-    exerciseId: number = 0
-    exercise: WorkoutExercise = new WorkoutExercise() 
+    exerciseId?: number
+    exercise?: WorkoutExercise = new WorkoutExercise() 
     deleted: boolean = false
   }
   

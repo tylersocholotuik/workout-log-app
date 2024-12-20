@@ -1,3 +1,5 @@
+import { Workout } from "../models/models";
+
 export const getWorkouts = async (userId: string) => {
     const res = await fetch(`/api/${userId}/workouts`)
 
@@ -21,3 +23,21 @@ export const getWorkout = async (userId: string, workoutId: number) => {
     const data = await res.json()
     return data
 }
+
+export const addWorkout = async (userId: string, workoutData: Workout) => {
+    const res = await fetch(`/api/${userId}/workouts`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId, workoutData }),
+    });
+
+    if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to add workout');
+    }
+    
+    const data = await res.json();
+    return data;
+};
