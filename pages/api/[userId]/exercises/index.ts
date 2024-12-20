@@ -8,12 +8,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return await getUserExercises(req, res);
   } else if (req.method === 'POST') {
     return await addUserExercise(req, res);
-  } else if (req.method === 'PUT') {
+  } else if (req.method === 'PATCH') {
     return await updateUserExercise(req, res);
   } else if (req.method === 'DELETE') {
     return await deleteUserExercise(req, res);
   } else {
-    res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
+    res.setHeader('Allow', ['GET', 'POST', 'PATCH', 'DELETE']);
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }

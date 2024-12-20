@@ -43,7 +43,7 @@ export const addUserExercise = async (userId: string, name: string) => {
 
 export const updateUserExercise = async (userId: string, exerciseId: number, newName: string) => {
     const res = await fetch(`/api/${userId}/exercises`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
             'Content-Type': 'application/json'
         },
