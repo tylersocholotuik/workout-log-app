@@ -2,20 +2,22 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/router"
 
 import { addUserExercise, updateUserExercise, deleteUserExercise } from "@/utils/api/exercises"
-import { addWorkout } from "@/utils/api/workouts";
+import { addWorkout, updateWorkout } from "@/utils/api/workouts";
 import { Workout } from "@/utils/models/models";
 
 import { workoutData } from "@/prisma/data/workoutData2";
+import { workoutDataUpdate } from "@/prisma/data/workoutData2Update";
 
 export default function Home() {
   const [exerciseName, setExerciseName] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const userId = 'cm4uhmfa80000prmoiywcmrlo' // test user
-  const workoutId = 1
+  const userId = 'cm4zr6sti0000priwve9whn6t' // test user
+  const workoutId = 2
   const exerciseId = 2
 
   useEffect(() => {
+    // updateExistingWorkout(userId, workoutId, workoutDataUpdate)
     addNewWorkout(userId, workoutData)
   }, [])
 
@@ -62,6 +64,19 @@ export default function Home() {
     setError(null);
     try {
       const data = await addWorkout(userId, workoutData);
+      console.log(data)
+    } catch (error) {
+      console.error(error);
+      if (error instanceof Error) {
+        setError(error.message)
+      }
+    }
+  }
+
+  const updateExistingWorkout = async (userId: string, workoutId: number, workoutData: Workout) => {
+    setError(null);
+    try {
+      const data = await updateWorkout(userId, workoutId, workoutData);
       console.log(data)
     } catch (error) {
       console.error(error);

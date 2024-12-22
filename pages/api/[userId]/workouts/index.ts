@@ -1,16 +1,20 @@
-import { NextApiRequest, NextApiResponse } from 'next';
-import { PrismaClient } from '@prisma/client'
-import { Workout, Exercise, Set } from '@/utils/models/models';
+import { NextApiRequest, NextApiResponse } from "next";
+import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method === 'GET') {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  if (req.method === "GET") {
     return await getUserWorkouts(req, res);
-  } else if (req.method === 'POST') {
+  } else if (req.method === "POST") {
     return await addWorkout(req, res);
+  } else if (req.method === "PATCH") {
+    return await updateWorkout(req, res);
   } else {
-    res.setHeader('Allow', ['GET', 'POST', 'PATCH', 'DELETE']);
+    res.setHeader("Allow", ["GET", "POST", "PATCH", "DELETE"]);
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }
@@ -18,17 +22,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 // gets all of a user's workouts ordered by date from newest to oldest
 const getUserWorkouts = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    const { userId } = req.query
+    const { userId } = req.query;
 
     // Validate and cast userId to string
-    if (typeof userId !== 'string') {
-      return res.status(400).json({ error: 'Invalid userId parameter' });
+    if (typeof userId !== "string") {
+      return res.status(400).json({ error: "Invalid userId parameter" });
     }
 
     // get all user workouts, ordered by date from newest to oldest
     const workouts = await prisma.workout.findMany({
       where: {
-        userId: userId, 
+        userId: userId,
         deleted: false,
       },
       include: {
@@ -40,19 +44,18 @@ const getUserWorkouts = async (req: NextApiRequest, res: NextApiResponse) => {
         },
       },
       orderBy: {
-        date: 'desc'
-      }
+        date: "desc",
+      },
     });
 
     return res.status(200).json(workouts);
-
   } catch (error) {
-    console.error('Error fetching workouts:', error);
-    res.status(500).json({ error: 'Failed to fetch workouts' });
+    console.error("Error fetching workouts:", error);
+    res.status(500).json({ error: "Failed to fetch workouts" });
   } finally {
-    await prisma.$disconnect()
+    await prisma.$disconnect();
   }
-}
+};
 
 const addWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
@@ -60,11 +63,11 @@ const addWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
 
     // temporary, remove after testing
     const existingWorkout = await prisma.workout.findFirst({
-      where: { date: workoutData.date, title: workoutData.title }
-    })
+      where: { date: workoutData.date, title: workoutData.title },
+    });
 
     if (existingWorkout) {
-      return res.status(400).json({ error: 'Workout already exists' });
+      return res.status(400).json({ error: "Workout already exists" });
     }
 
     const newWorkout = await prisma.workout.create({
@@ -76,7 +79,7 @@ const addWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
         deleted: workoutData.deleted,
         exercises: {
           create: workoutData.exercises.map((exercise) => {
-            return ({
+            return {
               notes: exercise.notes,
               weightUnit: exercise.weightUnit,
               exerciseId: exercise.exerciseId,
@@ -84,33 +87,187 @@ const addWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
               deleted: exercise.deleted,
               sets: {
                 create: exercise.sets.map((set) => {
-                  return ({
+                  return {
                     weight: set.weight,
                     reps: set.reps,
                     rpe: set.rpe,
-                    deleted: set.deleted
-                  })
-                })
-              }
-            })
-          })
-        }
+                    deleted: set.deleted,
+                  };
+                }),
+              },
+            };
+          }),
+        },
       },
       include: {
         exercises: {
           include: {
-            sets: true
-          }
-        }
-      }
+            sets: true,
+          },
+        },
+      },
+    });
+
+    return res.status(200).json(newWorkout);
+  } catch (error) {
+    console.error("Error fetching workouts:", error);
+    res.status(500).json({ error: "Failed to fetch workouts" });
+  } finally {
+    await prisma.$disconnect();
+  }
+};
+
+const updateWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
+  try {
+    const { workoutData } = req.body
+
+    // Fetch the current workout details including exercises and sets
+    const currentWorkout = await prisma.workout.findUnique({
+      where: { id: workoutData.id },
+      include: {
+        exercises: {
+          include: {
+            sets: true,
+          },
+        },
+      },
     })
 
-    return res.status(200).json(newWorkout)
-    
+    if (!currentWorkout) {
+      throw new Error(`Workout with ID ${workoutData.id} not found.`);
+    }
+
+    // Update the workout fields
+    await prisma.workout.update({
+      where: { id: workoutData.id },
+      data: {
+        title: workoutData.title,
+        notes: workoutData.notes,
+        date: workoutData.date,
+      },
+    })
+
+    // Handle exercises
+    const currentExerciseIds = currentWorkout.exercises
+      .filter((e) => !e.deleted)
+      .map((e) => e.id);
+
+    const incomingExerciseIds = workoutData.exercises
+      .map((e) => e.id)
+      .filter((id) => id !== undefined)
+
+    // Mark missing exercises as deleted
+    const exercisesToDelete = currentExerciseIds.filter(
+      (id) => !incomingExerciseIds.includes(id)
+    );
+
+    await prisma.workoutExercise.updateMany({
+      where: {
+        id: { in: exercisesToDelete },
+      },
+      data: { deleted: true },
+    })
+
+    // Process each incoming exercise
+    for (const exercise of workoutData.exercises) {
+      let exerciseId: number;
+
+      if (exercise.id) {
+        // Update existing exercise
+        await prisma.workoutExercise.update({
+          where: { id: exercise.id },
+          data: {
+            notes: exercise.notes,
+            weightUnit: exercise.weightUnit,
+            deleted: false,
+          },
+        });
+
+        exerciseId = exercise.id;
+      } else {
+        // Create new exercise
+        const newExercise = await prisma.workoutExercise.create({
+          data: {
+            notes: exercise.notes,
+            weightUnit: exercise.weightUnit,
+            exerciseId: exercise.exerciseId,
+            userExerciseId: exercise.userExerciseId,
+            workoutId: workoutData.id,
+            deleted: false,
+          },
+        })
+
+        exerciseId = newExercise.id;
+      }
+
+      // Handle sets for the current exercise
+      const currentSetIds =
+        currentWorkout.exercises
+          .find((e) => e.id === exerciseId)
+          ?.sets.filter((s) => !s.deleted)
+          .map((s) => s.id) || [];
+
+      const incomingSetIds = exercise.sets
+        .map((s) => s.id)
+        .filter((id) => id !== undefined)
+
+      // Mark missing sets as deleted
+      const setsToDelete = currentSetIds.filter(
+        (id) => !incomingSetIds.includes(id)
+      );
+
+      await prisma.set.updateMany({
+        where: {
+          id: { in: setsToDelete },
+        },
+        data: { deleted: true },
+      });
+
+      // Process each incoming set
+      for (const set of exercise.sets) {
+        if (set.id) {
+          // Update existing set
+          await prisma.set.update({
+            where: { id: set.id },
+            data: {
+              weight: set.weight,
+              reps: set.reps,
+              rpe: set.rpe,
+              deleted: set.deleted,
+            },
+          })
+
+        } else {
+          // Create new set
+          await prisma.set.create({
+            data: {
+              weight: set.weight,
+              reps: set.reps,
+              rpe: set.rpe,
+              exerciseId,
+              deleted: false,
+            },
+          })
+        }
+      }
+    }
+
+    const updatedWorkout = await prisma.workout.findUnique({
+      where: { id: workoutData.id },
+      include: {
+        exercises: {
+          include: {
+            sets: true,
+          },
+        },
+      },
+    })
+
+    return res.status(200).json(updatedWorkout);
   } catch (error) {
-    console.error('Error fetching workouts:', error);
-    res.status(500).json({ error: 'Failed to fetch workouts' });
+    console.error("Error updating workout:", error);
+    res.status(500).json({ error: "Failed to update workout" });
   } finally {
-    await prisma.$disconnect()
+    await prisma.$disconnect();
   }
-}
+};

@@ -1,59 +1,54 @@
 export class User {
     id?: string
-    email: string = ''
-    firstName: string = ''
-    lastName: string = ''
-    workouts: Workout[] = []
-    userExercises: UserExercise[] = []
+    email?: string
+    firstName?: string
+    lastName?: string
+    workouts?: Workout[]
+    userExercises?: UserExercise[]
   } 
   
   export class Exercise {
     id?: number
-    name: string = ''
-    workoutExercises: WorkoutExercise[] = []
+    name?: string
+    workoutExercises?: WorkoutExercise[]
   }
   
   export class UserExercise  {
     id?: number
-    name: string = ''
+    name?: string
     userId?: string
-    user: User = new User()
-    workoutExercises: WorkoutExercise[] = []
-    deleted: boolean = false
+    workoutExercises?: WorkoutExercise[]
+    deleted?: boolean
   }
   
   export class Workout {
     id?: number
-    title: string = ''
+    title?: string
     notes?: string
-    date: Date = new Date()
+    date?: Date
     userId?: string
-    exercises: WorkoutExercise[] = [] 
-    deleted: boolean = false
+    exercises?: WorkoutExercise[] 
+    deleted?: boolean
   } 
   
   export class WorkoutExercise {
     id?: number
     notes?: string
-    weightUnit: WeightUnit = 'lbs'
+    weightUnit?: WeightUnit
     exerciseId?: number
     userExerciseId?: number
     workoutId?: number
-    exercise?: Exercise | null = null
-    userExercise?: UserExercise | null = null
-    workout?: Workout = new Workout()
-    sets: Set[] = [] 
-    deleted: boolean = false
+    sets?: Set[] 
+    deleted?: boolean
   }
   
   export class Set {
     id?: number
-    weight: number | null = null
-    reps: number | null = null
-    rpe: number | null = null
+    weight?: number
+    reps?: number
+    rpe?: number
     exerciseId?: number
-    exercise?: WorkoutExercise = new WorkoutExercise() 
-    deleted: boolean = false
+    deleted?: boolean
   }
   
   type WeightUnit = 'lbs' | 'kg'

@@ -40,4 +40,24 @@ export const addWorkout = async (userId: string, workoutData: Workout) => {
     
     const data = await res.json();
     return data;
-};
+}
+
+export const updateWorkout = async (userId: string, workoutData: Workout) => {
+    const res = await fetch(`/api/${userId}/workouts`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+            workoutData 
+        }),
+    });
+
+    if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to update workout');
+    }
+    
+    const data = await res.json();
+    return data;
+}
