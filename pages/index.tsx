@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/router"
 
 import { addUserExercise, updateUserExercise, deleteUserExercise } from "@/utils/api/exercises"
-import { addWorkout, updateWorkout } from "@/utils/api/workouts";
+import { addWorkout, updateWorkout, getWorkout } from "@/utils/api/workouts";
 import { Workout } from "@/utils/models/models";
 
 import { workoutData } from "@/prisma/data/workoutData2";
@@ -17,9 +17,15 @@ export default function Home() {
   const exerciseId = 2
 
   useEffect(() => {
-    // updateExistingWorkout(userId, workoutId, workoutDataUpdate)
-    addNewWorkout(userId, workoutData)
+    updateExistingWorkout(userId, workoutDataUpdate)
+    // addNewWorkout(userId, workoutData)
+    // loadWorkout(userId, workoutId)
   }, [])
+
+  const loadWorkout = async (userId: string, id: number) => {
+    const data = await getWorkout(userId, id)
+    console.log(data)
+  }
 
   const addNewExercise = async (userId: string, name: string) => {
     setError(null);
@@ -73,10 +79,10 @@ export default function Home() {
     }
   }
 
-  const updateExistingWorkout = async (userId: string, workoutId: number, workoutData: Workout) => {
+  const updateExistingWorkout = async (userId: string, workoutData) => {
     setError(null);
     try {
-      const data = await updateWorkout(userId, workoutId, workoutData);
+      const data = await updateWorkout(userId, workoutData);
       console.log(data)
     } catch (error) {
       console.error(error);
@@ -100,10 +106,10 @@ export default function Home() {
 
   return (
    <>
-    <input 
-      type="text" 
-      id="exercise" 
-      value={exerciseName} 
+    <input
+      type="text"
+      id="exercise"
+      value={exerciseName}
       onChange={(e) => {
         setExerciseName(e.target.value)
       }}
@@ -112,6 +118,6 @@ export default function Home() {
     <button onClick={handleUpdateExercise}>Update</button>
     <button onClick={handleDeleteExercise}>Delete</button>
     {error && <p style={{color: 'red'}}>{error}</p>}
-   </> 
+   </>
   )
 }

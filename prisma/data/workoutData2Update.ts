@@ -19,15 +19,28 @@ export const workoutDataUpdate = {
             ],
             deleted: false
         },
+        // deleted
+        // {
+        //     id: 9,
+        //     exerciseId: 144, // (Row (Cable))
+        //     workoutId: 2,
+        //     notes: '2 sets of 8-12 reps',
+        //     weightUnit: 'lbs',
+        //     sets: [
+        //         { id: 25, weight: 210, reps: 12, rpe: 10, deleted: false },
+        //         { id: 26, weight: 210, reps: 9, rpe: 10, deleted: false },
+        //     ],
+        //     deleted: false
+        // },
         {
-            id: 9,
-            exerciseId: 144, // (Row (Cable))
+            id: 14,
+            exerciseId: 154, // (Row (T-bar, Chest-Supported))
             workoutId: 2,
             notes: '2 sets of 8-12 reps',
             weightUnit: 'lbs',
             sets: [
-                { id: 25, weight: 210, reps: 12, rpe: 10, deleted: false },
-                { id: 26, weight: 210, reps: 9, rpe: 10, deleted: false },
+                { weight: 145, reps: 12, rpe: 10, deleted: false },
+                { weight: 145, reps: 9, rpe: 10, deleted: false },
             ],
             deleted: false
         },

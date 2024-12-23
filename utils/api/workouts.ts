@@ -12,8 +12,8 @@ export const getWorkouts = async (userId: string) => {
     return data
 }
 
-export const getWorkout = async (userId: string, workoutId: number) => {
-    const res = await fetch(`/api/${userId}/workouts/${workoutId}`)
+export const getWorkout = async (userId: string, id: number) => {
+    const res = await fetch(`/api/${userId}/workouts/${id}`)
 
     if (!res.ok) {
         const errorData = await res.json();

@@ -8,21 +8,21 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method === "GET") {
-    return await getUserWorkouts(req, res);
+    return await getUserWorkouts(req, res)
   } else if (req.method === "POST") {
-    return await addWorkout(req, res);
+    return await addWorkout(req, res)
   } else if (req.method === "PATCH") {
-    return await updateWorkout(req, res);
+    return await updateWorkout(req, res)
   } else {
-    res.setHeader("Allow", ["GET", "POST", "PATCH", "DELETE"]);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
+    res.setHeader("Allow", ["GET", "POST", "PATCH", "DELETE"])
+    res.status(405).end(`Method ${req.method} Not Allowed`)
   }
 }
 
 // gets all of a user's workouts ordered by date from newest to oldest
 const getUserWorkouts = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    const { userId } = req.query;
+    const { userId } = req.query
 
     // Validate and cast userId to string
     if (typeof userId !== "string") {
@@ -46,16 +46,16 @@ const getUserWorkouts = async (req: NextApiRequest, res: NextApiResponse) => {
       orderBy: {
         date: "desc",
       },
-    });
+    })
 
-    return res.status(200).json(workouts);
+    return res.status(200).json(workouts)
   } catch (error) {
-    console.error("Error fetching workouts:", error);
-    res.status(500).json({ error: "Failed to fetch workouts" });
+    console.error("Error fetching workouts:", error)
+    res.status(500).json({ error: "Failed to fetch workouts" })
   } finally {
-    await prisma.$disconnect();
+    await prisma.$disconnect()
   }
-};
+}
 
 const addWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
@@ -106,7 +106,7 @@ const addWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
           },
         },
       },
-    });
+    })
 
     return res.status(200).json(newWorkout);
   } catch (error) {
@@ -252,16 +252,7 @@ const updateWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
       }
     }
 
-    const updatedWorkout = await prisma.workout.findUnique({
-      where: { id: workoutData.id },
-      include: {
-        exercises: {
-          include: {
-            sets: true,
-          },
-        },
-      },
-    })
+    const updatedWorkout = await getWorkout(workoutData.id)
 
     return res.status(200).json(updatedWorkout);
   } catch (error) {
@@ -270,4 +261,28 @@ const updateWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
   } finally {
     await prisma.$disconnect();
   }
-};
+}
+
+const getWorkout = async (id: number) => {
+  const workout = await prisma.workout.findUnique({
+    where: { id },
+    include: {
+      exercises: {
+        include: {
+          sets: true
+        }
+      }
+    }
+  })
+  
+  if (workout) {
+    workout.exercises = workout.exercises.filter((exercise) => {
+      exercise.sets = exercise.sets.filter((set) => {
+        return !set.deleted
+      })
+      return !exercise.deleted
+    })
+  } 
+
+  return workout
+}

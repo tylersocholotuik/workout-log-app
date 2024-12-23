@@ -1,6 +1,14 @@
 import { PrismaClient } from "@prisma/client";
 import { workoutDataUpdate } from "./data/workoutData2Update";
+import { getWorkout } from "@/utils/api/workouts";
 const prisma = new PrismaClient();
+
+
+async function main() {
+  const workout = await getWorkout('cm4zr6sti0000priwve9whn6t', 2)
+
+  console.log(workout)
+}
 
 async function updateWorkout(workoutData) {
   const workoutId = 2
@@ -137,23 +145,6 @@ async function updateWorkout(workoutData) {
   }
 }
 
-async function getWorkout(workoutId: number) {
-    const workout = await prisma.workoutExercise.findMany({
-        where: { workoutId: workoutId},
-        include: {
-            sets: {
-                select: {
-                    weight: true,
-                    reps: true,
-                    rpe: true
-                }
-            }
-        }
-    })
-
-    console.log(workout)
-}
-
 async function getSets(exerciseId: number) {
   const exercises = await prisma.workoutExercise.findMany({
     where: { exerciseId },
@@ -169,13 +160,21 @@ async function getSets(exerciseId: number) {
   })
 }
 
-updateWorkout(workoutDataUpdate)
+main()
   .catch((e) => {
     console.error(e.message);
   })
   .finally(async () => {
     await prisma.$disconnect;
   });
+
+// updateWorkout(workoutDataUpdate)
+//   .catch((e) => {
+//     console.error(e.message);
+//   })
+//   .finally(async () => {
+//     await prisma.$disconnect;
+//   });
 
   // getWorkout(2)
   // .catch((e) => {
