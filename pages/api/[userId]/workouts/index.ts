@@ -37,9 +37,17 @@ const getUserWorkouts = async (req: NextApiRequest, res: NextApiResponse) => {
       },
       include: {
         exercises: {
+          where: {
+            deleted: false
+          },
           include: {
             exercise: true,
-            sets: true,
+            userExercise: true,
+            sets: {
+              where: {
+                deleted: false
+              }
+            },
           },
         },
       },
@@ -102,6 +110,8 @@ const addWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
       include: {
         exercises: {
           include: {
+            exercise: true,
+            userExercise: true,
             sets: true,
           },
         },
@@ -115,7 +125,7 @@ const addWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
   } finally {
     await prisma.$disconnect();
   }
-};
+}
 
 const updateWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
@@ -268,21 +278,21 @@ const getWorkout = async (id: number) => {
     where: { id },
     include: {
       exercises: {
+        where: {
+          deleted: false
+        },
         include: {
-          sets: true
+          exercise: true,
+          userExercise: true,
+          sets: {
+            where: {
+              deleted: false
+            }
+          }
         }
       }
     }
   })
-  
-  if (workout) {
-    workout.exercises = workout.exercises.filter((exercise) => {
-      exercise.sets = exercise.sets.filter((set) => {
-        return !set.deleted
-      })
-      return !exercise.deleted
-    })
-  } 
 
   return workout
 }

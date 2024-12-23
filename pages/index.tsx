@@ -17,9 +17,9 @@ export default function Home() {
   const exerciseId = 2
 
   useEffect(() => {
-    updateExistingWorkout(userId, workoutDataUpdate)
+    // updateExistingWorkout(userId, workoutDataUpdate)
     // addNewWorkout(userId, workoutData)
-    // loadWorkout(userId, workoutId)
+    loadWorkout(userId, workoutId)
   }, [])
 
   const loadWorkout = async (userId: string, id: number) => {

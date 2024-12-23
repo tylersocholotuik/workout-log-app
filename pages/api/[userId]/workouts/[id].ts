@@ -29,23 +29,22 @@ export const getWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
       },
       include: {
         exercises: {
+          where: {
+            deleted: false
+          },
           include: {
-            sets: true
+            exercise: true,
+            userExercise: true,
+            sets: {
+              where: {
+                deleted: false
+              }
+            }
           }
         }
       }
     })
     
-    // filter out exercises and sets that are deleted
-    if (workout) {
-      workout.exercises = workout.exercises.filter((exercise) => {
-        exercise.sets = exercise.sets.filter((set) => {
-          return !set.deleted
-        })
-        return !exercise.deleted
-      })
-    } 
-
     return res.status(200).json(workout);
 
   } catch (error) {
