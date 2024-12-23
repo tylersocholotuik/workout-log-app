@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { PrismaClient } from "@prisma/client";
+import { Workout, WorkoutExercise, Set } from "@/utils/models/models";
 
 const prisma = new PrismaClient();
 
@@ -8,23 +9,23 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method === "GET") {
-    return await getUserWorkouts(req, res)
+    return await getUserWorkouts(req, res);
   } else if (req.method === "POST") {
-    return await addWorkout(req, res)
+    return await addWorkout(req, res);
   } else if (req.method === "PATCH") {
-    return await updateWorkout(req, res)
+    return await updateWorkout(req, res);
   } else if (req.method == "DELETE") {
-    return await deleteWorkout(req, res)
+    return await deleteWorkout(req, res);
   } else {
-    res.setHeader("Allow", ["GET", "POST", "PATCH", "DELETE"])
-    res.status(405).end(`Method ${req.method} Not Allowed`)
+    res.setHeader("Allow", ["GET", "POST", "PATCH", "DELETE"]);
+    res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }
 
 // gets all of a user's workouts ordered by date from newest to oldest
 const getUserWorkouts = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    const { userId } = req.query
+    const { userId } = req.query;
 
     // Validate and cast userId to string
     if (typeof userId !== "string") {
@@ -40,15 +41,15 @@ const getUserWorkouts = async (req: NextApiRequest, res: NextApiResponse) => {
       include: {
         exercises: {
           where: {
-            deleted: false
+            deleted: false,
           },
           include: {
             exercise: true,
             userExercise: true,
             sets: {
               where: {
-                deleted: false
-              }
+                deleted: false,
+              },
             },
           },
         },
@@ -56,16 +57,16 @@ const getUserWorkouts = async (req: NextApiRequest, res: NextApiResponse) => {
       orderBy: {
         date: "desc",
       },
-    })
+    });
 
-    return res.status(200).json(workouts)
+    return res.status(200).json(workouts);
   } catch (error) {
-    console.error("Error fetching workouts:", error)
-    res.status(500).json({ error: "Failed to fetch workouts" })
+    console.error("Error fetching workouts:", error);
+    res.status(500).json({ error: "Failed to fetch workouts" });
   } finally {
-    await prisma.$disconnect()
+    await prisma.$disconnect();
   }
-}
+};
 
 const addWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
@@ -118,7 +119,7 @@ const addWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
           },
         },
       },
-    })
+    });
 
     return res.status(200).json(newWorkout);
   } catch (error) {
@@ -127,23 +128,14 @@ const addWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
   } finally {
     await prisma.$disconnect();
   }
-}
+};
 
 const updateWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    const { workoutData } = req.body
+    const { workoutData } = req.body;
 
     // Fetch the current workout details including exercises and sets
-    const currentWorkout = await prisma.workout.findUnique({
-      where: { id: workoutData.id },
-      include: {
-        exercises: {
-          include: {
-            sets: true,
-          },
-        },
-      },
-    })
+    const currentWorkout = await getWorkout(workoutData.id)
 
     if (!currentWorkout) {
       throw new Error(`Workout with ID ${workoutData.id} not found.`);
@@ -157,16 +149,14 @@ const updateWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
         notes: workoutData.notes,
         date: workoutData.date,
       },
-    })
+    });
 
     // Handle exercises
-    const currentExerciseIds = currentWorkout.exercises
-      .filter((e) => !e.deleted)
-      .map((e) => e.id);
+    const currentExerciseIds = currentWorkout.exercises.map((e) => e.id);
 
     const incomingExerciseIds = workoutData.exercises
-      .map((e) => e.id)
-      .filter((id) => id !== undefined)
+      .map((e: WorkoutExercise) => e.id)
+      .filter((id: number) => id !== undefined);
 
     // Mark missing exercises as deleted
     const exercisesToDelete = currentExerciseIds.filter(
@@ -178,7 +168,7 @@ const updateWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
         id: { in: exercisesToDelete },
       },
       data: { deleted: true },
-    })
+    });
 
     // Process each incoming exercise
     for (const exercise of workoutData.exercises) {
@@ -207,7 +197,7 @@ const updateWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
             workoutId: workoutData.id,
             deleted: false,
           },
-        })
+        });
 
         exerciseId = newExercise.id;
       }
@@ -216,12 +206,11 @@ const updateWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
       const currentSetIds =
         currentWorkout.exercises
           .find((e) => e.id === exerciseId)
-          ?.sets.filter((s) => !s.deleted)
-          .map((s) => s.id) || [];
+          ?.sets.map((s) => s.id) || [];
 
       const incomingSetIds = exercise.sets
-        .map((s) => s.id)
-        .filter((id) => id !== undefined)
+        .map((s: Set) => s.id)
+        .filter((id: number) => id !== undefined);
 
       // Mark missing sets as deleted
       const setsToDelete = currentSetIds.filter(
@@ -247,8 +236,7 @@ const updateWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
               rpe: set.rpe,
               deleted: set.deleted,
             },
-          })
-
+          });
         } else {
           // Create new set
           await prisma.set.create({
@@ -259,12 +247,12 @@ const updateWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
               exerciseId,
               deleted: false,
             },
-          })
+          });
         }
       }
     }
 
-    const updatedWorkout = await getWorkout(workoutData.id)
+    const updatedWorkout = await getWorkout(workoutData.id);
 
     return res.status(200).json(updatedWorkout);
   } catch (error) {
@@ -273,28 +261,28 @@ const updateWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
   } finally {
     await prisma.$disconnect();
   }
-}
+};
 
 const deleteWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    const { id } = req.body
+    const { id } = req.body;
 
     // soft delete by setting deleted to true
     const deletedWorkout = await prisma.workout.update({
       where: { id },
       data: {
-        deleted: true
-      }
-    })
-    
-    return res.status(200).json(deletedWorkout)
+        deleted: true,
+      },
+    });
+
+    return res.status(200).json(deletedWorkout);
   } catch (error) {
-    console.error("Error deleting workout:", error)
-    res.status(500).json({ error: "Failed to delete workout" })
+    console.error("Error deleting workout:", error);
+    res.status(500).json({ error: "Failed to delete workout" });
   } finally {
-    await prisma.$disconnect()
+    await prisma.$disconnect();
   }
-}
+};
 
 const getWorkout = async (id: number) => {
   const workout = await prisma.workout.findUnique({
@@ -302,20 +290,20 @@ const getWorkout = async (id: number) => {
     include: {
       exercises: {
         where: {
-          deleted: false
+          deleted: false,
         },
         include: {
           exercise: true,
           userExercise: true,
           sets: {
             where: {
-              deleted: false
-            }
-          }
-        }
-      }
-    }
-  })
+              deleted: false,
+            },
+          },
+        },
+      },
+    },
+  });
 
-  return workout
-}
+  return workout;
+};

@@ -37,6 +37,8 @@ export class WorkoutExercise {
   weightUnit?: WeightUnit;
   exerciseId?: number;
   userExerciseId?: number;
+  exercise?: Exercise;
+  userExercise?: UserExercise;
   workoutId?: number;
   sets?: Set[];
   deleted?: boolean;

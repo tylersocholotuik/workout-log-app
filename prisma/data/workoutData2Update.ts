@@ -1,4 +1,6 @@
-export const workoutDataUpdate = {
+import { Workout } from "@/utils/models/models"
+
+export const workoutDataUpdate: Workout = {
     id: 2,
     title: 'Full Body Workout B',
     notes: 'test update',
