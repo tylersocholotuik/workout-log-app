@@ -61,3 +61,23 @@ export const updateWorkout = async (userId: string, workoutData: Workout) => {
     const data = await res.json();
     return data;
 }
+
+export const deleteWorkout = async (userId: string, id: number) => {
+    const res = await fetch(`/api/${userId}/workouts`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+            id 
+        }),
+    });
+
+    if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to delete workout');
+    }
+    
+    const data = await res.json();
+    return data;
+}

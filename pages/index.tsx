@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/router"
 
 import { addUserExercise, updateUserExercise, deleteUserExercise } from "@/utils/api/exercises"
-import { addWorkout, updateWorkout, getWorkout } from "@/utils/api/workouts";
+import { addWorkout, updateWorkout, getWorkout, deleteWorkout } from "@/utils/api/workouts";
 import { Workout } from "@/utils/models/models";
 
 import { workoutData } from "@/prisma/data/workoutData2";
@@ -19,12 +19,27 @@ export default function Home() {
   useEffect(() => {
     // updateExistingWorkout(userId, workoutDataUpdate)
     // addNewWorkout(userId, workoutData)
-    loadWorkout(userId, workoutId)
+    // loadWorkout(userId, workoutId)
+    // softDeleteWorkout(userId, workoutId)
   }, [])
 
   const loadWorkout = async (userId: string, id: number) => {
     const data = await getWorkout(userId, id)
     console.log(data)
+  }
+
+  const softDeleteWorkout = async (userId: string, workoutId: number) => {
+    setError(null);
+    try {
+      const data = await deleteWorkout(userId, workoutId)
+      console.log(data)
+    } catch (error) {
+      console.error(error);
+      if (error instanceof Error) {
+        setError(error.message)
+      }
+    }
+    
   }
 
   const addNewExercise = async (userId: string, name: string) => {

@@ -13,6 +13,8 @@ export default async function handler(
     return await addWorkout(req, res)
   } else if (req.method === "PATCH") {
     return await updateWorkout(req, res)
+  } else if (req.method == "DELETE") {
+    return await deleteWorkout(req, res)
   } else {
     res.setHeader("Allow", ["GET", "POST", "PATCH", "DELETE"])
     res.status(405).end(`Method ${req.method} Not Allowed`)
@@ -270,6 +272,27 @@ const updateWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
     res.status(500).json({ error: "Failed to update workout" });
   } finally {
     await prisma.$disconnect();
+  }
+}
+
+const deleteWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
+  try {
+    const { id } = req.body
+
+    // soft delete by setting deleted to true
+    const deletedWorkout = await prisma.workout.update({
+      where: { id },
+      data: {
+        deleted: true
+      }
+    })
+    
+    return res.status(200).json(deletedWorkout)
+  } catch (error) {
+    console.error("Error deleting workout:", error)
+    res.status(500).json({ error: "Failed to delete workout" })
+  } finally {
+    await prisma.$disconnect()
   }
 }
 
