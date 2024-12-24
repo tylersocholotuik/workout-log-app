@@ -13,6 +13,8 @@ import {
   Button,
 } from "@nextui-org/react";
 
+import DarkModeSwitch from "./DarkModeSwitch";
+
 export default function NavBar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
@@ -75,9 +77,12 @@ export default function NavBar() {
           <Link href="#">Login</Link>
         </NavbarItem>
         <NavbarItem>
-          <Button as={Link} color="warning" href="#" variant="flat">
+          <Button as={Link} color="primary" href="#" variant="flat">
             Sign Up
           </Button>
+        </NavbarItem>
+        <NavbarItem>
+            <DarkModeSwitch />
         </NavbarItem>
       </NavbarContent>
 
