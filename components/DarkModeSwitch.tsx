@@ -51,6 +51,8 @@ export default function DarkModeSwitch() {
   };
   return (
     <Switch
+      aria-label="dark mode switch"
+      aria-checked={isSelected}
       color="primary"
       size="sm"
       thumbIcon={({ isSelected, className }) =>
