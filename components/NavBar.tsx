@@ -33,7 +33,13 @@ export default function NavBar() {
   };
 
   return (
-    <Navbar maxWidth="full" isBordered isMenuOpen={isMenuOpen} onMenuOpenChange={setIsMenuOpen}>
+    <Navbar
+      maxWidth="full"
+      isBordered
+      shouldHideOnScroll
+      isMenuOpen={isMenuOpen}
+      onMenuOpenChange={setIsMenuOpen}
+    >
       <NavbarContent className="sm:hidden" justify="start">
         <NavbarMenuToggle
           aria-label={isMenuOpen ? "Close menu" : "Open menu"}
@@ -63,7 +69,7 @@ export default function NavBar() {
                 aria-current={isActive(item.path) ? "page" : undefined}
                 href={item.path
                   .replace("[userId]", `${userId}`)
-                  .replace("[workoutId]", "2")}
+                  .replace("[workoutId]", "0")}
               >
                 {item.name}
               </Link>
@@ -82,7 +88,7 @@ export default function NavBar() {
           </Button>
         </NavbarItem>
         <NavbarItem>
-            <DarkModeSwitch />
+          <DarkModeSwitch />
         </NavbarItem>
       </NavbarContent>
 
