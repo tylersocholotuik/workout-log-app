@@ -4,7 +4,12 @@ import { useRouter } from "next/router";
 import ExerciseCard from "@/components/workout/ExerciseCard";
 import { Button, Spinner } from "@nextui-org/react";
 
-import { getWorkout } from "@/utils/api/workouts";
+import {
+  getWorkout,
+  addWorkout,
+  updateWorkout,
+  deleteWorkout,
+} from "@/utils/api/workouts";
 
 import { Workout, WorkoutExercise, Set, Exercise } from "@/utils/models/models";
 
@@ -26,6 +31,8 @@ export default function WorkoutLog() {
 
   const loadWorkout = async (userId: string, workoutId: number) => {
     try {
+      // id is greater than 0 if navigating from workout history page
+      // load the selected workout. Otherwise, it's a new workout.
       if (id > 0) {
         const data = await getWorkout(userId, workoutId);
         setWorkout(data);
@@ -56,6 +63,21 @@ export default function WorkoutLog() {
     newWorkoutExercise.sets.push(newSet);
     updatedWorkout.exercises.push(newWorkoutExercise);
     setWorkout(updatedWorkout);
+  };
+
+  const saveWorkout = async (userId: string, workoutData: Workout) => {
+    try {
+        let newWorkout;
+        if (id === 0) {
+            newWorkout = await addWorkout(userId, workoutData);
+        } else {
+            newWorkout = await updateWorkout(userId, workoutData);
+        }
+        setWorkout(newWorkout);
+    } catch (error) {
+      // temporary. Add error alert in future.
+      console.error(error);
+    }
   };
 
   if (isLoading) {
@@ -94,7 +116,7 @@ export default function WorkoutLog() {
         </Button>
       </div>
       <div className="flex justify-center gap-4 mb-6">
-        <Button color="success" variant="flat" radius="full" size="lg">
+        <Button color="success" variant="flat" radius="full" size="lg" onPress={() => saveWorkout(userId, workout)}>
           Save Workout
         </Button>
         <Button color="danger" variant="flat" radius="full" size="lg">
