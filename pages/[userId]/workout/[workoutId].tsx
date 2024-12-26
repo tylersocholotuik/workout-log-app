@@ -16,7 +16,7 @@ import {
     deleteWorkout,
 } from "@/utils/api/workouts";
 
-import { Workout, WorkoutExercise, Exercise } from "@/utils/models/models";
+import { Workout, WorkoutExercise, Set, Exercise } from "@/utils/models/models";
 
 export const WorkoutContext = createContext({});
 
@@ -71,18 +71,7 @@ export default function WorkoutLog() {
         const newWorkoutExercise = new WorkoutExercise();
         newWorkoutExercise.exercise = new Exercise();
         newWorkoutExercise.exercise.name = "test";
-        const newSet = {
-            // temporary id used for key in loop
-            // without this, can't delete correct set index
-            // in the deleteSet function in SetsTable component
-            tempId: Date.now(),
-            id: 0,
-            weight: null,
-            reps: null,
-            rpe: null,
-            exerciseId: 0,
-            deleted: false,
-        };
+        const newSet = new Set();
         newWorkoutExercise.sets.push(newSet);
         updatedWorkout.exercises.push(newWorkoutExercise);
         setWorkout(updatedWorkout);

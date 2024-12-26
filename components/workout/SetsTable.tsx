@@ -97,7 +97,7 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
             </TableHeader>
             <TableBody>
                 {sets.map((set, index) => (
-                    <TableRow key={set.tempId || `set-${index}`}>
+                    <TableRow key={`set-${index}`}>
                         <TableCell>
                             <Input
                                 id={`set-${index}-weight`}

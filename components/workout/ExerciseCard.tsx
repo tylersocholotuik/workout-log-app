@@ -22,18 +22,7 @@ export default function ExerciseCard({ exercise, exerciseIndex }) {
     const { workout, setWorkout } = useContext(WorkoutContext)
 
     const addSet = () => {
-        const newSet = {
-            // temporary id used for key in loop
-            // without this, can't delete correct set index
-            // in the deleteSet function in SetsTable component
-            tempId: Date.now(),
-            id: 0,
-            weight: null,
-            reps: null,
-            rpe: null,
-            exerciseId: exercise.id,
-            deleted: false,
-        };
+        const newSet = new Set();
 
         // creating a deep copy of workout, then adding a new set
         // to the exercise at the current exercise index

@@ -180,7 +180,7 @@ const updateWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
     for (const exercise of workoutData.exercises) {
       let exerciseId: number;
 
-      if (exercise.id) {
+      if (exercise.id > 0) {
         // Update existing exercise
         await prisma.workoutExercise.update({
           where: { id: exercise.id },
@@ -232,7 +232,7 @@ const updateWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
 
       // Process each incoming set
       for (const set of exercise.sets) {
-        if (set.id) {
+        if (set.id > 0) {
           // Update existing set
           await prisma.set.update({
             where: { id: set.id },
