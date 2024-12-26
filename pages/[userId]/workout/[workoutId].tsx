@@ -25,10 +25,8 @@ export default function WorkoutLog() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [feedback, setFeedback] = useState("");
+    const [feedback, setFeedback] = useState("test");
     const [error, setError] = useState("");
-    const [hasFeedback, setHasFeedback] = useState(false);
-    const [hasError, setHasError] = useState(false);
 
     const DetailsModal = useDisclosure();
     const DeleteModal = useDisclosure();
@@ -84,8 +82,6 @@ export default function WorkoutLog() {
         try {
             setFeedback("");
             setError("");
-            setHasFeedback(false);
-            setHasError(false);
             setIsSaving(true);
 
             let newWorkout;
@@ -99,11 +95,9 @@ export default function WorkoutLog() {
             setWorkout(newWorkout);
 
             setFeedback("Workout Saved!");
-            setHasFeedback(true);
         } catch (error) {
             if (error instanceof Error) {
                 setError(error.message);
-                setHasError(true);
             }
         } finally {
             setIsSaving(false);
@@ -118,8 +112,6 @@ export default function WorkoutLog() {
 
         setFeedback("");
         setError("");
-        setHasFeedback(false);
-        setHasError(false);
 
         if (workoutId === 0) {
             // if it is a new unsaved workout, simply initialize a
@@ -132,13 +124,11 @@ export default function WorkoutLog() {
                 await deleteWorkout(userId, workoutId);
 
                 setFeedback(`'${workout.title}' was deleted`);
-                setHasFeedback(true);
 
                 success = true;
             } catch (error) {
                 if (error instanceof Error) {
                     setError(error.message);
-                    setHasError(true);
                 }
             } finally {
                 setIsDeleting(false);
@@ -208,25 +198,29 @@ export default function WorkoutLog() {
                     </Button>
                 </div>
                 <div className="flex justify-center mb-6">
-                    {hasFeedback && (
-                        <Alert
-                            color="success"
-                            description={feedback}
-                            isVisible={hasFeedback}
-                            title="Success"
-                            variant="faded"
-                            onClose={() => setHasFeedback(false)}
-                        />
+                    {feedback !== "" && (
+                        <div className="w-[320px]">
+                            <Alert
+                                color="success"
+                                description={feedback}
+                                isVisible={feedback !== ""}
+                                title="Success"
+                                variant="faded"
+                                onClose={() => setFeedback("")}
+                            />
+                        </div>
                     )}
-                    {hasError && (
-                        <Alert
-                            color="danger"
-                            description={error}
-                            isVisible={hasError}
-                            title="Error"
-                            variant="faded"
-                            onClose={() => setHasError(false)}
-                        />
+                    {error !== "" && (
+                        <div className="w-[320px]">
+                            <Alert
+                                color="danger"
+                                description={error}
+                                isVisible={error !== ""}
+                                title="Error"
+                                variant="faded"
+                                onClose={() => setError("")}
+                            />
+                        </div>
                     )}
                 </div>
                 <div className="flex justify-center gap-4 mb-6">
