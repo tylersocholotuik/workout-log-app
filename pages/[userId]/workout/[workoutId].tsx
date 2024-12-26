@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, createContext } from "react";
 import { useRouter } from "next/router";
 
 import ExerciseCard from "@/components/workout/ExerciseCard";
-import { Button, Spinner } from "@nextui-org/react";
+import WorkoutDetailsModal from "@/components/workout/WorkoutDetailsModal";
+
+import { Button, Spinner, useDisclosure } from "@nextui-org/react";
 
 import { EditIcon } from "@/icons/EditIcon";
 
@@ -15,9 +17,14 @@ import {
 
 import { Workout, WorkoutExercise, Set, Exercise } from "@/utils/models/models";
 
+export const WorkoutContext = createContext({});
+
 export default function WorkoutLog() {
     const [workout, setWorkout] = useState<Workout>(new Workout());
     const [isLoading, setIsLoading] = useState(true);
+
+    const DetailsModal = useDisclosure();
+
     const router = useRouter();
 
     const { userId, workoutId } = router.query;
@@ -94,63 +101,79 @@ export default function WorkoutLog() {
     }
 
     return (
-        <div className="container mx-auto px-2 md:px-4 py-6">
-            <div className="flex flex-col gap-2 text-center mb-6">
-                <h2 className="text-lg">{workout.title}</h2>
-                <p className="text-md">
-                    {new Date(workout.date).toLocaleString("en-CA", {
-                        dateStyle: "full",
-                    })}
-                </p>
-                <p className="text-md text-default-500">
-                    <span className="font-bold">Notes: </span>
-                    {workout.notes}
-                </p>
-                <div>
-                    <Button color="primary" variant="light" size="md" startContent={<EditIcon />}>
-                        Edit Details
+        <WorkoutContext.Provider value={{ workout, setWorkout }}>
+            <div className="container mx-auto px-2 md:px-4 py-6">
+                <div className="flex flex-col gap-2 text-center mb-6">
+                    <h2 className="text-lg">{workout.title}</h2>
+                    <p className="text-md">
+                        {new Date(workout.date).toLocaleString("en-CA", {
+                            dateStyle: "full",
+                        })}
+                    </p>
+                    <p className="text-md text-default-500">
+                        <span className="font-bold">Notes: </span>
+                        {workout.notes}
+                    </p>
+                    <div>
+                        <Button
+                            color="primary"
+                            variant="light"
+                            size="md"
+                            startContent={<EditIcon />}
+                            onPress={DetailsModal.onOpen}
+                        >
+                            Edit Details
+                        </Button>
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+                    {workout.exercises.length > 0 &&
+                        workout.exercises.map((exercise, index) => {
+                            return (
+                                <ExerciseCard
+                                    key={exercise.id}
+                                    exercise={exercise}
+                                    exerciseIndex={index}
+                                />
+                            );
+                        })}
+                </div>
+                <div className="flex justify-center mb-8">
+                    <Button
+                        color="primary"
+                        variant="solid"
+                        radius="full"
+                        size="md"
+                        onPress={addExercise}
+                    >
+                        Add Exercise
+                    </Button>
+                </div>
+                <div className="flex justify-center gap-4 mb-6">
+                    <Button
+                        color="success"
+                        variant="flat"
+                        radius="full"
+                        size="lg"
+                        onPress={() => saveWorkout(userId, workout)}
+                    >
+                        Save Workout
+                    </Button>
+                    <Button
+                        color="danger"
+                        variant="flat"
+                        radius="full"
+                        size="lg"
+                    >
+                        Delete Workout
                     </Button>
                 </div>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
-                {workout.exercises.length > 0 &&
-                    workout.exercises.map((exercise, index) => {
-                        return (
-                            <ExerciseCard
-                                key={exercise.id}
-                                exercise={exercise}
-                                exerciseIndex={index}
-                                workout={workout}
-                                setWorkout={setWorkout}
-                            />
-                        );
-                    })}
-            </div>
-            <div className="flex justify-center mb-8">
-                <Button
-                    color="primary"
-                    variant="solid"
-                    radius="full"
-                    size="md"
-                    onPress={addExercise}
-                >
-                    Add Exercise
-                </Button>
-            </div>
-            <div className="flex justify-center gap-4 mb-6">
-                <Button
-                    color="success"
-                    variant="flat"
-                    radius="full"
-                    size="lg"
-                    onPress={() => saveWorkout(userId, workout)}
-                >
-                    Save Workout
-                </Button>
-                <Button color="danger" variant="flat" radius="full" size="lg">
-                    Delete Workout
-                </Button>
-            </div>
-        </div>
+
+            <WorkoutDetailsModal
+                isOpen={DetailsModal.isOpen}
+                onOpenChange={DetailsModal.onOpenChange}
+            />
+        </WorkoutContext.Provider>
     );
 }

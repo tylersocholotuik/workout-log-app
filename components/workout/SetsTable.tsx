@@ -1,3 +1,5 @@
+import { useContext } from "react";
+
 import {
     Button,
     Table,
@@ -11,13 +13,12 @@ import {
 
 import { DeleteIcon } from "@/icons/DeleteIcon";
 
-export default function SetsTable({
-    sets,
-    weightUnit,
-    exerciseIndex,
-    workout,
-    setWorkout,
-}) {
+import { WorkoutContext } from "@/pages/[userId]/workout/[workoutId]";
+
+export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
+
+    const { workout, setWorkout } = useContext(WorkoutContext);
+
     const columns = [
         {
             key: "weight",

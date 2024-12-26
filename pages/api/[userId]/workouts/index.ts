@@ -43,12 +43,18 @@ const getUserWorkouts = async (req: NextApiRequest, res: NextApiResponse) => {
           where: {
             deleted: false,
           },
+          orderBy: {
+            id: 'asc'
+          },
           include: {
             exercise: true,
             userExercise: true,
             sets: {
               where: {
                 deleted: false,
+              },
+              orderBy: {
+                id: 'asc'
               },
             },
           },

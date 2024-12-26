@@ -1,3 +1,5 @@
+import { useContext } from "react";
+
 import {
     Button,
     Card,
@@ -13,12 +15,12 @@ import SetsTable from "./SetsTable";
 
 import { WorkoutExercise, Set } from "@/utils/models/models";
 
-export default function ExerciseCard({
-    exercise,
-    exerciseIndex,
-    workout,
-    setWorkout,
-}) {
+import { WorkoutContext } from "@/pages/[userId]/workout/[workoutId]";
+
+export default function ExerciseCard({ exercise, exerciseIndex }) {
+
+    const { workout, setWorkout } = useContext(WorkoutContext)
+
     const addSet = () => {
         const newSet = {
             // temporary id used for key in loop
@@ -61,7 +63,9 @@ export default function ExerciseCard({
         <Card classNames={{ footer: "justify-center py-2" }}>
             <CardHeader className="flex justify-between">
                 <div className="flex flex-col gap-1">
-                    <h3 className="text-md text-primary dark:text-inherit">{exercise.exercise.name}</h3>
+                    <h3 className="text-md text-primary dark:text-inherit">
+                        {exercise.exercise.name}
+                    </h3>
                     <p className="text-small text-default-500">
                         <span className="font-bold">Notes: </span>
                         {exercise.notes}
@@ -85,8 +89,6 @@ export default function ExerciseCard({
                     sets={exercise.sets}
                     weightUnit={exercise.weightUnit}
                     exerciseIndex={exerciseIndex}
-                    workout={workout}
-                    setWorkout={setWorkout}
                 />
             </CardBody>
             <CardFooter>
