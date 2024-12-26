@@ -62,7 +62,7 @@ export const updateWorkout = async (userId: string | string[] | undefined, worko
     return data;
 };
 
-export const deleteWorkout = async (userId: string, id: number) => {
+export const deleteWorkout = async (userId: string | string[] | undefined, id: number) => {
     const res = await fetch(`/api/${userId}/workouts`, {
         method: "DELETE",
         headers: {

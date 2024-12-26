@@ -1,6 +1,7 @@
 import { useEffect, useState, createContext } from "react";
 import { useRouter } from "next/router";
 
+import DeleteWorkoutModal from "@/components/DeleteWorkoutModal";
 import ExerciseCard from "@/components/workout/ExerciseCard";
 import WorkoutDetailsModal from "@/components/workout/WorkoutDetailsModal";
 
@@ -23,12 +24,14 @@ export default function WorkoutLog() {
     const [workout, setWorkout] = useState<Workout>(new Workout());
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [feedback, setFeedback] = useState("");
     const [error, setError] = useState("");
     const [hasFeedback, setHasFeedback] = useState(false);
     const [hasError, setHasError] = useState(false);
 
     const DetailsModal = useDisclosure();
+    const DeleteModal = useDisclosure();
 
     const router = useRouter();
 
@@ -95,6 +98,7 @@ export default function WorkoutLog() {
             setHasFeedback(false);
             setHasError(false);
             setIsSaving(true);
+
             let newWorkout;
 
             if (id === 0) {
@@ -114,6 +118,46 @@ export default function WorkoutLog() {
             }
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const discardWorkout = async (
+        userId: string | string[] | undefined,
+        workoutId: number
+    ) => {
+        let success = false;
+
+        setFeedback("");
+        setError("");
+        setHasFeedback(false);
+        setHasError(false);
+
+        if (workoutId === 0) {
+            // if it is a new unsaved workout, simply initialize a
+            // new workout
+            setWorkout(new Workout());
+        } else {
+            try {
+                setIsDeleting(true);
+
+                await deleteWorkout(userId, workoutId);
+
+                setFeedback(`'${workout.title}' was deleted`);
+                setHasFeedback(true);
+
+                success = true;
+            } catch (error) {
+                if (error instanceof Error) {
+                    setError(error.message);
+                    setHasError(true);
+                }
+            } finally {
+                setIsDeleting(false);
+                if (success) {
+                    setWorkout(new Workout());
+                    router.push(`/${userId}/workout/0`);
+                }
+            }
         }
     };
 
@@ -190,7 +234,7 @@ export default function WorkoutLog() {
                             color="danger"
                             description={error}
                             isVisible={hasError}
-                            title="Error saving workout"
+                            title="Error"
                             variant="faded"
                             onClose={() => setHasError(false)}
                         />
@@ -208,12 +252,14 @@ export default function WorkoutLog() {
                         Save Workout
                     </Button>
                     <Button
+                        isLoading={isDeleting}
                         color="danger"
                         variant="flat"
                         radius="full"
                         size="lg"
+                        onPress={DeleteModal.onOpen}
                     >
-                        Delete Workout
+                        {workout.id === 0 ? "Cancel Workout" : "Delete Workout"}
                     </Button>
                 </div>
             </div>
@@ -221,6 +267,11 @@ export default function WorkoutLog() {
             <WorkoutDetailsModal
                 isOpen={DetailsModal.isOpen}
                 onOpenChange={DetailsModal.onOpenChange}
+            />
+            <DeleteWorkoutModal
+                isOpen={DeleteModal.isOpen}
+                onOpenChange={DeleteModal.onOpenChange}
+                callbackFunction={() => discardWorkout(userId, workout.id)}
             />
         </WorkoutContext.Provider>
     );
