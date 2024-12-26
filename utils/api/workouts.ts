@@ -1,6 +1,6 @@
 import { Workout } from "../models/models";
 
-export const getWorkouts = async (userId: string) => {
+export const getWorkouts = async (userId: string | string[] | undefined) => {
     const res = await fetch(`/api/${userId}/workouts`);
 
     if (!res.ok) {
@@ -12,7 +12,7 @@ export const getWorkouts = async (userId: string) => {
     return data;
 };
 
-export const getWorkout = async (userId: string, id: number) => {
+export const getWorkout = async (userId: string | string[] | undefined, id: number) => {
     const res = await fetch(`/api/${userId}/workouts/${id}`);
 
     if (!res.ok) {
@@ -24,7 +24,7 @@ export const getWorkout = async (userId: string, id: number) => {
     return data;
 };
 
-export const addWorkout = async (userId: string, workoutData: Workout) => {
+export const addWorkout = async (userId: string | string[] | undefined, workoutData: Workout) => {
     const res = await fetch(`/api/${userId}/workouts`, {
         method: "POST",
         headers: {
@@ -42,7 +42,7 @@ export const addWorkout = async (userId: string, workoutData: Workout) => {
     return data;
 };
 
-export const updateWorkout = async (userId: string, workoutData: Workout) => {
+export const updateWorkout = async (userId: string | string[] | undefined, workoutData: Workout) => {
     const res = await fetch(`/api/${userId}/workouts`, {
         method: "PATCH",
         headers: {

@@ -40,7 +40,7 @@ export default function WorkoutLog() {
         loadWorkout(userId, id);
     }, [router.isReady]);
 
-    const loadWorkout = async (userId: string, workoutId: number) => {
+    const loadWorkout = async (userId: string | string[] | undefined, workoutId: number) => {
         // id is greater than 0 if navigating from workout history page
         // load the selected workout. Otherwise, it's a new workout.
         if (id > 0) {

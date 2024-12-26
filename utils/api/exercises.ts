@@ -10,7 +10,7 @@ export const getStockExercises = async () => {
   return data;
 };
 
-export const getUserExercises = async (userId: string) => {
+export const getUserExercises = async (userId: string | string[] | undefined) => {
   const res = await fetch(`/api/${userId}/exercises`);
 
   if (!res.ok) {
@@ -22,7 +22,7 @@ export const getUserExercises = async (userId: string) => {
   return data;
 };
 
-export const addUserExercise = async (userId: string, name: string) => {
+export const addUserExercise = async (userId: string | string[] | undefined, name: string) => {
   const res = await fetch(`/api/${userId}/exercises`, {
     method: "POST",
     headers: {
@@ -41,7 +41,7 @@ export const addUserExercise = async (userId: string, name: string) => {
 };
 
 export const updateUserExercise = async (
-  userId: string,
+  userId: string | string | undefined,
   exerciseId: number,
   newName: string
 ) => {
@@ -67,7 +67,7 @@ export const updateUserExercise = async (
 };
 
 export const deleteUserExercise = async (
-  userId: string,
+  userId: string | string[] | undefined,
   exerciseId: number
 ) => {
   const res = await fetch(`/api/${userId}/exercises`, {
