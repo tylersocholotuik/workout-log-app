@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 import ExerciseCard from "@/components/workout/ExerciseCard";
 import WorkoutDetailsModal from "@/components/workout/WorkoutDetailsModal";
 
-import { Button, Spinner, useDisclosure } from "@nextui-org/react";
+import { Alert, Button, Spinner, useDisclosure } from "@nextui-org/react";
 
 import { EditIcon } from "@/icons/EditIcon";
 
@@ -15,13 +15,18 @@ import {
     deleteWorkout,
 } from "@/utils/api/workouts";
 
-import { Workout, WorkoutExercise, Set, Exercise } from "@/utils/models/models";
+import { Workout, WorkoutExercise, Exercise } from "@/utils/models/models";
 
 export const WorkoutContext = createContext({});
 
 export default function WorkoutLog() {
     const [workout, setWorkout] = useState<Workout>(new Workout());
     const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
+    const [feedback, setFeedback] = useState("");
+    const [error, setError] = useState("");
+    const [hasFeedback, setHasFeedback] = useState(false);
+    const [hasError, setHasError] = useState(false);
 
     const DetailsModal = useDisclosure();
 
@@ -40,7 +45,10 @@ export default function WorkoutLog() {
         loadWorkout(userId, id);
     }, [router.isReady]);
 
-    const loadWorkout = async (userId: string | string[] | undefined, workoutId: number) => {
+    const loadWorkout = async (
+        userId: string | string[] | undefined,
+        workoutId: number
+    ) => {
         // id is greater than 0 if navigating from workout history page
         // load the selected workout. Otherwise, it's a new workout.
         if (id > 0) {
@@ -77,18 +85,35 @@ export default function WorkoutLog() {
         setWorkout(updatedWorkout);
     };
 
-    const saveWorkout = async (userId: string, workoutData: Workout) => {
+    const saveWorkout = async (
+        userId: string | string[] | undefined,
+        workoutData: Workout
+    ) => {
         try {
+            setFeedback("");
+            setError("");
+            setHasFeedback(false);
+            setHasError(false);
+            setIsSaving(true);
             let newWorkout;
+
             if (id === 0) {
                 newWorkout = await addWorkout(userId, workoutData);
             } else {
                 newWorkout = await updateWorkout(userId, workoutData);
             }
+
             setWorkout(newWorkout);
+
+            setFeedback("Workout Saved!");
+            setHasFeedback(true);
         } catch (error) {
-            // temporary. Add error alert in future.
-            console.error(error);
+            if (error instanceof Error) {
+                setError(error.message);
+                setHasError(true);
+            }
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -149,8 +174,31 @@ export default function WorkoutLog() {
                         Add Exercise
                     </Button>
                 </div>
+                <div className="flex justify-center mb-6">
+                    {hasFeedback && (
+                        <Alert
+                            color="success"
+                            description={feedback}
+                            isVisible={hasFeedback}
+                            title="Success"
+                            variant="faded"
+                            onClose={() => setHasFeedback(false)}
+                        />
+                    )}
+                    {hasError && (
+                        <Alert
+                            color="danger"
+                            description={error}
+                            isVisible={hasError}
+                            title="Error saving workout"
+                            variant="faded"
+                            onClose={() => setHasError(false)}
+                        />
+                    )}
+                </div>
                 <div className="flex justify-center gap-4 mb-6">
                     <Button
+                        isLoading={isSaving}
                         color="success"
                         variant="flat"
                         radius="full"
