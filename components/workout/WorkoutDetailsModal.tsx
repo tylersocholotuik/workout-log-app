@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useState } from "react";
 
 import {
     Modal,
@@ -19,18 +19,17 @@ import { WorkoutContext } from "@/pages/[userId]/workout/[workoutId]";
 export default function WorkoutDetailsModal({ isOpen, onOpenChange }) {
     const { workout, setWorkout } = useContext(WorkoutContext);
 
-    const handleInputChange = (
-        field: string,
-        value: string | CalendarDate | Date | null
-    ) => {
+    const [title, setTitle] = useState(workout.title);
+    const [date, setDate] = useState(workout.date);
+    const [notes, setNotes] = useState(workout.notes);
 
-        if (field === 'date' && value instanceof CalendarDate) {
-            value = value.toDate(getLocalTimeZone());
-        }
+    const saveChanges = () => {
 
         const updatedWorkout = {
             ...workout,
-            [field]: value,
+            title: title,
+            date: date,
+            notes: notes
         };
 
         setWorkout(updatedWorkout);
@@ -52,40 +51,46 @@ export default function WorkoutDetailsModal({ isOpen, onOpenChange }) {
                             <Input
                                 label="Workout Title"
                                 variant="bordered"
-                                value={workout.title}
-                                onValueChange={(newValue) =>
-                                    handleInputChange("title", newValue)
-                                }
+                                value={title}
+                                onValueChange={setTitle}
                             />
                             <DatePicker
                                 label="Date"
                                 variant="bordered"
                                 value={parseDate(
-                                    new Date(workout.date)
+                                    new Date(date)
                                         .toISOString()
                                         .split("T")[0]
                                 )}
                                 onChange={(newValue) =>
-                                    handleInputChange("date", newValue)
+                                    setDate(newValue?.toDate(getLocalTimeZone()))
                                 }
                             />
                             <Textarea
                                 label="Notes"
                                 variant="bordered"
                                 minRows={1}
-                                value={workout.notes}
-                                onValueChange={(newValue) =>
-                                    handleInputChange("notes", newValue)
-                                }
+                                value={notes}
+                                onValueChange={setNotes}
                             />
                         </ModalBody>
                         <ModalFooter>
                             <Button
                                 color="danger"
-                                variant="light"
+                                variant="faded"
                                 onPress={onClose}
                             >
                                 Close
+                            </Button>
+                            <Button
+                                color="success"
+                                variant="flat"
+                                onPress={() => {
+                                    saveChanges();
+                                    onClose();
+                                }}
+                            >
+                                Save
                             </Button>
                         </ModalFooter>
                     </>
