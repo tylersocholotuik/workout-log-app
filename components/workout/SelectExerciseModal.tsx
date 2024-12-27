@@ -39,7 +39,9 @@ export default function SelectExerciseModal({
     };
 
     const onSearch = (value: string) => {
-        let searchedExercises = [...exercises]
+
+        let searchedExercises = [...exercises];
+        
         if (value !== '') {
             searchedExercises = searchedExercises.filter((exercise) => {
                 return exercise.name.toLowerCase().includes(value.toLowerCase());
@@ -121,6 +123,7 @@ export default function SelectExerciseModal({
                                 variant="faded"
                                 onPress={() => {
                                     setSelectedKey(new Set());
+                                    setFilterValue('');
                                     onClose();
                                 }}
                             >
@@ -136,6 +139,7 @@ export default function SelectExerciseModal({
                                     if (selectedExercise) {
                                         callbackFunction(selectedExercise);
                                         setSelectedKey(new Set());
+                                        setFilterValue('');
                                         onClose();
                                     }
                                 }}

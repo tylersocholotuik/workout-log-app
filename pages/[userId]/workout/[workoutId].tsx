@@ -1,7 +1,7 @@
 import { useEffect, useState, createContext } from "react";
 import { useRouter } from "next/router";
 
-import DeleteWorkoutModal from "@/components/DeleteWorkoutModal";
+import DeleteWorkoutModal from "@/components/workout/DeleteWorkoutModal";
 import ExerciseCard from "@/components/workout/ExerciseCard";
 import SelectExerciseModal from "@/components/workout/SelectExerciseModal";
 import WorkoutDetailsModal from "@/components/workout/WorkoutDetailsModal";
@@ -110,12 +110,12 @@ export default function WorkoutLog() {
             newWorkoutExercise.exercise = exercise;
         }
         newWorkoutExercise.workoutId = workout.id;
+        // automatically add an empty set when adding a new exercise
         const newSet = new Set();
         newWorkoutExercise.sets.push(newSet);
         updatedWorkout.exercises.push(newWorkoutExercise);
+
         setWorkout(updatedWorkout);
-        console.log(updatedWorkout);
-        console.log(typeof exercise);
     };
 
     const saveWorkout = async (

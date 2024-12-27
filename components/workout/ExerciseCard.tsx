@@ -145,7 +145,7 @@ export default function ExerciseCard({ exercise, exerciseIndex }) {
                     variant="underlined"
                     value={notes}
                     onValueChange={setNotes}
-                    onFocusChange={() =>
+                    onBlur={() =>
                         saveInputChange(exerciseIndex, "notes", notes)
                     }
                 />

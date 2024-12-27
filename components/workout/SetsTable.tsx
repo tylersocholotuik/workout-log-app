@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useEffect, useState } from "react";
 
 import {
     Button,
@@ -19,6 +19,52 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
 
     const { workout, setWorkout } = useContext(WorkoutContext);
 
+    const [localSets, setLocalSets] = useState(sets);
+
+    useEffect(() => {
+        setLocalSets(sets);
+    }, [sets]);
+
+    // updates the workout with the changes to the weight, reps, or rpe
+    // values of a given set
+    const handleInputChange = (
+        setIndex: number,
+        field: string,
+        value: string
+    ) => {
+        setLocalSets((prevSets) =>
+            prevSets.map((set, index) =>
+                index === setIndex ? { ...set, [field]: Number(value) } : set
+            )
+        );
+    };
+
+    const saveChanges = () => {
+        const updatedWorkout = {
+            ...workout,
+            exercises: workout.exercises.map((exercise, index) =>
+                index === exerciseIndex ? { ...exercise, sets: localSets } : exercise
+            ),
+        };
+
+        setWorkout(updatedWorkout);
+    }
+
+    const deleteSet = (setIndex: number) => {
+        const updatedSets = localSets.filter((_, i) => i !== setIndex);
+        setLocalSets(updatedSets);
+
+        // Update the global workout context after deleting a set
+        const updatedWorkout = {
+            ...workout,
+            exercises: workout.exercises.map((exercise, index) =>
+                index === exerciseIndex ? { ...exercise, sets: updatedSets } : exercise
+            ),
+        };
+
+        setWorkout(updatedWorkout);
+    };
+
     const columns = [
         {
             key: "weight",
@@ -37,52 +83,6 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
             label: "",
         },
     ];
-
-    // updates the workout with the changes to the weight, reps, or rpe
-    // values of a given set
-    const handleInputChange = (
-        setIndex: number,
-        field: string,
-        value: string
-    ) => {
-        const updatedWorkout = {
-            ...workout,
-            exercises: workout.exercises.map((exercise, index) =>
-                index === exerciseIndex
-                    ? {
-                          ...exercise,
-                          sets: exercise.sets.map((set, i) =>
-                              i === setIndex
-                                  ? {
-                                        ...set,
-                                        [field]: Number(value),
-                                    }
-                                  : set
-                          ),
-                      }
-                    : exercise
-            ),
-        };
-
-        setWorkout(updatedWorkout);
-    };
-
-    const deleteSet = (setIndex: number) => {
-        // creating a deep copy of workout, then removing the set at the
-        // index of where the delete button was pressed
-        const updatedWorkout = {
-            ...workout,
-            exercises: workout.exercises.map((exercise, index) =>
-                index === exerciseIndex
-                    ? {
-                          ...exercise,
-                          sets: exercise.sets.filter((_, i) => i !== setIndex),
-                      }
-                    : exercise
-            ),
-        };
-        setWorkout(updatedWorkout);
-    };
 
     return (
         <Table
@@ -116,7 +116,7 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
                                         </span>
                                     </div>
                                 }
-                                value={set.weight ?? ""}
+                                value={localSets[index]?.weight ?? ""}
                                 onValueChange={(newValue) => {
                                     handleInputChange(
                                         index,
@@ -124,6 +124,7 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
                                         newValue
                                     );
                                 }}
+                                onBlur={saveChanges}
                             />
                         </TableCell>
                         <TableCell>
@@ -137,10 +138,11 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
                                 min="0"
                                 max="9999"
                                 step="1"
-                                value={set.reps ?? ""}
+                                value={localSets[index]?.reps ?? ""}
                                 onValueChange={(newValue) => {
                                     handleInputChange(index, "reps", newValue);
                                 }}
+                                onBlur={saveChanges}
                             />
                         </TableCell>
                         <TableCell>
@@ -154,10 +156,11 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
                                 min="6"
                                 max="10"
                                 step="0.5"
-                                value={set.rpe ?? ""}
+                                value={localSets[index]?.rpe ?? ""}
                                 onValueChange={(newValue) => {
                                     handleInputChange(index, "rpe", newValue);
                                 }}
+                                onBlur={saveChanges}
                             />
                         </TableCell>
                         <TableCell>
