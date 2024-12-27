@@ -95,10 +95,12 @@ export default function ExerciseCard({ exercise, exerciseIndex }) {
                                 variant="light"
                                 size="sm"
                             >
-                                <Icon
-                                    icon="material-symbols:settings"
-                                    width="16"
-                                />
+                                <Tooltip content="Options">
+                                    <Icon
+                                        icon="material-symbols:settings"
+                                        width="16"
+                                    />
+                                </Tooltip>
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-[240px]">
