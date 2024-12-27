@@ -95,7 +95,7 @@ export default function ExerciseCard({ exercise, exerciseIndex }) {
                                 variant="light"
                                 size="sm"
                             >
-                                <Tooltip content="Options">
+                                <Tooltip content="Change Weight Unit">
                                     <Icon
                                         icon="material-symbols:settings"
                                         width="16"

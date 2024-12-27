@@ -35,7 +35,9 @@ export default function WorkoutLog() {
     const [workout, setWorkout] = useState<Workout>(new Workout());
     const [stockExercises, setStockExercises] = useState<Exercise[]>([]);
     const [userExercises, setUserExercises] = useState<UserExercise[]>([]);
-    const [allExercises, setAllExercises] = useState<(Exercise | UserExercise)[]>([]);
+    const [allExercises, setAllExercises] = useState<
+        (Exercise | UserExercise)[]
+    >([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -96,13 +98,13 @@ export default function WorkoutLog() {
                 setError(error.message);
             }
         }
-    }
+    };
 
     const addExercise = (exercise: Exercise | UserExercise) => {
         const updatedWorkout = { ...workout };
         const newWorkoutExercise = new WorkoutExercise();
         // if userId is present, that means it is a user exercise
-        if ('userId' in exercise) {
+        if ("userId" in exercise) {
             newWorkoutExercise.userExerciseId = exercise.id;
             newWorkoutExercise.userExercise = exercise;
         } else {
@@ -194,17 +196,19 @@ export default function WorkoutLog() {
     return (
         <WorkoutContext.Provider value={{ workout, setWorkout }}>
             <div className="container mx-auto px-2 md:px-4 py-6">
-                <div className="flex flex-col gap-2 text-center mb-6">
+                <div className="flex flex-col gap-2 items-center mb-6">
                     <h2 className="text-lg">{workout.title}</h2>
                     <p className="text-md">
                         {new Date(workout.date).toLocaleString("en-CA", {
                             dateStyle: "full",
                         })}
                     </p>
-                    <p className="text-md text-default-500">
-                        <span className="font-bold">Notes: </span>
-                        {workout.notes}
-                    </p>
+                    <div className="max-w-[400px] text-center">
+                        <p className="text-md text-default-500">
+                            <span className="font-bold">Notes: </span>
+                            {workout.notes}
+                        </p>
+                    </div>
                     <div>
                         <Button
                             color="primary"
@@ -299,7 +303,7 @@ export default function WorkoutLog() {
                 exercises={stockExercises}
                 isOpen={addExerciseModal.isOpen}
                 onOpenChange={addExerciseModal.onOpenChange}
-                callbackFunction={addExercise} 
+                callbackFunction={addExercise}
             />
 
             <DeleteWorkoutModal
