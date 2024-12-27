@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
     Modal,
@@ -15,7 +15,6 @@ import {
     TableCell,
     Selection,
     Input,
-    Pagination,
     Tabs,
     Tab,
 } from "@nextui-org/react";
@@ -36,6 +35,28 @@ export default function SelectExerciseModal({
     const [filteredExercises, setFilteredExercises] = useState(exercises);
     const [filteredUserExercises, setFilteredUserExercises] = useState(userExercises);
 
+    useEffect(() => {
+        // update the filtered exercises when the tab changes
+        if (selectedTab === "stock-exercises") {
+            setFilteredExercises(
+                filterValue
+                    ? exercises.filter((exercise) =>
+                          exercise.name.toLowerCase().includes(filterValue.toLowerCase())
+                      )
+                    : exercises
+            );
+        }
+        if (selectedTab === "user-exercises") {
+            setFilteredUserExercises(
+                userFilterValue
+                    ? userExercises.filter((exercise) =>
+                          exercise.name.toLowerCase().includes(userFilterValue.toLowerCase())
+                      )
+                    : userExercises
+            );
+        }
+    }, [selectedTab, exercises, userExercises, filterValue, userFilterValue]);
+
     // gets the selected exercise id, and returns the exercise that matches the id
     const getSelectedExercise = () => {
         const selectedId = Array.from(selectedKey).pop();
@@ -52,29 +73,25 @@ export default function SelectExerciseModal({
         }
     };
 
-    const onSearch = (value: string) => {
-        let searchedExercises;
-
-        if (selectedTab === 'stock-exercises') {
-            searchedExercises = [...exercises];
-        }
-        if (selectedTab === 'user-exercises') {
-            searchedExercises = [...userExercises]; 
-        }
-
-        if (value !== "") {
-            searchedExercises = searchedExercises?.filter((exercise) => {
-                return exercise.name
-                    .toLowerCase()
-                    .includes(value.toLowerCase());
-            });
-        }
-
-        if (selectedTab === 'stock-exercises') {
-            setFilteredExercises(searchedExercises);
-        }
-        if (selectedTab === 'user-exercises') {
-            setFilteredUserExercises(searchedExercises);
+    const onSearch = (value: string, type: string) => {
+        if (type === "stock") {
+            setFilterValue(value);
+            setFilteredExercises(
+                value
+                    ? exercises.filter((exercise) =>
+                          exercise.name.toLowerCase().includes(value.toLowerCase())
+                      )
+                    : exercises
+            );
+        } else if (type === "user") {
+            setUserFilterValue(value);
+            setFilteredUserExercises(
+                value
+                    ? userExercises.filter((exercise) =>
+                          exercise.name.toLowerCase().includes(value.toLowerCase())
+                      )
+                    : userExercises
+            );
         }
     };
 
@@ -116,13 +133,13 @@ export default function SelectExerciseModal({
                                         <Input
                                             isClearable
                                             className="w-full"
-                                            placeholder="Search exercises..."
+                                            placeholder="Search stock exercises..."
                                             startContent={<SearchIcon />}
                                             value={filterValue}
                                             onClear={() => setFilterValue("")}
                                             onValueChange={(newValue) => {
                                                 setFilterValue(newValue);
-                                                onSearch(newValue);
+                                                onSearch(newValue, 'stock');
                                             }}
                                         />
                                     </div>
@@ -161,19 +178,19 @@ export default function SelectExerciseModal({
                                 </Tab>
                                 <Tab
                                     key="user-exercises"
-                                    title="User Exercises"
+                                    title="My Exercises"
                                 >
                                     <div className="z-10 sticky top-0">
                                         <Input
                                             isClearable
                                             className="w-full"
-                                            placeholder="Search exercises..."
+                                            placeholder="Search my exercises..."
                                             startContent={<SearchIcon />}
                                             value={userFilterValue}
                                             onClear={() => setUserFilterValue("")}
                                             onValueChange={(newValue) => {
                                                 setUserFilterValue(newValue);
-                                                onSearch(newValue);
+                                                onSearch(newValue, 'user');
                                             }}
                                         />
                                     </div>
@@ -219,6 +236,7 @@ export default function SelectExerciseModal({
                                 onPress={() => {
                                     setSelectedKey(new Set());
                                     setFilterValue("");
+                                    setUserFilterValue("");
                                     onClose();
                                 }}
                             >
@@ -235,6 +253,7 @@ export default function SelectExerciseModal({
                                         callbackFunction(selectedExercise);
                                         setSelectedKey(new Set());
                                         setFilterValue("");
+                                        setUserFilterValue("");
                                         onClose();
                                     }
                                 }}
