@@ -198,8 +198,8 @@ const updateWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
           data: {
             notes: exercise.notes,
             weightUnit: exercise.weightUnit,
-            exerciseId: exercise.exerciseId,
-            userExerciseId: exercise.userExerciseId,
+            exerciseId: exercise.exercise?.id ?? null,
+            userExerciseId: exercise.userExercise?.id ?? null,
             workoutId: workoutData.id,
             deleted: false,
           },
