@@ -1,6 +1,6 @@
 import { Switch } from "@nextui-org/react";
 import { useTheme } from "next-themes";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export const MoonIcon = (props) => {
   return (
@@ -41,8 +41,14 @@ export const SunIcon = (props) => {
 };
 
 export default function DarkModeSwitch() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const [isSelected, setIsSelected] = useState(true);
+
+  useEffect(() => {
+    // checks the current theme to determine switch selected
+    // state on mount
+    setIsSelected(resolvedTheme === 'dark');
+  }, [resolvedTheme]);
 
   const toggleTheme = (newValue: boolean) => {
     setIsSelected(newValue);
