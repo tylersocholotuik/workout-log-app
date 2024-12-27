@@ -13,7 +13,9 @@ export default function WorkoutCard({ workout }) {
         <Card>
             <CardHeader className="flex justify-between">
                 <div className="flex flex-col gap-1">
-                    <h3 className="text-md text-primary dark:text-inherit">{workout.title}</h3>
+                    <h3 className="text-md text-primary dark:text-inherit">
+                        {workout.title}
+                    </h3>
                     <p className="text-small text-default-500">
                         {workoutDate.toLocaleString("en-CA", {
                             dateStyle: "full",
@@ -33,10 +35,13 @@ export default function WorkoutCard({ workout }) {
                     {workout.exercises.map((exercise) => {
                         return (
                             <li
-                                key={exercise.exercise.name}
+                                key={exercise.id}
                                 className="text-xs text-default-500"
                             >
-                                {exercise.exercise.name}
+                                {exercise.exercise?.name
+                                    ? exercise.exercise.name
+                                    : exercise.userExercise?.name &&
+                                      exercise.userExercise.name}
                             </li>
                         );
                     })}

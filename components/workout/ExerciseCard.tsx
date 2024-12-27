@@ -82,9 +82,16 @@ export default function ExerciseCard({ exercise, exerciseIndex }) {
         <Card classNames={{ footer: "justify-center py-2" }}>
             <CardHeader className="flex justify-between items-center">
                 <div className="flex flex-col gap-2">
-                    <h3 className="text-md text-primary">
-                        {exercise.exercise.name}
-                    </h3>
+                    {exercise.exercise && (
+                        <h3 className="text-md text-primary">
+                            {exercise.exercise.name}
+                        </h3>
+                    )}
+                    {exercise.userExercise && (
+                        <h3 className="text-md text-primary">
+                            {exercise.userExercise.name}
+                        </h3>
+                    )}
                 </div>
                 <div className="flex gap-1 items-center">
                     <Popover showArrow offset={10} placement="bottom">
@@ -115,7 +122,7 @@ export default function ExerciseCard({ exercise, exerciseIndex }) {
                                     <div className="mt-2 flex flex-col gap-2 w-full">
                                         <RadioGroup
                                             label="Weight Unit"
-                                            id={`${exercise.exercise.name}-weight-unit`}
+                                            id={`exercise-${exercise.id}-weight-unit`}
                                             orientation="vertical"
                                             value={weightUnit}
                                             onValueChange={(newValue) => {
@@ -153,7 +160,7 @@ export default function ExerciseCard({ exercise, exerciseIndex }) {
                 <Textarea
                     className="mb-4"
                     label="Notes"
-                    id={`${exercise.exercise.name}-notes`}
+                    id={`exercise-${exercise.id}-notes`}
                     minRows={1}
                     variant="underlined"
                     value={notes}
