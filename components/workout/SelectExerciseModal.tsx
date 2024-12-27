@@ -13,10 +13,12 @@ import {
     TableBody,
     TableRow,
     TableCell,
-    Selection
+    Selection,
+    Input,
+    Pagination
 } from "@nextui-org/react";
 
-import { WorkoutContext } from "@/pages/[userId]/workout/[workoutId]";
+import { SearchIcon } from "@/icons/SearchIcon";
 
 export default function SelectExerciseModal({
     exercises,
@@ -24,14 +26,27 @@ export default function SelectExerciseModal({
     onOpenChange,
     callbackFunction,
 }) {
-
     const [selectedKey, setSelectedKey] = useState<Selection>(new Set());
+    const [filterValue, setFilterValue] = useState('');
+    const [filteredExercises, setFilteredExercises] = useState(exercises);
 
     // gets the selected exercise id, and returns the exercise that matches the id
     const getSelectedExercise = () => {
         const selectedId = Array.from(selectedKey).pop();
-        return selectedId ? exercises.find((exercise) => exercise.id === Number(selectedId)) : null;
+        return selectedId
+            ? exercises.find((exercise) => exercise.id === Number(selectedId))
+            : null;
     };
+
+    const onSearch = (value: string) => {
+        let searchedExercises = [...exercises]
+        if (value !== '') {
+            searchedExercises = searchedExercises.filter((exercise) => {
+                return exercise.name.toLowerCase().includes(value.toLowerCase());
+            })
+        }
+        setFilteredExercises(searchedExercises);
+    } 
 
     const columns = [
         {
@@ -40,13 +55,12 @@ export default function SelectExerciseModal({
         },
     ];
 
-    // TODO: Add search input, include user exercises
-
     return (
         <Modal
             isOpen={isOpen}
             placement="top-center"
             scrollBehavior="inside"
+            size="xs"
             onOpenChange={onOpenChange}
         >
             <ModalContent>
@@ -56,15 +70,32 @@ export default function SelectExerciseModal({
                             Select Exercise
                         </ModalHeader>
                         <ModalBody>
-                            <p>{Object.keys(selectedKey)}</p>
+                            <div className="z-10 sticky top-0">
+                                <Input
+                                    isClearable
+                                    className="w-full"
+                                    placeholder="Search exercises..."
+                                    startContent={<SearchIcon />}
+                                    value={filterValue}
+                                    onClear={() => setFilterValue('')}
+                                    onValueChange={(newValue) => {
+                                        setFilterValue(newValue);
+                                        onSearch(newValue);
+                                    }}
+                                />
+                            </div>
                             <Table
                                 aria-label="Sets table"
                                 removeWrapper
+                                hideHeader
                                 selectionMode="single"
                                 selectionBehavior="toggle"
                                 selectedKeys={selectedKey}
                                 onSelectionChange={setSelectedKey}
                                 color="default"
+                                classNames={{
+                                    base: 'min-h-[500px]'
+                                }}
                             >
                                 <TableHeader columns={columns}>
                                     {(column) => (
@@ -74,7 +105,7 @@ export default function SelectExerciseModal({
                                     )}
                                 </TableHeader>
                                 <TableBody>
-                                    {exercises.map((exercise) => (
+                                    {filteredExercises.map((exercise) => (
                                         <TableRow key={exercise.id}>
                                             <TableCell>
                                                 {exercise.name}
@@ -100,7 +131,8 @@ export default function SelectExerciseModal({
                                 variant="solid"
                                 isDisabled={selectedKey.size === 0}
                                 onPress={() => {
-                                    const selectedExercise = getSelectedExercise();
+                                    const selectedExercise =
+                                        getSelectedExercise();
                                     if (selectedExercise) {
                                         callbackFunction(selectedExercise);
                                         setSelectedKey(new Set());
