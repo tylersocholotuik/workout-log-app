@@ -56,7 +56,7 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
                 parsedValue % 0.5 === 0;
         } else if (field === "reps") {
             // rules for reps:
-            // min: 0 
+            // min: 0
             // max: 9999
             // must be whole number
             isValid =
@@ -124,14 +124,20 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
         {
             key: "weight",
             label: "Weight",
+            tooltipHeader: "Weight Lifted (lbs/kg)",
+            tooltipConent: "Range: 0-9999, steps of 0.5",
         },
         {
             key: "reps",
             label: "Reps",
+            tooltipHeader: "Repetitions Performed",
+            tooltipConent: "Range: 0-9999",
         },
         {
             key: "rpe",
             label: "RPE",
+            tooltipHeader: "Rate of Perceived Exertion",
+            tooltipConent: "Range: 6-10, steps of 0.5",
         },
         {
             key: "delete",
@@ -148,7 +154,23 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
         >
             <TableHeader columns={columns}>
                 {(column) => (
-                    <TableColumn key={column.key}>{column.label}</TableColumn>
+                    <TableColumn key={column.key}>
+                        <Tooltip
+                            content={
+                                <div className="px-1 py-2">
+                                    <div className="text-small font-bold">
+                                        {column.tooltipHeader}
+                                    </div>
+                                    <div className="text-tiny">
+                                        {column.tooltipConent}
+                                    </div>
+                                </div>
+                            }
+                            placement="bottom"
+                        >
+                            {column.label}
+                        </Tooltip>
+                    </TableColumn>
                 )}
             </TableHeader>
             <TableBody>
