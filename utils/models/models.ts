@@ -80,7 +80,7 @@ export class WorkoutExercise {
 
     constructor(
         id: number = 0,
-        notes: string | null = null,
+        notes: string | null = '',
         weightUnit: WeightUnit = "lbs",
         exerciseId: number | null = null,
         userExerciseId: number | null = null,

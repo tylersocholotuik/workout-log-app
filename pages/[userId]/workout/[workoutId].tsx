@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 
 import DeleteWorkoutModal from "@/components/DeleteWorkoutModal";
 import ExerciseCard from "@/components/workout/ExerciseCard";
+import SelectExerciseModal from "@/components/workout/SelectExerciseModal";
 import WorkoutDetailsModal from "@/components/workout/WorkoutDetailsModal";
 
 import { Alert, Button, Spinner, useDisclosure } from "@nextui-org/react";
@@ -16,20 +17,34 @@ import {
     deleteWorkout,
 } from "@/utils/api/workouts";
 
-import { Workout, WorkoutExercise, Set, Exercise } from "@/utils/models/models";
+import { getStockExercises, getUserExercises } from "@/utils/api/exercises";
+
+import {
+    Workout,
+    WorkoutExercise,
+    Set,
+    Exercise,
+    UserExercise,
+} from "@/utils/models/models";
+import { User } from "@prisma/client";
+import { workoutData } from "@/prisma/data/workoutData";
 
 export const WorkoutContext = createContext({});
 
 export default function WorkoutLog() {
     const [workout, setWorkout] = useState<Workout>(new Workout());
+    const [stockExercises, setStockExercises] = useState<Exercise[]>([]);
+    const [userExercises, setUserExercises] = useState<UserExercise[]>([]);
+    const [allExercises, setAllExercises] = useState<(Exercise | UserExercise)[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [feedback, setFeedback] = useState("test");
+    const [feedback, setFeedback] = useState("");
     const [error, setError] = useState("");
 
-    const DetailsModal = useDisclosure();
-    const DeleteModal = useDisclosure();
+    const detailsModal = useDisclosure();
+    const deleteModal = useDisclosure();
+    const addExerciseModal = useDisclosure();
 
     const router = useRouter();
 
@@ -44,6 +59,7 @@ export default function WorkoutLog() {
         if (!router.isReady) return;
 
         loadWorkout(userId, id);
+        loadExercises(userId);
     }, [router.isReady]);
 
     const loadWorkout = async (
@@ -57,22 +73,49 @@ export default function WorkoutLog() {
                 const data = await getWorkout(userId, workoutId);
                 setWorkout(data);
             } catch (error) {
-                console.error(error);
+                if (error instanceof Error) {
+                    setError(error.message);
+                }
             }
         }
 
         setIsLoading(false);
     };
 
-    const addExercise = () => {
+    const loadExercises = async (userId: string | string[] | undefined) => {
+        try {
+            const data = await getStockExercises();
+            setStockExercises(data);
+            const userData = await getUserExercises(userId);
+            setUserExercises(userData);
+
+            const combinedExercises = [...stockExercises, ...userExercises];
+            setAllExercises(combinedExercises);
+        } catch (error) {
+            if (error instanceof Error) {
+                setError(error.message);
+            }
+        }
+    }
+
+    const addExercise = (exercise: Exercise | UserExercise) => {
         const updatedWorkout = { ...workout };
         const newWorkoutExercise = new WorkoutExercise();
-        newWorkoutExercise.exercise = new Exercise();
-        newWorkoutExercise.exercise.name = "test";
+        // if userId is present, that means it is a user exercise
+        if ('userId' in exercise) {
+            newWorkoutExercise.userExerciseId = exercise.id;
+            newWorkoutExercise.userExercise = exercise;
+        } else {
+            newWorkoutExercise.exerciseId = exercise.id;
+            newWorkoutExercise.exercise = exercise;
+        }
+        newWorkoutExercise.workoutId = workout.id;
         const newSet = new Set();
         newWorkoutExercise.sets.push(newSet);
         updatedWorkout.exercises.push(newWorkoutExercise);
         setWorkout(updatedWorkout);
+        console.log(updatedWorkout);
+        console.log(typeof exercise);
     };
 
     const saveWorkout = async (
@@ -168,7 +211,7 @@ export default function WorkoutLog() {
                             variant="light"
                             size="md"
                             startContent={<EditIcon />}
-                            onPress={DetailsModal.onOpen}
+                            onPress={detailsModal.onOpen}
                         >
                             Edit Details
                         </Button>
@@ -192,7 +235,7 @@ export default function WorkoutLog() {
                         variant="solid"
                         radius="full"
                         size="md"
-                        onPress={addExercise}
+                        onPress={addExerciseModal.onOpen}
                     >
                         Add Exercise
                     </Button>
@@ -240,7 +283,7 @@ export default function WorkoutLog() {
                         variant="flat"
                         radius="full"
                         size="lg"
-                        onPress={DeleteModal.onOpen}
+                        onPress={deleteModal.onOpen}
                     >
                         {workout.id === 0 ? "Cancel Workout" : "Delete Workout"}
                     </Button>
@@ -248,12 +291,20 @@ export default function WorkoutLog() {
             </div>
 
             <WorkoutDetailsModal
-                isOpen={DetailsModal.isOpen}
-                onOpenChange={DetailsModal.onOpenChange}
+                isOpen={detailsModal.isOpen}
+                onOpenChange={detailsModal.onOpenChange}
             />
+
+            <SelectExerciseModal
+                exercises={stockExercises}
+                isOpen={addExerciseModal.isOpen}
+                onOpenChange={addExerciseModal.onOpenChange}
+                callbackFunction={addExercise} 
+            />
+
             <DeleteWorkoutModal
-                isOpen={DeleteModal.isOpen}
-                onOpenChange={DeleteModal.onOpenChange}
+                isOpen={deleteModal.isOpen}
+                onOpenChange={deleteModal.onOpenChange}
                 callbackFunction={() => discardWorkout(userId, workout.id)}
             />
         </WorkoutContext.Provider>
