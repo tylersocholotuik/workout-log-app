@@ -163,7 +163,7 @@ export default function SelectExerciseModal({
                                                 </TableColumn>
                                             )}
                                         </TableHeader>
-                                        <TableBody>
+                                        <TableBody emptyContent={'No exercises found.'}>
                                             {filteredExercises.map(
                                                 (exercise) => (
                                                     <TableRow key={exercise.id}>
@@ -214,7 +214,7 @@ export default function SelectExerciseModal({
                                                 </TableColumn>
                                             )}
                                         </TableHeader>
-                                        <TableBody>
+                                        <TableBody emptyContent={'No exercises found.'}>
                                             {filteredUserExercises.map(
                                                 (exercise) => (
                                                     <TableRow key={exercise.id}>
