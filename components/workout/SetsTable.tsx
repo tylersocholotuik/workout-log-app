@@ -9,6 +9,7 @@ import {
     TableRow,
     TableCell,
     Input,
+    Tooltip,
 } from "@nextui-org/react";
 
 import { DeleteIcon } from "@/icons/DeleteIcon";
@@ -24,16 +25,63 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
         setLocalSets(sets);
     }, [sets]);
 
+    // this method updates the state for localSets, and prevents user
+    // from entering bad data
     const handleInputChange = (
         setIndex: number,
         field: string,
         value: string
     ) => {
-        setLocalSets((prevSets) =>
-            prevSets.map((set, index) =>
-                index === setIndex ? { ...set, [field]: Number(value) } : set
-            )
-        );
+        // allow empty or null values
+        if (value === "" || value === null) {
+            setLocalSets((prevSets) =>
+                prevSets.map((set, index) =>
+                    index === setIndex ? { ...set, [field]: null } : set
+                )
+            );
+            return;
+        }
+
+        const parsedValue = parseFloat(value);
+
+        let isValid = false;
+        // rules for weight:
+        // min: 0
+        // max: 9999
+        // must be in steps of 0.5
+        if (field === "weight") {
+            isValid =
+                parsedValue >= 0 &&
+                parsedValue <= 9999 &&
+                parsedValue % 0.5 === 0;
+        } else if (field === "reps") {
+            // rules for reps:
+            // min: 0 
+            // max: 9999
+            // must be whole number
+            isValid =
+                parsedValue >= 0 &&
+                parsedValue <= 9999 &&
+                Number.isInteger(parsedValue);
+        } else if (field === "rpe") {
+            // rules for rpe
+            // min: 6 (people are not accurate at rating RPE below 6)
+            // max: 10
+            // must be in steps of 0.5
+            isValid =
+                parsedValue >= 6 &&
+                parsedValue <= 10 &&
+                parsedValue % 0.5 === 0;
+        }
+
+        // allow input if isValid, otherwise, input is prevented
+        if (isValid) {
+            setLocalSets((prevSets) =>
+                prevSets.map((set, index) =>
+                    index === setIndex ? { ...set, [field]: parsedValue } : set
+                )
+            );
+        }
     };
 
     const saveChanges = () => {
@@ -172,15 +220,17 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
                             />
                         </TableCell>
                         <TableCell>
-                            <Button
-                                isIconOnly
-                                aria-label="delete set"
-                                color="danger"
-                                variant="light"
-                                onPress={() => deleteSet(index)}
-                            >
-                                <DeleteIcon />
-                            </Button>
+                            <Tooltip content="Delete Set">
+                                <Button
+                                    isIconOnly
+                                    aria-label="delete set"
+                                    color="danger"
+                                    variant="light"
+                                    onPress={() => deleteSet(index)}
+                                >
+                                    <DeleteIcon />
+                                </Button>
+                            </Tooltip>
                         </TableCell>
                     </TableRow>
                 ))}

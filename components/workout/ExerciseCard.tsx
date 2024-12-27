@@ -13,6 +13,7 @@ import {
     Popover,
     PopoverTrigger,
     PopoverContent,
+    Tooltip,
 } from "@nextui-org/react";
 
 import { Icon } from "@iconify/react";
@@ -88,8 +89,16 @@ export default function ExerciseCard({ exercise, exerciseIndex }) {
                 <div className="flex gap-1 items-center">
                     <Popover showArrow offset={10} placement="bottom">
                         <PopoverTrigger>
-                            <Button isIconOnly color="default" variant="light" size="sm">
-                                <Icon icon="material-symbols:settings" width="16" />
+                            <Button
+                                isIconOnly
+                                color="default"
+                                variant="light"
+                                size="sm"
+                            >
+                                <Icon
+                                    icon="material-symbols:settings"
+                                    width="16"
+                                />
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-[240px]">
@@ -105,7 +114,7 @@ export default function ExerciseCard({ exercise, exerciseIndex }) {
                                         <RadioGroup
                                             label="Weight Unit"
                                             id={`${exercise.exercise.name}-weight-unit`}
-                                            orientation="horizontal"
+                                            orientation="vertical"
                                             value={weightUnit}
                                             onValueChange={(newValue) => {
                                                 setWeightUnit(newValue);
@@ -124,15 +133,17 @@ export default function ExerciseCard({ exercise, exerciseIndex }) {
                             )}
                         </PopoverContent>
                     </Popover>
-                    <Button
-                        isIconOnly
-                        aria-label="delete set"
-                        color="danger"
-                        variant="light"
-                        onPress={deleteExercise}
-                    >
-                        <DeleteIcon />
-                    </Button>
+                    <Tooltip content="Delete Exercise">
+                        <Button
+                            isIconOnly
+                            aria-label="delete set"
+                            color="danger"
+                            variant="light"
+                            onPress={deleteExercise}
+                        >
+                            <DeleteIcon />
+                        </Button>
+                    </Tooltip>
                 </div>
             </CardHeader>
             <Divider />
