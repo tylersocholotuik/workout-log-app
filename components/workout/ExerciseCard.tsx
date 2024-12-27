@@ -81,7 +81,7 @@ export default function ExerciseCard({ exercise, exerciseIndex }) {
         <Card classNames={{ footer: "justify-center py-2" }}>
             <CardHeader className="flex justify-between items-center">
                 <div className="flex flex-col gap-2">
-                    <h3 className="text-md text-primary dark:text-inherit">
+                    <h3 className="text-md text-primary">
                         {exercise.exercise.name}
                     </h3>
                 </div>

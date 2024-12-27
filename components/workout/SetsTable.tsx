@@ -16,7 +16,6 @@ import { DeleteIcon } from "@/icons/DeleteIcon";
 import { WorkoutContext } from "@/pages/[userId]/workout/[workoutId]";
 
 export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
-
     const { workout, setWorkout } = useContext(WorkoutContext);
 
     const [localSets, setLocalSets] = useState(sets);
@@ -25,8 +24,6 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
         setLocalSets(sets);
     }, [sets]);
 
-    // updates the workout with the changes to the weight, reps, or rpe
-    // values of a given set
     const handleInputChange = (
         setIndex: number,
         field: string,
@@ -43,22 +40,32 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
         const updatedWorkout = {
             ...workout,
             exercises: workout.exercises.map((exercise, index) =>
-                index === exerciseIndex ? { ...exercise, sets: localSets } : exercise
+                index === exerciseIndex
+                    ? {
+                          ...exercise,
+                          sets: localSets,
+                      }
+                    : exercise
             ),
         };
 
         setWorkout(updatedWorkout);
-    }
+    };
 
     const deleteSet = (setIndex: number) => {
-        const updatedSets = localSets.filter((_, i) => i !== setIndex);
+        const updatedSets = localSets.filter((_, index) => index !== setIndex);
         setLocalSets(updatedSets);
 
         // Update the global workout context after deleting a set
         const updatedWorkout = {
             ...workout,
             exercises: workout.exercises.map((exercise, index) =>
-                index === exerciseIndex ? { ...exercise, sets: updatedSets } : exercise
+                index === exerciseIndex
+                    ? {
+                          ...exercise,
+                          sets: updatedSets,
+                      }
+                    : exercise
             ),
         };
 
@@ -88,6 +95,7 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
         <Table
             aria-label="Sets table"
             removeWrapper
+            isCompact
             classNames={{ th: "text-center" }}
         >
             <TableHeader columns={columns}>
@@ -96,7 +104,7 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
                 )}
             </TableHeader>
             <TableBody>
-                {sets.map((set, index) => (
+                {localSets.map((set, index) => (
                     <TableRow key={`set-${index}`}>
                         <TableCell>
                             <Input
