@@ -35,9 +35,6 @@ export default function WorkoutLog() {
     const [workout, setWorkout] = useState<Workout>(new Workout());
     const [stockExercises, setStockExercises] = useState<Exercise[]>([]);
     const [userExercises, setUserExercises] = useState<UserExercise[]>([]);
-    const [allExercises, setAllExercises] = useState<
-        (Exercise | UserExercise)[]
-    >([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -90,9 +87,6 @@ export default function WorkoutLog() {
             setStockExercises(data);
             const userData = await getUserExercises(userId);
             setUserExercises(userData);
-
-            const combinedExercises = [...stockExercises, ...userExercises];
-            setAllExercises(combinedExercises);
         } catch (error) {
             if (error instanceof Error) {
                 setError(error.message);
@@ -301,6 +295,7 @@ export default function WorkoutLog() {
 
             <SelectExerciseModal
                 exercises={stockExercises}
+                userExercises={userExercises}
                 isOpen={addExerciseModal.isOpen}
                 onOpenChange={addExerciseModal.onOpenChange}
                 callbackFunction={addExercise}
