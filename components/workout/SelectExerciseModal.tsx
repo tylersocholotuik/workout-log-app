@@ -17,12 +17,17 @@ import {
     Input,
     Tabs,
     Tab,
+    Alert,
 } from "@nextui-org/react";
 
 import { SearchIcon } from "@/icons/SearchIcon";
 
 import { Exercise, UserExercise } from "@/utils/models/models";
-import { getUserExercises, getStockExercises } from "@/utils/api/exercises";
+import {
+    getUserExercises,
+    getStockExercises,
+    addUserExercise,
+} from "@/utils/api/exercises";
 
 export default function SelectExerciseModal({
     userId,
@@ -37,11 +42,17 @@ export default function SelectExerciseModal({
     const [filterValue, setFilterValue] = useState("");
     const [userFilterValue, setUserFilterValue] = useState("");
     const [filteredExercises, setFilteredExercises] = useState(exercises);
-    const [filteredUserExercises, setFilteredUserExercises] = useState(userExercises);
+    const [filteredUserExercises, setFilteredUserExercises] =
+        useState(userExercises);
+    const [exerciseName, setExerciseName] = useState("");
+    const [newExercise, setNewExercise] = useState<UserExercise>(new UserExercise())
+    const [isCreating, setisCreating] = useState(false);
+    const [error, setError] = useState("");
+    const [feedback, setFeedback] = useState("");
 
     useEffect(() => {
         loadExercises(userId);
-    }, [])
+    }, []);
 
     useEffect(() => {
         // update the filtered exercises when the tab changes
@@ -49,7 +60,9 @@ export default function SelectExerciseModal({
             setFilteredExercises(
                 filterValue
                     ? exercises.filter((exercise) =>
-                          exercise.name.toLowerCase().includes(filterValue.toLowerCase())
+                          exercise.name
+                              .toLowerCase()
+                              .includes(filterValue.toLowerCase())
                       )
                     : exercises
             );
@@ -58,7 +71,9 @@ export default function SelectExerciseModal({
             setFilteredUserExercises(
                 userFilterValue
                     ? userExercises.filter((exercise) =>
-                          exercise.name.toLowerCase().includes(userFilterValue.toLowerCase())
+                          exercise.name
+                              .toLowerCase()
+                              .includes(userFilterValue.toLowerCase())
                       )
                     : userExercises
             );
@@ -66,31 +81,35 @@ export default function SelectExerciseModal({
     }, [selectedTab, exercises, userExercises, filterValue, userFilterValue]);
 
     const loadExercises = async (userId: string | string[] | undefined) => {
-            try {
-                const data = await getStockExercises();
-                setExercises(data);
-                const userData = await getUserExercises(userId);
-                setUserExercises(userData);
-            } catch (error) {
-                if (error instanceof Error) {
-                    console.error(error.message);
-                }
+        try {
+            const data = await getStockExercises();
+            setExercises(data);
+            const userData = await getUserExercises(userId);
+            setUserExercises(userData);
+        } catch (error) {
+            if (error instanceof Error) {
+                console.error(error.message);
             }
-        };
+        }
+    };
 
     // gets the selected exercise id, and returns the exercise that matches the id
     const getSelectedExercise = () => {
         const selectedId = Array.from(selectedKey).pop();
 
-        if (selectedTab === 'stock-exercises') {
+        if (selectedTab === "stock-exercises") {
             return selectedId
-            ? exercises.find((exercise) => exercise.id === Number(selectedId))
-            : null;
+                ? exercises.find(
+                      (exercise) => exercise.id === Number(selectedId)
+                  )
+                : null;
         }
-        if (selectedTab === 'user-exercises') {
+        if (selectedTab === "user-exercises") {
             return selectedId
-            ? userExercises.find((exercise) => exercise.id === Number(selectedId))
-            : null;
+                ? userExercises.find(
+                      (exercise) => exercise.id === Number(selectedId)
+                  )
+                : null;
         }
     };
 
@@ -100,7 +119,9 @@ export default function SelectExerciseModal({
             setFilteredExercises(
                 value
                     ? exercises.filter((exercise) =>
-                          exercise.name.toLowerCase().includes(value.toLowerCase())
+                          exercise.name
+                              .toLowerCase()
+                              .includes(value.toLowerCase())
                       )
                     : exercises
             );
@@ -109,12 +130,88 @@ export default function SelectExerciseModal({
             setFilteredUserExercises(
                 value
                     ? userExercises.filter((exercise) =>
-                          exercise.name.toLowerCase().includes(value.toLowerCase())
+                          exercise.name
+                              .toLowerCase()
+                              .includes(value.toLowerCase())
                       )
                     : userExercises
             );
         }
     };
+
+    const createNewExercise = async (userId: string, name: string) => {
+        setError("");
+        setFeedback("");
+        setisCreating(true);
+
+        try {
+            if (name.trim() === "") {
+                throw new Error(`Please enter an exercise name.`);
+            }
+
+            const nameIsTaken =
+                exercises.some(
+                    (exercise) =>
+                        name.trim().toLowerCase() ===
+                        exercise.name.toLowerCase()
+                ) ||
+                userExercises.some(
+                    (exercise) =>
+                        name.trim().toLowerCase() ===
+                        exercise.name.toLowerCase()
+                );
+
+            if (nameIsTaken) {
+                throw new Error(`Exercise name '${name}' already exists.`);
+            }
+
+            const newExerciseData = await addUserExercise(userId, exerciseName.trim());
+            setNewExercise(newExerciseData);
+            // reload userExercises to have access to new exercise
+            const userData = await getUserExercises(userId);
+            setUserExercises(userData);
+
+            setFeedback(`'${exerciseName}' was created!`);
+        } catch (error) {
+            if (error instanceof Error) {
+                setError(error.message);
+            }
+        } finally {
+            setExerciseName("");
+            setisCreating(false);
+        }
+    };
+
+    const clearState = () => {
+        setSelectedKey(new Set());
+        setFilterValue("");
+        setUserFilterValue("");
+        setError("");
+        setFeedback("");
+        setExerciseName("");
+        setSelectedTab("");
+        setNewExercise(new UserExercise());
+    };
+
+    const onAdd = () => {
+        const selectedExercise = getSelectedExercise();
+        if (selectedExercise) {
+            callbackFunction(selectedExercise);
+            clearState();
+        }
+    };
+
+    const addCreatedExerciseToWorkout = () => {
+        // return early if there is no new exercise loaded
+        // (default id value for new UserExercise is 0)
+        if (newExercise.id === 0) {
+            return;
+        }
+
+        // add new exercise to workout
+        callbackFunction(newExercise);
+        clearState();
+    }
 
     const columns = [
         {
@@ -126,15 +223,16 @@ export default function SelectExerciseModal({
     return (
         <Modal
             isOpen={isOpen}
-            placement="top-center"
+            isDismissable={false}
+            isKeyboardDismissDisabled
             scrollBehavior="inside"
-            size="xs"
+            size="md"
             onOpenChange={onOpenChange}
         >
             <ModalContent>
                 {(onClose) => (
                     <>
-                        <ModalHeader className="flex flex-col gap-1">
+                        <ModalHeader className="flex flex-col items-center gap-1">
                             Select Exercise
                         </ModalHeader>
                         <ModalBody>
@@ -142,7 +240,8 @@ export default function SelectExerciseModal({
                                 aria-label="Stock or User Exercise Selection"
                                 variant="solid"
                                 color="primary"
-                                radius="full"
+                                radius="sm"
+                                className="justify-center z-10 sticky top-0"
                                 selectedKey={selectedTab}
                                 onSelectionChange={setSelectedTab}
                             >
@@ -150,7 +249,7 @@ export default function SelectExerciseModal({
                                     key="stock-exercises"
                                     title="Stock Exercises"
                                 >
-                                    <div className="z-10 sticky top-0">
+                                    <div className="z-10 sticky top-[50px]">
                                         <Input
                                             isClearable
                                             className="w-full"
@@ -160,7 +259,7 @@ export default function SelectExerciseModal({
                                             onClear={() => setFilterValue("")}
                                             onValueChange={(newValue) => {
                                                 setFilterValue(newValue);
-                                                onSearch(newValue, 'stock');
+                                                onSearch(newValue, "stock");
                                             }}
                                         />
                                     </div>
@@ -184,7 +283,9 @@ export default function SelectExerciseModal({
                                                 </TableColumn>
                                             )}
                                         </TableHeader>
-                                        <TableBody emptyContent={'No exercises found.'}>
+                                        <TableBody
+                                            emptyContent={"No exercises found."}
+                                        >
                                             {filteredExercises.map(
                                                 (exercise) => (
                                                     <TableRow key={exercise.id}>
@@ -197,10 +298,7 @@ export default function SelectExerciseModal({
                                         </TableBody>
                                     </Table>
                                 </Tab>
-                                <Tab
-                                    key="user-exercises"
-                                    title="My Exercises"
-                                >
+                                <Tab key="user-exercises" title="My Exercises">
                                     <div className="z-10 sticky top-0">
                                         <Input
                                             isClearable
@@ -208,10 +306,12 @@ export default function SelectExerciseModal({
                                             placeholder="Search my exercises..."
                                             startContent={<SearchIcon />}
                                             value={userFilterValue}
-                                            onClear={() => setUserFilterValue("")}
+                                            onClear={() =>
+                                                setUserFilterValue("")
+                                            }
                                             onValueChange={(newValue) => {
                                                 setUserFilterValue(newValue);
-                                                onSearch(newValue, 'user');
+                                                onSearch(newValue, "user");
                                             }}
                                         />
                                     </div>
@@ -235,7 +335,9 @@ export default function SelectExerciseModal({
                                                 </TableColumn>
                                             )}
                                         </TableHeader>
-                                        <TableBody emptyContent={'No exercises found.'}>
+                                        <TableBody
+                                            emptyContent={"No exercises found."}
+                                        >
                                             {filteredUserExercises.map(
                                                 (exercise) => (
                                                     <TableRow key={exercise.id}>
@@ -248,6 +350,67 @@ export default function SelectExerciseModal({
                                         </TableBody>
                                     </Table>
                                 </Tab>
+                                <Tab key="create-exercise" title="Create New">
+                                    <div className="min-h-[500px]">
+                                        <h3 className="text-md text-center mb-4">
+                                            Create new exercise
+                                        </h3>
+                                        <div className="mb-4">
+                                            <Input
+                                                id="exercise-name"
+                                                label="Exercise Name"
+                                                variant="bordered"
+                                                description="Can not have the same name as a stock exercise."
+                                                isInvalid={error !== ""}
+                                                errorMessage={error}
+                                                value={exerciseName}
+                                                onValueChange={setExerciseName}
+                                                onChange={() => setError("")}
+                                            />
+                                        </div>
+                                        {feedback !== "" && (
+                                            <div className="mb-4">
+                                                <Alert
+                                                    color="success"
+                                                    description={feedback}
+                                                    isVisible={feedback !== ""}
+                                                    title="Success"
+                                                    variant="faded"
+                                                    onClose={() =>
+                                                        setFeedback("")
+                                                    }
+                                                    endContent={
+                                                        <Button
+                                                            color="success"
+                                                            size="sm"
+                                                            variant="flat"
+                                                            onPress={() => {
+                                                                addCreatedExerciseToWorkout();
+                                                                onClose();
+                                                            }}
+                                                        >
+                                                            Add
+                                                        </Button>
+                                                    }
+                                                />
+                                            </div>
+                                        )}
+                                        <div className="flex justify-center">
+                                            <Button
+                                                color="primary"
+                                                isLoading={isCreating}
+                                                onPress={() =>
+                                                    createNewExercise(
+                                                        userId,
+                                                        exerciseName
+                                                    )
+                                                }
+                                            >
+                                                Create
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </Tab>
                             </Tabs>
                         </ModalBody>
                         <ModalFooter>
@@ -255,9 +418,7 @@ export default function SelectExerciseModal({
                                 color="danger"
                                 variant="faded"
                                 onPress={() => {
-                                    setSelectedKey(new Set());
-                                    setFilterValue("");
-                                    setUserFilterValue("");
+                                    clearState();
                                     onClose();
                                 }}
                             >
@@ -268,15 +429,8 @@ export default function SelectExerciseModal({
                                 variant="solid"
                                 isDisabled={selectedKey.size === 0}
                                 onPress={() => {
-                                    const selectedExercise =
-                                        getSelectedExercise();
-                                    if (selectedExercise) {
-                                        callbackFunction(selectedExercise);
-                                        setSelectedKey(new Set());
-                                        setFilterValue("");
-                                        setUserFilterValue("");
-                                        onClose();
-                                    }
+                                    onAdd();
+                                    onClose();
                                 }}
                             >
                                 Add
