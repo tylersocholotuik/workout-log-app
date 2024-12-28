@@ -26,7 +26,7 @@ export default function DeleteWorkoutModal({ isOpen, onOpenChange, callbackFunct
                         <ModalFooter>
                             <Button
                                 color="danger"
-                                variant="faded"
+                                variant="ghost"
                                 onPress={onClose}
                             >
                                 Cancel

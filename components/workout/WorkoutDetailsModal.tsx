@@ -77,7 +77,7 @@ export default function WorkoutDetailsModal({ isOpen, onOpenChange }) {
                         <ModalFooter>
                             <Button
                                 color="danger"
-                                variant="faded"
+                                variant="ghost"
                                 onPress={onClose}
                             >
                                 Close

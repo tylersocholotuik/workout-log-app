@@ -20,7 +20,7 @@ export default function History() {
         }
     }, [router.isReady]);
 
-    const loadWorkouts = async (userId: string) => {
+    const loadWorkouts = async (userId: string | string[] | undefined) => {
         setError("");
 
         try {
