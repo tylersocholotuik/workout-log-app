@@ -34,6 +34,7 @@ export default function WorkoutLog() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [feedback, setFeedback] = useState("");
     const [error, setError] = useState("");
+    const [startNewWorkout, setStartNewWorkout] = useState(false);
 
     const detailsModal = useDisclosure();
     const deleteModal = useDisclosure();
@@ -139,6 +140,7 @@ export default function WorkoutLog() {
             // if it is a new unsaved workout, simply initialize a
             // new workout
             setWorkout(new Workout());
+            setStartNewWorkout(false);
         } else {
             try {
                 setIsDeleting(true);
@@ -156,6 +158,7 @@ export default function WorkoutLog() {
                 setIsDeleting(false);
                 if (success) {
                     setWorkout(new Workout());
+                    setStartNewWorkout(false);
                     router.push(`/${userId}/workout/0`);
                 }
             }
@@ -166,6 +169,63 @@ export default function WorkoutLog() {
         return (
             <div className="flex justify-center pt-6">
                 <Spinner size="lg" />
+            </div>
+        );
+    }
+
+    // if navigating directly to workout page, prompt user to either start a new workout
+    // or load an existing workout
+    if (id === 0 && !startNewWorkout) {
+        return (
+            <div className="container mx-auto px-2 md:px-4 py-6">
+                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-6">
+                    <div>
+                        <Button
+                            color="primary"
+                            size="lg"
+                            variant="solid"
+                            onPress={() => setStartNewWorkout(true)}
+                        >
+                            Start New Workout
+                        </Button>
+                    </div>
+                    <div>
+                        <Button
+                            color="primary"
+                            size="lg"
+                            variant="solid"
+                            onPress={() => router.push(`/${userId}/history`)}
+                        >
+                            Load Existing Workout
+                        </Button>
+                    </div>
+                </div>
+                <div className="flex justify-center mb-6">
+                    {feedback !== "" && (
+                        <div className="w-[320px]">
+                            <Alert
+                                color="success"
+                                description={feedback}
+                                isVisible={feedback !== ""}
+                                title="Success"
+                                variant="faded"
+                                onClose={() => setFeedback("")}
+                            />
+                        </div>
+                    )}
+                    {error !== "" && (
+                        <div className="w-[320px]">
+                            <Alert
+                                color="danger"
+                                description={error}
+                                isVisible={error !== ""}
+                                title="Error"
+                                variant="faded"
+                                onClose={() => setError("")}
+                            />
+                        </div>
+                    )}
+                </div>
             </div>
         );
     }
