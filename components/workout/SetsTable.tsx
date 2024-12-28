@@ -65,11 +65,11 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
                 Number.isInteger(parsedValue);
         } else if (field === "rpe") {
             // rules for rpe
-            // min: 6 (people are not accurate at rating RPE below 6)
+            // min: 0
             // max: 10
             // must be in steps of 0.5
             isValid =
-                parsedValue >= 6 &&
+                parsedValue >= 0 &&
                 parsedValue <= 10 &&
                 parsedValue % 0.5 === 0;
         }
@@ -137,7 +137,7 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
             key: "rpe",
             label: "RPE",
             tooltipHeader: "Rate of Perceived Exertion",
-            tooltipConent: "Range: 6-10, steps of 0.5",
+            tooltipConent: "Range: 0-10, steps of 0.5",
         },
         {
             key: "delete",
@@ -231,7 +231,7 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
                                 size="sm"
                                 aria-label="rpe"
                                 color="primary"
-                                min="6"
+                                min="0"
                                 max="10"
                                 step="0.5"
                                 value={localSets[index]?.rpe ?? ""}
