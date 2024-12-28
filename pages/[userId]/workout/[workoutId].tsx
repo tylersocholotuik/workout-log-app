@@ -31,8 +31,6 @@ export const WorkoutContext = createContext({});
 
 export default function WorkoutLog() {
     const [workout, setWorkout] = useState<Workout>(new Workout());
-    const [stockExercises, setStockExercises] = useState<Exercise[]>([]);
-    const [userExercises, setUserExercises] = useState<UserExercise[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -56,7 +54,6 @@ export default function WorkoutLog() {
         if (!router.isReady) return;
 
         loadWorkout(userId, id);
-        loadExercises(userId);
     }, [router.isReady]);
 
     const loadWorkout = async (
@@ -78,19 +75,6 @@ export default function WorkoutLog() {
         }
 
         setIsLoading(false);
-    };
-
-    const loadExercises = async (userId: string | string[] | undefined) => {
-        try {
-            const data = await getStockExercises();
-            setStockExercises(data);
-            const userData = await getUserExercises(userId);
-            setUserExercises(userData);
-        } catch (error) {
-            if (error instanceof Error) {
-                setError(error.message);
-            }
-        }
     };
 
     const addExercise = (exercise: Exercise | UserExercise) => {
@@ -293,8 +277,7 @@ export default function WorkoutLog() {
             />
 
             <SelectExerciseModal
-                exercises={stockExercises}
-                userExercises={userExercises}
+                userId={userId}
                 isOpen={addExerciseModal.isOpen}
                 onOpenChange={addExerciseModal.onOpenChange}
                 callbackFunction={addExercise}

@@ -21,19 +21,27 @@ import {
 
 import { SearchIcon } from "@/icons/SearchIcon";
 
+import { Exercise, UserExercise } from "@/utils/models/models";
+import { getUserExercises, getStockExercises } from "@/utils/api/exercises";
+
 export default function SelectExerciseModal({
-    exercises,
-    userExercises,
+    userId,
     isOpen,
     onOpenChange,
     callbackFunction,
 }) {
+    const [exercises, setExercises] = useState<Exercise[]>([]);
+    const [userExercises, setUserExercises] = useState<UserExercise[]>([]);
     const [selectedKey, setSelectedKey] = useState<Selection>(new Set());
     const [selectedTab, setSelectedTab] = useState("stock-exercises");
     const [filterValue, setFilterValue] = useState("");
     const [userFilterValue, setUserFilterValue] = useState("");
     const [filteredExercises, setFilteredExercises] = useState(exercises);
     const [filteredUserExercises, setFilteredUserExercises] = useState(userExercises);
+
+    useEffect(() => {
+        loadExercises(userId);
+    }, [])
 
     useEffect(() => {
         // update the filtered exercises when the tab changes
@@ -56,6 +64,19 @@ export default function SelectExerciseModal({
             );
         }
     }, [selectedTab, exercises, userExercises, filterValue, userFilterValue]);
+
+    const loadExercises = async (userId: string | string[] | undefined) => {
+            try {
+                const data = await getStockExercises();
+                setExercises(data);
+                const userData = await getUserExercises(userId);
+                setUserExercises(userData);
+            } catch (error) {
+                if (error instanceof Error) {
+                    console.error(error.message);
+                }
+            }
+        };
 
     // gets the selected exercise id, and returns the exercise that matches the id
     const getSelectedExercise = () => {
