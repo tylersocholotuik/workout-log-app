@@ -17,8 +17,6 @@ import {
     deleteWorkout,
 } from "@/utils/api/workouts";
 
-import { getStockExercises, getUserExercises } from "@/utils/api/exercises";
-
 import {
     Workout,
     WorkoutExercise,
@@ -51,10 +49,11 @@ export default function WorkoutLog() {
     }
 
     useEffect(() => {
-        if (!router.isReady) return;
+        if (!router.isReady || !workoutId) return;
 
         loadWorkout(userId, id);
-    }, [router.isReady]);
+        console.log(id);
+    }, [router.isReady, workoutId]);
 
     const loadWorkout = async (
         userId: string | string[] | undefined,
@@ -106,17 +105,18 @@ export default function WorkoutLog() {
             setError("");
             setIsSaving(true);
 
-            let newWorkout;
+            let newWorkout: Workout;
 
             if (id === 0) {
                 newWorkout = await addWorkout(userId, workoutData);
+                setFeedback("Workout Saved");
+                // reload the page with the new workoutId
+                await router.push(`/${userId}/workout/${newWorkout.id}`);
             } else {
                 newWorkout = await updateWorkout(userId, workoutData);
+                setWorkout(newWorkout);
+                setFeedback("Workout Updated!");
             }
-
-            setWorkout(newWorkout);
-
-            setFeedback("Workout Saved!");
         } catch (error) {
             if (error instanceof Error) {
                 setError(error.message);
