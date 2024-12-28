@@ -226,6 +226,7 @@ export default function SelectExerciseModal({
             isDismissable={false}
             isKeyboardDismissDisabled
             scrollBehavior="inside"
+            placement="top"
             size="md"
             onOpenChange={onOpenChange}
         >
@@ -273,7 +274,7 @@ export default function SelectExerciseModal({
                                         onSelectionChange={setSelectedKey}
                                         color="default"
                                         classNames={{
-                                            base: "min-h-[500px]",
+                                            base: "",
                                         }}
                                     >
                                         <TableHeader columns={columns}>
@@ -325,7 +326,7 @@ export default function SelectExerciseModal({
                                         onSelectionChange={setSelectedKey}
                                         color="default"
                                         classNames={{
-                                            base: "min-h-[500px]",
+                                            base: "",
                                         }}
                                     >
                                         <TableHeader columns={columns}>
@@ -351,7 +352,7 @@ export default function SelectExerciseModal({
                                     </Table>
                                 </Tab>
                                 <Tab key="create-exercise" title="Create New">
-                                    <div className="min-h-[500px]">
+                                    <div className="">
                                         <h3 className="text-md text-center mb-4">
                                             Create new exercise
                                         </h3>
@@ -416,7 +417,7 @@ export default function SelectExerciseModal({
                         <ModalFooter>
                             <Button
                                 color="danger"
-                                variant="faded"
+                                variant="ghost"
                                 onPress={() => {
                                     clearState();
                                     onClose();
