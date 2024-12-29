@@ -26,7 +26,7 @@ import { Set } from "@/utils/models/models";
 
 import { WorkoutContext } from "@/pages/[userId]/workout/[workoutId]";
 
-import { rpeData } from "@/utils/calc-functions/rpeData";
+import { calculateOneRepMax } from "@/utils/calculator/calc-functions";
 
 export default function ExerciseCard({ exercise, exerciseIndex }) {
     const { workout, setWorkout } = useContext(WorkoutContext);
@@ -107,12 +107,6 @@ export default function ExerciseCard({ exercise, exerciseIndex }) {
 
             setOneRepMax(highestOneRepMax);
         }
-    };
-
-    const calculateOneRepMax = (weight: number, reps: number, rpe: number) => {
-        // formula is Weight x 100 / %1RM
-        // sourced from: https://fiftyonestrong.com/rpe/
-        return Math.round((weight * 100) / rpeData[rpe][reps]);
     };
 
     return (
