@@ -8,6 +8,7 @@ import WorkoutDetailsModal from "@/components/workout/WorkoutDetailsModal";
 
 import { Alert, Button, Spinner, useDisclosure } from "@nextui-org/react";
 
+import { Icon } from "@iconify/react/dist/iconify.js";
 import { EditIcon } from "@/icons/EditIcon";
 
 import {
@@ -61,7 +62,7 @@ export default function WorkoutLog() {
         if (feedback !== "" || error !== "") {
             feedbackModal.onOpen();
         }
-    }, [feedback, error])
+    }, [feedback, error]);
 
     const loadWorkout = async (
         userId: string | string[] | undefined,
@@ -192,16 +193,30 @@ export default function WorkoutLog() {
                             size="lg"
                             variant="solid"
                             onPress={() => setStartNewWorkout(true)}
+                            startContent={
+                                <Icon
+                                    icon="gridicons:create"
+                                    width="24"
+                                    height="24"
+                                />
+                            }
                         >
-                            Start New Workout
+                            Create New Workout
                         </Button>
                     </div>
                     <div>
                         <Button
-                            color="primary"
+                            color="secondary"
                             size="lg"
                             variant="solid"
                             onPress={() => router.push(`/${userId}/history`)}
+                            startContent={
+                                <Icon
+                                    icon="material-symbols:history"
+                                    width="24"
+                                    height="24"
+                                />
+                            }
                         >
                             Load Existing Workout
                         </Button>
