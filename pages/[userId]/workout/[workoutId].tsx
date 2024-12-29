@@ -73,7 +73,6 @@ export default function WorkoutLog() {
         if (id > 0) {
             try {
                 const data = await getWorkout(userId, workoutId);
-                console.log(data);
                 setWorkout(data);
             } catch (error) {
                 if (error instanceof Error) {

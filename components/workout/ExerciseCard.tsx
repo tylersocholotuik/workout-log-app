@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 
 import {
     Button,
@@ -14,6 +14,7 @@ import {
     PopoverTrigger,
     PopoverContent,
     Tooltip,
+    Switch,
 } from "@nextui-org/react";
 
 import { Icon } from "@iconify/react";
@@ -21,15 +22,23 @@ import { DeleteIcon } from "@/icons/DeleteIcon";
 
 import SetsTable from "./SetsTable";
 
-import { WorkoutExercise, Set } from "@/utils/models/models";
+import { Set } from "@/utils/models/models";
 
 import { WorkoutContext } from "@/pages/[userId]/workout/[workoutId]";
+
+import { rpeData } from "@/utils/calc-functions/rpeData";
 
 export default function ExerciseCard({ exercise, exerciseIndex }) {
     const { workout, setWorkout } = useContext(WorkoutContext);
 
     const [notes, setNotes] = useState(exercise.notes);
     const [weightUnit, setWeightUnit] = useState(exercise.weightUnit);
+    const [oneRepMax, setOneRepMax] = useState<number | null>();
+    const [showOneRepMax, setShowOneRepMax] = useState(true);
+
+    useEffect(() => {
+        updateOneRepMax(exercise.sets);
+    }, [workout]);
 
     const addSet = () => {
         const newSet = new Set();
@@ -78,6 +87,34 @@ export default function ExerciseCard({ exercise, exerciseIndex }) {
         setWorkout(updatedWorkout);
     };
 
+    const updateOneRepMax = (sets: Set[]) => {
+        // determine best set that has between 1-10 reps and RPE >= 6
+        // this rule is due to there only being data for these values
+        // see utils/calc-functions/rpeData.ts
+        const elligibleSets = sets.filter((set) => {
+            if (set.weight && set.reps && set.rpe) {
+                return set.reps >= 1 && set.reps <= 10 && set.rpe >= 6;
+            }
+        });
+
+        if (elligibleSets.length > 0) {
+            // calculate e1RM for each set and use the highest value
+            const maxList = elligibleSets.map((set) => {
+                return calculateOneRepMax(set.weight, set.reps, set.rpe);
+            });
+
+            const highestOneRepMax = Math.max(...maxList);
+
+            setOneRepMax(highestOneRepMax);
+        }
+    };
+
+    const calculateOneRepMax = (weight: number, reps: number, rpe: number) => {
+        // formula is Weight x 100 / %1RM
+        // sourced from: https://fiftyonestrong.com/rpe/
+        return Math.round((weight * 100) / rpeData[rpe][reps]);
+    };
+
     return (
         <Card classNames={{ footer: "justify-center py-2" }}>
             <CardHeader className="flex justify-between items-center">
@@ -102,7 +139,7 @@ export default function ExerciseCard({ exercise, exerciseIndex }) {
                                 variant="light"
                                 size="sm"
                             >
-                                <Tooltip content="Change Weight Unit">
+                                <Tooltip content="Options">
                                     <Icon
                                         icon="material-symbols:settings"
                                         width="16"
@@ -114,12 +151,12 @@ export default function ExerciseCard({ exercise, exerciseIndex }) {
                             {(titleProps) => (
                                 <div className="px-1 py-2 w-full">
                                     <p
-                                        className="text-small font-bold text-foreground"
+                                        className="text-small font-bold text-foreground mb-2"
                                         {...titleProps}
                                     >
                                         Options
                                     </p>
-                                    <div className="mt-2 flex flex-col gap-2 w-full">
+                                    <div className="flex flex-col gap-2 w-full mb-2">
                                         <RadioGroup
                                             label="Weight Unit"
                                             id={`exercise-${exerciseIndex}-weight-unit`}
@@ -137,6 +174,15 @@ export default function ExerciseCard({ exercise, exerciseIndex }) {
                                             <Radio value="lbs">lbs</Radio>
                                             <Radio value="kg">kg</Radio>
                                         </RadioGroup>
+                                    </div>
+                                    <div>
+                                        <Switch
+                                            size="sm"
+                                            isSelected={showOneRepMax}
+                                            onValueChange={setShowOneRepMax}
+                                        >
+                                            Show e1RM
+                                        </Switch>
                                     </div>
                                 </div>
                             )}
@@ -174,6 +220,21 @@ export default function ExerciseCard({ exercise, exerciseIndex }) {
                     weightUnit={exercise.weightUnit}
                     exerciseIndex={exerciseIndex}
                 />
+                {oneRepMax && showOneRepMax && (
+                    <div className="flex justify-center mt-4">
+                        <Tooltip
+                            content="Estimated one-rep max"
+                            placement="bottom"
+                        >
+                            <p className="text-default-500">
+                                e1RM:{" "}
+                                <span className="text-white">
+                                    {oneRepMax} {exercise.weightUnit}
+                                </span>
+                            </p>
+                        </Tooltip>
+                    </div>
+                )}
             </CardBody>
             <CardFooter>
                 <Button color="primary" variant="light" onPress={addSet}>
