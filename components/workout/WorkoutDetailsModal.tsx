@@ -15,6 +15,7 @@ import {
 import { getLocalTimeZone, parseDate } from "@internationalized/date";
 
 import { WorkoutContext } from "@/pages/[userId]/workout/[workoutId]";
+import { ReadableStreamDefaultController } from "node:stream/web";
 
 export default function WorkoutDetailsModal({ isOpen, onOpenChange }) {
     const { workout, setWorkout } = useContext(WorkoutContext);
@@ -22,17 +23,47 @@ export default function WorkoutDetailsModal({ isOpen, onOpenChange }) {
     const [title, setTitle] = useState(workout.title);
     const [date, setDate] = useState(workout.date);
     const [notes, setNotes] = useState(workout.notes);
+    const [titleError, setTitleError] = useState("");
+    const [notesError, setNotesError] = useState("");
+    const [dateError, setDateError] = useState("");
 
     const saveChanges = () => {
-
         const updatedWorkout = {
             ...workout,
             title: title,
             date: date,
-            notes: notes
+            notes: notes,
         };
 
         setWorkout(updatedWorkout);
+    };
+
+    const isValid = (title: string, notes: string, date: string) => {
+        setTitleError("");
+        setDateError("");
+        setNotesError("");
+
+        if (title.length === 0) {
+            setTitleError("Title is required.");
+            return false;
+        }
+
+        if (title.length > 50) {
+            setTitleError("Title must be 50 characters or less.");
+            return false;
+        }
+
+        if (notes.length > 250) {
+            setNotesError("Notes must be 250 characters or less.");
+            return false;
+        }
+
+        if (!date) {
+            setDateError("Date is required");
+            return false;
+        }
+
+        return true;
     };
 
     return (
@@ -51,27 +82,45 @@ export default function WorkoutDetailsModal({ isOpen, onOpenChange }) {
                             <Input
                                 label="Workout Title"
                                 variant="bordered"
+                                isRequired
+                                maxLength={50}
+                                description={`${title.length}/50 characters`}
+                                errorMessage={titleError}
+                                isInvalid={titleError !== ""}
                                 value={title}
                                 onValueChange={setTitle}
+                                onChange={() => setTitleError("")}
                             />
                             <DatePicker
                                 label="Date"
                                 variant="bordered"
+                                isRequired
+                                errorMessage={dateError}
+                                isInvalid={dateError !== ""}
                                 value={parseDate(
-                                    new Date(date)
-                                        .toISOString()
-                                        .split("T")[0]
+                                    new Date(date).toISOString().split("T")[0]
                                 )}
-                                onChange={(newValue) =>
-                                    setDate(newValue?.toDate(getLocalTimeZone()))
+                                onChange={(newValue) => {
+                                    setDate(
+                                        newValue?.toDate(getLocalTimeZone())
+                                    );
+                                    setDateError("");
+                                }
                                 }
                             />
                             <Textarea
                                 label="Notes"
                                 variant="bordered"
+                                description={`${notes.length}/250 characters`}
+                                maxLength={250}
+                                errorMessage={notesError}
+                                isInvalid={notesError !== ""}
                                 minRows={1}
                                 value={notes}
                                 onValueChange={setNotes}
+                                onChange={() => {
+                                    setNotesError("");
+                                }}
                             />
                         </ModalBody>
                         <ModalFooter>
@@ -83,11 +132,13 @@ export default function WorkoutDetailsModal({ isOpen, onOpenChange }) {
                                 Close
                             </Button>
                             <Button
-                                color="success"
-                                variant="flat"
+                                color="primary"
+                                variant="solid"
                                 onPress={() => {
-                                    saveChanges();
-                                    onClose();
+                                    if (isValid(title, notes, date)) {
+                                        saveChanges();
+                                        onClose();
+                                    }
                                 }}
                             >
                                 Save
