@@ -1,6 +1,16 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-import { RadioGroup, Radio, DateRangePicker, Switch } from "@nextui-org/react";
+import {
+    RadioGroup,
+    Radio,
+    DateRangePicker,
+    Button,
+    Popover,
+    PopoverTrigger,
+    PopoverContent,
+} from "@nextui-org/react";
+
+import { Icon } from "@iconify/react/dist/iconify.js";
 
 import { parseDate, CalendarDate } from "@internationalized/date";
 
@@ -9,22 +19,19 @@ import WorkoutCard from "./WorkoutCard";
 import { Workout } from "@/utils/models/models";
 
 export default function WorkoutList({ workouts }) {
+    // workouts are in descending order by date
+    const firstWorkoutDate = workouts[workouts.length - 1].date;
+    const lastWorkoutDate = workouts[0].date;
+
     const [groupByOption, setGroupByOption] = useState("none");
     const [dateRange, setDateRange] = useState({
-        start: parseDate(new Date().toISOString().split("T")[0]),
-        end: parseDate(new Date().toISOString().split("T")[0]),
+        start: parseDate(
+            new Date(firstWorkoutDate).toISOString().split("T")[0]
+        ),
+        end: parseDate(new Date(lastWorkoutDate).toISOString().split("T")[0]),
     });
     const [filteredWorkouts, setFilteredWorkouts] =
         useState<Workout[]>(workouts);
-    const [useFilter, setUseFilter] = useState(false);
-
-    useEffect(() => {
-        if (!useFilter) {
-            setFilteredWorkouts(workouts);
-        } else {
-            filterWorkoutsByDateRange(workouts, dateRange);
-        }
-    }, [useFilter, dateRange]);
 
     const filterWorkoutsByDateRange = (
         workouts: Workout[],
@@ -97,58 +104,91 @@ export default function WorkoutList({ workouts }) {
         }
     };
 
+    // sets date range back to the range of the first workout to last workout
+    const resetDateRange = () => {
+        const dateRange = {
+            start: parseDate(
+                new Date(firstWorkoutDate).toISOString().split("T")[0]
+            ),
+            end: parseDate(
+                new Date(lastWorkoutDate).toISOString().split("T")[0]
+            ),
+        };
+
+        filterWorkoutsByDateRange(workouts, dateRange);
+    };
+
     const groupedWorkouts = groupWorkoutsBy(filteredWorkouts, groupByOption);
 
     return (
         <section>
-            <h2 className="text-center text-xl mb-6">Workout History</h2>
-            <div className="flex flex-col gap-8 items-center justify-center mb-6">
-                <div className="flex flex-col items-center gap-2">
-                    <div>
-                        <Switch
-                            isSelected={useFilter}
-                            onValueChange={setUseFilter}
-                            size="sm"
+            <div className="flex justify-center items-center gap-2"></div>
+            <h2 className="text-center text-xl mb-2">Workout History</h2>
+            <div className="justify-self-center mb-6">
+                <Popover placement="bottom">
+                    <PopoverTrigger>
+                        <Button
+                            color="primary"
+                            variant="light"
+                            size="md"
+                            startContent={
+                                <Icon icon="system-uicons:filtering" width="21" height="21" />
+                            }
                         >
-                            Filter by date range
-                        </Switch>
-                    </div>
-                    {useFilter && (
-                        <div>
-                            <DateRangePicker
-                                label="Select date range"
-                                showMonthAndYearPickers
-                                visibleMonths={3}
-                                pageBehavior="single"
-                                variant="bordered"
-                                size="md"
-                                color="primary"
-                                value={dateRange}
-                                onChange={(newValue) =>
-                                    filterWorkoutsByDateRange(
-                                        workouts,
-                                        newValue
-                                    )
-                                }
-                            />
+                            Filering/grouping
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent>
+                        <p className="mb-4">Filtering/grouping options</p>
+                        <div className="flex flex-col gap-4 items-center mb-4">
+                            <div className="flex flex-col items-center gap-2">
+                                <div>
+                                    <DateRangePicker
+                                        label="Select date range"
+                                        showMonthAndYearPickers
+                                        visibleMonths={3}
+                                        pageBehavior="single"
+                                        variant="bordered"
+                                        size="md"
+                                        color="primary"
+                                        value={dateRange}
+                                        onChange={(newValue) =>
+                                            filterWorkoutsByDateRange(
+                                                workouts,
+                                                newValue
+                                            )
+                                        }
+                                    />
+                                </div>
+                                <div>
+                                    <Button
+                                        color="primary"
+                                        size="sm"
+                                        variant="solid"
+                                        onPress={resetDateRange}
+                                    >
+                                        Reset
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="">
+                                <RadioGroup
+                                    label="Group workouts by"
+                                    orientation="vertical"
+                                    value={groupByOption}
+                                    onValueChange={setGroupByOption}
+                                    classNames={{
+                                        base: "",
+                                    }}
+                                >
+                                    <Radio value="none">None</Radio>
+                                    <Radio value="month">Month</Radio>
+                                    <Radio value="week">Week</Radio>
+                                </RadioGroup>
+                            </div>
                         </div>
-                    )}
-                </div>
-                <div className="">
-                    <RadioGroup
-                        label="Group workouts by"
-                        orientation="horizontal"
-                        value={groupByOption}
-                        onValueChange={setGroupByOption}
-                        classNames={{
-                            base: "text-center",
-                        }}
-                    >
-                        <Radio value="none">None</Radio>
-                        <Radio value="month">Month</Radio>
-                        <Radio value="week">Week</Radio>
-                    </RadioGroup>
-                </div>
+                    </PopoverContent>
+                </Popover>
             </div>
             {filteredWorkouts.length === 0 && (
                 <p className="text-center pt-6 text-gray-400 italic text-lg">
