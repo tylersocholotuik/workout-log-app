@@ -24,6 +24,7 @@ import {
     Exercise,
     UserExercise,
 } from "@/utils/models/models";
+import FeedbackModal from "@/components/workout/FeedbackModal";
 
 export const WorkoutContext = createContext({});
 
@@ -39,6 +40,7 @@ export default function WorkoutLog() {
     const detailsModal = useDisclosure();
     const deleteModal = useDisclosure();
     const addExerciseModal = useDisclosure();
+    const feedbackModal = useDisclosure();
 
     const router = useRouter();
 
@@ -54,6 +56,12 @@ export default function WorkoutLog() {
 
         loadWorkout(userId, id);
     }, [router.isReady, workoutId]);
+
+    useEffect(() => {
+        if (feedback !== "" || error !== "") {
+            feedbackModal.onOpen();
+        }
+    }, [feedback, error])
 
     const loadWorkout = async (
         userId: string | string[] | undefined,
@@ -200,26 +208,28 @@ export default function WorkoutLog() {
                     </div>
                 </div>
                 <div className="flex justify-center mb-6">
+                    {/* Need this because feedback modal won't open when workout is deleted
+                        and page is re-directed */}
                     {feedback !== "" && (
-                        <div className="w-[320px]">
+                        <div>
                             <Alert
                                 color="success"
-                                description={feedback}
                                 isVisible={feedback !== ""}
                                 title="Success"
-                                variant="faded"
+                                description={feedback}
+                                variant="bordered"
                                 onClose={() => setFeedback("")}
                             />
                         </div>
                     )}
                     {error !== "" && (
-                        <div className="w-[320px]">
+                        <div>
                             <Alert
                                 color="danger"
                                 description={error}
                                 isVisible={error !== ""}
                                 title="Error"
-                                variant="faded"
+                                variant="bordered"
                                 onClose={() => setError("")}
                             />
                         </div>
@@ -280,32 +290,6 @@ export default function WorkoutLog() {
                         Add Exercise
                     </Button>
                 </div>
-                <div className="flex justify-center mb-6">
-                    {feedback !== "" && (
-                        <div className="w-[320px]">
-                            <Alert
-                                color="success"
-                                description={feedback}
-                                isVisible={feedback !== ""}
-                                title="Success"
-                                variant="faded"
-                                onClose={() => setFeedback("")}
-                            />
-                        </div>
-                    )}
-                    {error !== "" && (
-                        <div className="w-[320px]">
-                            <Alert
-                                color="danger"
-                                description={error}
-                                isVisible={error !== ""}
-                                title="Error"
-                                variant="faded"
-                                onClose={() => setError("")}
-                            />
-                        </div>
-                    )}
-                </div>
                 <div className="flex justify-center gap-4 mb-6">
                     <Button
                         isLoading={isSaving}
@@ -333,6 +317,16 @@ export default function WorkoutLog() {
             <WorkoutDetailsModal
                 isOpen={detailsModal.isOpen}
                 onOpenChange={detailsModal.onOpenChange}
+            />
+
+            <FeedbackModal
+                isOpen={feedbackModal.isOpen}
+                onOpenChange={feedbackModal.onOpenChange}
+                title={feedback !== "" ? "Success" : error !== "" && "Error"}
+                message={feedback !== "" ? feedback : error !== "" && error}
+                color={error !== "" ? "red-600" : "inherit"}
+                setFeedback={setFeedback}
+                setError={setError}
             />
 
             <SelectExerciseModal

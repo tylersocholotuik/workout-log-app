@@ -7,39 +7,49 @@ import {
     Button,
 } from "@nextui-org/react";
 
-export default function DeleteWorkoutModal({ isOpen, onOpenChange, callbackFunction }) {
+export default function FeedbackModal({
+    isOpen,
+    onOpenChange,
+    title,
+    message,
+    color,
+    setFeedback,
+    setError,
+}) {
+
+    const resetMessage = () => {
+        setFeedback("");
+        setError("");
+    }
+
     return (
         <Modal
             isOpen={isOpen}
             placement="top-center"
             onOpenChange={onOpenChange}
+            classNames={{
+                header: `text-${color}`
+            }}
         >
             <ModalContent>
                 {(onClose) => (
                     <>
                         <ModalHeader className="flex flex-col gap-1">
-                            Delete Workout
+                            {title}
                         </ModalHeader>
                         <ModalBody>
-                            <p className="">Are you sure you want to delete this workout?</p>
+                            <p>{message}</p>
                         </ModalBody>
                         <ModalFooter>
                             <Button
-                                color="danger"
-                                variant="ghost"
-                                onPress={onClose}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                color="danger"
+                                color="primary"
                                 variant="solid"
                                 onPress={() => {
-                                    callbackFunction();
+                                    resetMessage();
                                     onClose();
                                 }}
                             >
-                                Delete
+                                Ok
                             </Button>
                         </ModalFooter>
                     </>
