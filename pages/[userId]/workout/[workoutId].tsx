@@ -174,7 +174,7 @@ export default function WorkoutLog() {
 
     if (isLoading) {
         return (
-            <div className="flex justify-center pt-6">
+            <div className="absolute top-1/2 left-2/4 -translate-x-1/2 -translate-y-1/2">
                 <Spinner size="lg" />
             </div>
         );
@@ -185,7 +185,7 @@ export default function WorkoutLog() {
     if (id === 0 && !startNewWorkout) {
         return (
             <div className="container mx-auto px-2 md:px-4 py-6">
-                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-6">
+                <div className="flex flex-col sm:flex-row gap-4 items-center mb-6 absolute top-1/2 left-2/4 -translate-x-1/2 -translate-y-1/2">
                     <div>
                         <Button
                             color="primary"

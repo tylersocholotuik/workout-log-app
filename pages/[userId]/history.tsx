@@ -40,7 +40,7 @@ export default function History() {
 
     if (isLoading) {
         return (
-            <div className="flex justify-center pt-6">
+            <div className="absolute top-1/2 left-2/4 -translate-x-1/2 -translate-y-1/2">
                 <Spinner size="lg" />
             </div>
         );
