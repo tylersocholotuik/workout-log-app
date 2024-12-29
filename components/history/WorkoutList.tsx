@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { RadioGroup, Radio } from "@nextui-org/react";
+import { RadioGroup, Radio, DateRangePicker, Switch } from "@nextui-org/react";
+
+import { parseDate, CalendarDate } from "@internationalized/date";
 
 import WorkoutCard from "./WorkoutCard";
 
@@ -8,6 +10,39 @@ import { Workout } from "@/utils/models/models";
 
 export default function WorkoutList({ workouts }) {
     const [groupByOption, setGroupByOption] = useState("none");
+    const [dateRange, setDateRange] = useState({
+        start: parseDate(new Date().toISOString().split("T")[0]),
+        end: parseDate(new Date().toISOString().split("T")[0]),
+    });
+    const [filteredWorkouts, setFilteredWorkouts] =
+        useState<Workout[]>(workouts);
+    const [useFilter, setUseFilter] = useState(false);
+
+    useEffect(() => {
+        if (!useFilter) {
+            setFilteredWorkouts(workouts);
+        } else {
+            filterWorkoutsByDateRange(workouts, dateRange);
+        }
+    }, [useFilter, dateRange]);
+
+    const filterWorkoutsByDateRange = (
+        workouts: Workout[],
+        dateRange: { start: CalendarDate; end: CalendarDate }
+    ) => {
+        setDateRange(dateRange);
+
+        const workoutsInRange = workouts.filter((workout) => {
+            const workoutDate = parseDate(
+                new Date(workout.date).toISOString().split("T")[0]
+            );
+            return (
+                workoutDate >= dateRange.start && workoutDate <= dateRange.end
+            );
+        });
+
+        setFilteredWorkouts(workoutsInRange);
+    };
 
     // groups the workouts by month or week depending on the provided option
     const groupWorkoutsBy = (workouts: Workout[], option: string) => {
@@ -62,25 +97,58 @@ export default function WorkoutList({ workouts }) {
         }
     };
 
-    const groupedWorkouts = groupWorkoutsBy(workouts, groupByOption);
+    const groupedWorkouts = groupWorkoutsBy(filteredWorkouts, groupByOption);
 
     return (
         <section>
             <h2 className="text-center text-xl mb-6">Workout History</h2>
-            <div className="flex justify-center mb-6">
-                <RadioGroup
-                    label="Group workouts by"
-                    orientation="horizontal"
-                    value={groupByOption}
-                    onValueChange={setGroupByOption}
-                    classNames={{
-                        base: "text-center"
-                    }}
-                >
-                    <Radio value="none">None</Radio>
-                    <Radio value="month">Month</Radio>
-                    <Radio value="week">Week</Radio>
-                </RadioGroup>
+            <div className="flex flex-col gap-8 items-center justify-center mb-6">
+                <div className="flex flex-col items-center gap-2">
+                    <div>
+                        <Switch
+                            isSelected={useFilter}
+                            onValueChange={setUseFilter}
+                            size="sm"
+                        >
+                            Filter by date range
+                        </Switch>
+                    </div>
+                    {useFilter && (
+                        <div>
+                            <DateRangePicker
+                                label="Select date range"
+                                showMonthAndYearPickers
+                                visibleMonths={3}
+                                pageBehavior="single"
+                                variant="bordered"
+                                size="md"
+                                color="primary"
+                                value={dateRange}
+                                onChange={(newValue) =>
+                                    filterWorkoutsByDateRange(
+                                        workouts,
+                                        newValue
+                                    )
+                                }
+                            />
+                        </div>
+                    )}
+                </div>
+                <div className="">
+                    <RadioGroup
+                        label="Group workouts by"
+                        orientation="horizontal"
+                        value={groupByOption}
+                        onValueChange={setGroupByOption}
+                        classNames={{
+                            base: "text-center",
+                        }}
+                    >
+                        <Radio value="none">None</Radio>
+                        <Radio value="month">Month</Radio>
+                        <Radio value="week">Week</Radio>
+                    </RadioGroup>
+                </div>
             </div>
             {workouts.length === 0 && (
                 <p className="text-center pt-6 text-gray-400 italic text-lg">
@@ -88,8 +156,8 @@ export default function WorkoutList({ workouts }) {
                 </p>
             )}
             {groupByOption === "none" ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {workouts.map((workout) => {
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 justify-center">
+                    {filteredWorkouts.map((workout) => {
                         return (
                             <WorkoutCard key={workout.id} workout={workout} />
                         );

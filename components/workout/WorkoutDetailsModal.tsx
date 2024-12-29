@@ -12,7 +12,7 @@ import {
     Textarea,
 } from "@nextui-org/react";
 
-import { CalendarDate, getLocalTimeZone, parseDate } from "@internationalized/date";
+import { getLocalTimeZone, parseDate } from "@internationalized/date";
 
 import { WorkoutContext } from "@/pages/[userId]/workout/[workoutId]";
 
