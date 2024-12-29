@@ -150,7 +150,7 @@ export default function WorkoutList({ workouts }) {
                     </RadioGroup>
                 </div>
             </div>
-            {workouts.length === 0 && (
+            {filteredWorkouts.length === 0 && (
                 <p className="text-center pt-6 text-gray-400 italic text-lg">
                     No Workouts
                 </p>
