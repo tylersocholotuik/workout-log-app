@@ -53,7 +53,6 @@ export default function WorkoutLog() {
         if (!router.isReady || !workoutId) return;
 
         loadWorkout(userId, id);
-        console.log(id);
     }, [router.isReady, workoutId]);
 
     const loadWorkout = async (
@@ -263,7 +262,7 @@ export default function WorkoutLog() {
                         workout.exercises.map((exercise, index) => {
                             return (
                                 <ExerciseCard
-                                    key={exercise.id}
+                                    key={`exercise-${index}`}
                                     exercise={exercise}
                                     exerciseIndex={index}
                                 />

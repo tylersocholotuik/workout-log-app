@@ -122,7 +122,7 @@ export default function ExerciseCard({ exercise, exerciseIndex }) {
                                     <div className="mt-2 flex flex-col gap-2 w-full">
                                         <RadioGroup
                                             label="Weight Unit"
-                                            id={`exercise-${exercise.id}-weight-unit`}
+                                            id={`exercise-${exerciseIndex}-weight-unit`}
                                             orientation="vertical"
                                             value={weightUnit}
                                             onValueChange={(newValue) => {
@@ -160,7 +160,7 @@ export default function ExerciseCard({ exercise, exerciseIndex }) {
                 <Textarea
                     className="mb-4"
                     label="Notes"
-                    id={`exercise-${exercise.id}-notes`}
+                    id={`exercise-${exerciseIndex}-notes`}
                     minRows={1}
                     variant="underlined"
                     value={notes}

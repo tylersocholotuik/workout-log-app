@@ -175,10 +175,10 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
             </TableHeader>
             <TableBody>
                 {localSets.map((set, index) => (
-                    <TableRow key={`set-${index}`}>
+                    <TableRow key={`exercise-${exerciseIndex}-set-${index}`}>
                         <TableCell>
                             <Input
-                                id={`set-${index}-weight`}
+                                id={`exercise-${exerciseIndex}-set-${index}-weight`}
                                 type="number"
                                 variant="bordered"
                                 size="sm"
@@ -207,7 +207,7 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
                         </TableCell>
                         <TableCell>
                             <Input
-                                id={`set-${index}-reps`}
+                                id={`exercise-${exerciseIndex}-set-${index}-reps`}
                                 type="number"
                                 variant="bordered"
                                 size="sm"
@@ -225,7 +225,7 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
                         </TableCell>
                         <TableCell>
                             <Input
-                                id={`set-${index}-rpe`}
+                                id={`exercise-${exerciseIndex}-set-${index}-rpe`}
                                 type="number"
                                 variant="bordered"
                                 size="sm"
