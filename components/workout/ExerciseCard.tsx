@@ -202,6 +202,8 @@ export default function ExerciseCard({ exercise, exerciseIndex }) {
                     label="Notes"
                     id={`exercise-${exerciseIndex}-notes`}
                     minRows={1}
+                    maxRows={3}
+                    maxLength={100}
                     variant="underlined"
                     value={notes}
                     onValueChange={setNotes}
