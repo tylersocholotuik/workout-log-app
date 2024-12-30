@@ -15,7 +15,6 @@ import {
 import { getLocalTimeZone, parseDate } from "@internationalized/date";
 
 import { WorkoutContext } from "@/pages/[userId]/workout/[workoutId]";
-import { ReadableStreamDefaultController } from "node:stream/web";
 
 export default function WorkoutDetailsModal({ isOpen, onOpenChange }) {
     const { workout, setWorkout } = useContext(WorkoutContext);
