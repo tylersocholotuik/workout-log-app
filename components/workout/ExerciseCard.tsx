@@ -91,21 +91,23 @@ export default function ExerciseCard({ exercise, exerciseIndex }) {
         // determine best set that has between 1-10 reps and RPE >= 6
         // this rule is due to there only being data for these values
         // see utils/calc-functions/rpeData.ts
-        const elligibleSets = sets.filter((set) => {
+        const eligibleSets = sets.filter((set) => {
             if (set.weight && set.reps && set.rpe) {
                 return set.reps >= 1 && set.reps <= 10 && set.rpe >= 6;
             }
         });
 
-        if (elligibleSets.length > 0) {
+        if (eligibleSets.length > 0) {
             // calculate e1RM for each set and use the highest value
-            const maxList = elligibleSets.map((set) => {
+            const maxList = eligibleSets.map((set) => {
                 return calculateOneRepMax(set.weight, set.reps, set.rpe);
             });
 
             const highestOneRepMax = Math.max(...maxList);
 
             setOneRepMax(highestOneRepMax);
+        } else {
+            setOneRepMax(null);
         }
     };
 
@@ -222,7 +224,7 @@ export default function ExerciseCard({ exercise, exerciseIndex }) {
                             content="Estimated one-rep max"
                             placement="bottom"
                         >
-                            <p className="text-default-500">
+                            <p className="text-default-500 text-sm">
                                 e1RM:{" "}
                                 <span className="text-white">
                                     {oneRepMax} {exercise.weightUnit}
