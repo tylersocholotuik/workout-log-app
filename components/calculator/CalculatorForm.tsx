@@ -4,10 +4,7 @@ import { Button, Input, Select, SelectItem, Tooltip } from "@nextui-org/react";
 
 import { calculateOneRepMax } from "@/utils/calculator/calc-functions";
 
-export default function CalculatorForm({
-    setSetData,
-    setOneRepMax,
-}) {
+export default function CalculatorForm({ setSetData, setOneRepMax }) {
     const [weight, setWeight] = useState("");
     const [weightUnit, setWeightUnit] = useState("lbs");
     const [reps, setReps] = useState<string>("");
@@ -37,7 +34,10 @@ export default function CalculatorForm({
         // max: 9999
         // must be in steps of 0.5
         isValid =
-            parsedValue >= 0 && parsedValue <= 9999 && parsedValue % 0.5 === 0;
+            (parsedValue >= 0 &&
+                parsedValue <= 9999 &&
+                parsedValue % 0.5 === 0) ||
+            value === "";
 
         // allow input if isValid, otherwise, input is prevented
         if (isValid) {
@@ -54,9 +54,10 @@ export default function CalculatorForm({
         // max: 10
         // must be whole number
         isValid =
-            parsedValue >= 1 &&
-            parsedValue <= 10 &&
-            Number.isInteger(parsedValue);
+            (parsedValue >= 1 &&
+                parsedValue <= 10 &&
+                Number.isInteger(parsedValue)) ||
+            value === "";
 
         if (isValid) {
             setReps(value);
@@ -98,7 +99,7 @@ export default function CalculatorForm({
         setRPE(new Set([""]));
         setSetData({});
         setOneRepMax(0);
-    }
+    };
 
     return (
         <div>
@@ -136,7 +137,9 @@ export default function CalculatorForm({
                     >
                         <span
                             className={
-                                weightUnit === "lbs" ? "text-primary font-bold" : ""
+                                weightUnit === "lbs"
+                                    ? "text-primary font-bold"
+                                    : ""
                             }
                         >
                             lbs
@@ -144,7 +147,9 @@ export default function CalculatorForm({
                         /
                         <span
                             className={
-                                weightUnit === "kg" ? "text-primary font-bold" : ""
+                                weightUnit === "kg"
+                                    ? "text-primary font-bold"
+                                    : ""
                             }
                         >
                             kg
