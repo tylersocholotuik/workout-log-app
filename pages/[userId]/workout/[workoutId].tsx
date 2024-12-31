@@ -348,6 +348,8 @@ export default function WorkoutLog() {
                 isOpen={addExerciseModal.isOpen}
                 onOpenChange={addExerciseModal.onOpenChange}
                 callbackFunction={addExercise}
+                exerciseIndex={undefined}
+                update={false}
             />
 
             <DeleteWorkoutModal

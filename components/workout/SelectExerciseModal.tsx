@@ -34,6 +34,8 @@ export default function SelectExerciseModal({
     isOpen,
     onOpenChange,
     callbackFunction,
+    exerciseIndex,
+    update,
 }) {
     const [exercises, setExercises] = useState<Exercise[]>([]);
     const [userExercises, setUserExercises] = useState<UserExercise[]>([]);
@@ -196,7 +198,13 @@ export default function SelectExerciseModal({
     const onAdd = () => {
         const selectedExercise = getSelectedExercise();
         if (selectedExercise) {
-            callbackFunction(selectedExercise);
+            if (!update) {
+                // callbackFunction = addExercise 
+                callbackFunction(selectedExercise);
+            } else {
+                // callbackFunction = changeExercise
+                callbackFunction(selectedExercise, exerciseIndex);
+            }
             clearState();
         }
     };
@@ -209,7 +217,11 @@ export default function SelectExerciseModal({
         }
 
         // add new exercise to workout
-        callbackFunction(newExercise);
+        if (!update) {
+            callbackFunction(newExercise);
+        } else {
+            callbackFunction(newExercise, exerciseIndex)
+        }
         clearState();
     }
 
@@ -434,7 +446,7 @@ export default function SelectExerciseModal({
                                     onClose();
                                 }}
                             >
-                                Add
+                                {!update ? "Add" : "Update"}
                             </Button>
                         </ModalFooter>
                     </>

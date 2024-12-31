@@ -39,7 +39,7 @@ export class UserExercise {
 export class Workout {
     id: number;
     title: string;
-    notes: string | null;
+    notes: string | null = "";
     date: Date;
     userId: string;
     exercises: WorkoutExercise[];
@@ -80,7 +80,7 @@ export class WorkoutExercise {
 
     constructor(
         id: number = 0,
-        notes: string | null = '',
+        notes: string | null = "",
         weightUnit: WeightUnit = "lbs",
         exerciseId: number | null = null,
         userExerciseId: number | null = null,

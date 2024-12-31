@@ -185,6 +185,8 @@ const updateWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
         await prisma.workoutExercise.update({
           where: { id: exercise.id },
           data: {
+            exerciseId: exercise.exercise?.id ?? null,
+            userExerciseId: exercise.userExercise?.id ?? null,
             notes: exercise.notes,
             weightUnit: exercise.weightUnit,
             deleted: false,
