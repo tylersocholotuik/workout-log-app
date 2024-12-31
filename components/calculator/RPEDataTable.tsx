@@ -66,7 +66,10 @@ export default function RPEDataTable({ oneRepMax }: { oneRepMax: number }) {
 
     return (
         <div className="max-w-[800px] mx-auto">
-            <Table aria-label="RPE data table" isCompact isStriped>
+            <Table aria-label="RPE data table" isCompact isStriped classNames={{
+                th: 'text-center text-sm',
+                td: 'text-center'
+            }}>
                 <TableHeader columns={columns}>
                     {(column) => (
                         <TableColumn key={column.key}>{column.label}</TableColumn>
@@ -96,7 +99,11 @@ export default function RPEDataTable({ oneRepMax }: { oneRepMax: number }) {
                         )
                         .map(([rpeKey, rpeData]) => (
                             <TableRow key={`rpe-${rpeKey}`}>
-                                <TableCell>{rpeKey}</TableCell>
+                                <TableCell>
+                                    <span className="text-foreground-500 font-semibold">
+                                        {rpeKey}
+                                    </span>
+                                </TableCell>
                                 {Object.entries(rpeData).map(
                                     ([repsKey, repsData]) => (
                                         <TableCell key={`reps-${repsKey}`}>
