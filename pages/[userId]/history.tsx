@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 
+import Head from "next/head";
+
 import { Spinner } from "@nextui-org/react";
 import WorkoutList from "@/components/history/WorkoutList";
 
@@ -40,15 +42,29 @@ export default function History() {
 
     if (isLoading) {
         return (
-            <div className="absolute top-1/2 left-2/4 -translate-x-1/2 -translate-y-1/2">
-                <Spinner size="lg" />
-            </div>
+            <>
+                <Head>
+                    <title>Workout History</title>
+                </Head>
+                <main>
+                    <div className="absolute top-1/2 left-2/4 -translate-x-1/2 -translate-y-1/2">
+                        <Spinner size="lg" />
+                    </div>
+                </main>
+            </>
         );
     }
 
     return (
-        <div className="container mx-auto px-2 md:px-4 py-6">
-            <WorkoutList workouts={workouts} />
-        </div>
+        <>
+            <Head>
+                <title>Workout History</title>
+            </Head>
+            <main>
+                <div className="container mx-auto px-2 md:px-4 py-6">
+                    <WorkoutList workouts={workouts} />
+                </div>
+            </main>
+        </>
     );
 }

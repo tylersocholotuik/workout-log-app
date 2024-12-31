@@ -1,6 +1,8 @@
 import { useEffect, useState, createContext } from "react";
 import { useRouter } from "next/router";
 
+import Head from "next/head";
+
 import DeleteWorkoutModal from "@/components/workout/DeleteWorkoutModal";
 import ExerciseCard from "@/components/workout/ExerciseCard";
 import SelectExerciseModal from "@/components/workout/SelectExerciseModal";
@@ -174,9 +176,16 @@ export default function WorkoutLog() {
 
     if (isLoading) {
         return (
-            <div className="absolute top-1/2 left-2/4 -translate-x-1/2 -translate-y-1/2">
-                <Spinner size="lg" />
-            </div>
+            <>
+                <Head>
+                    <title>Workout</title>
+                </Head>
+                <main>
+                    <div className="absolute top-1/2 left-2/4 -translate-x-1/2 -translate-y-1/2">
+                        <Spinner size="lg" />
+                    </div>
+                </main>
+            </>
         );
     }
 
@@ -184,179 +193,199 @@ export default function WorkoutLog() {
     // or load an existing workout
     if (id === 0 && !startNewWorkout) {
         return (
-            <div className="container mx-auto px-2 md:px-4 py-6">
-                <div className="flex flex-col sm:flex-row gap-4 items-center mb-6 absolute top-1/2 left-2/4 -translate-x-1/2 -translate-y-1/2">
-                    <div>
-                        <Button
-                            color="primary"
-                            size="lg"
-                            variant="solid"
-                            onPress={() => setStartNewWorkout(true)}
-                            startContent={
-                                <Icon
-                                    icon="gridicons:create"
-                                    width="24"
-                                    height="24"
-                                />
-                            }
-                        >
-                            Create New Workout
-                        </Button>
-                    </div>
-                    <div>
-                        <Button
-                            color="secondary"
-                            size="lg"
-                            variant="solid"
-                            onPress={() => router.push(`/${userId}/history`)}
-                            startContent={
-                                <Icon
-                                    icon="material-symbols:history"
-                                    width="24"
-                                    height="24"
-                                />
-                            }
-                        >
-                            Load Existing Workout
-                        </Button>
-                    </div>
-                </div>
-                <div className="flex justify-center mb-6">
-                    {/* Need this because feedback modal won't open when workout is deleted
-                        and page is re-directed */}
-                    {feedback !== "" && (
-                        <div>
-                            <Alert
-                                color="success"
-                                isVisible={feedback !== ""}
-                                title="Success"
-                                description={feedback}
-                                variant="bordered"
-                                onClose={() => setFeedback("")}
-                            />
+            <>
+                <Head>
+                    <title>Workout</title>
+                </Head>
+                <main>
+                    <div className="container mx-auto px-2 md:px-4 py-6">
+                        <div className="flex flex-col sm:flex-row gap-4 items-center mb-6 absolute top-1/2 left-2/4 -translate-x-1/2 -translate-y-1/2">
+                            <div>
+                                <Button
+                                    color="primary"
+                                    size="lg"
+                                    variant="solid"
+                                    onPress={() => setStartNewWorkout(true)}
+                                    startContent={
+                                        <Icon
+                                            icon="gridicons:create"
+                                            width="24"
+                                            height="24"
+                                        />
+                                    }
+                                >
+                                    Create New Workout
+                                </Button>
+                            </div>
+                            <div>
+                                <Button
+                                    color="secondary"
+                                    size="lg"
+                                    variant="solid"
+                                    onPress={() =>
+                                        router.push(`/${userId}/history`)
+                                    }
+                                    startContent={
+                                        <Icon
+                                            icon="material-symbols:history"
+                                            width="24"
+                                            height="24"
+                                        />
+                                    }
+                                >
+                                    Load Existing Workout
+                                </Button>
+                            </div>
                         </div>
-                    )}
-                    {error !== "" && (
-                        <div>
-                            <Alert
-                                color="danger"
-                                description={error}
-                                isVisible={error !== ""}
-                                title="Error"
-                                variant="bordered"
-                                onClose={() => setError("")}
-                            />
+                        <div className="flex justify-center mb-6">
+                            {/* Need this because feedback modal won't open when workout is deleted
+                            and page is re-directed */}
+                            {feedback !== "" && (
+                                <div>
+                                    <Alert
+                                        color="success"
+                                        isVisible={feedback !== ""}
+                                        title="Success"
+                                        description={feedback}
+                                        variant="bordered"
+                                        onClose={() => setFeedback("")}
+                                    />
+                                </div>
+                            )}
+                            {error !== "" && (
+                                <div>
+                                    <Alert
+                                        color="danger"
+                                        description={error}
+                                        isVisible={error !== ""}
+                                        title="Error"
+                                        variant="bordered"
+                                        onClose={() => setError("")}
+                                    />
+                                </div>
+                            )}
                         </div>
-                    )}
-                </div>
-            </div>
+                    </div>
+                </main>
+            </>
         );
     }
 
     return (
-        <WorkoutContext.Provider value={{ workout, setWorkout }}>
-            <div className="container mx-auto px-2 md:px-4 py-6">
-                <div className="flex flex-col gap-2 items-center mb-6">
-                    <h2 className="text-lg">{workout.title}</h2>
-                    <p className="text-md">
-                        {new Date(workout.date).toLocaleString("en-CA", {
-                            dateStyle: "full",
-                        })}
-                    </p>
-                    <div className="max-w-[400px] text-center">
-                        <p className="text-md text-default-500">
-                            <span className="font-bold">Notes: </span>
-                            {workout.notes}
-                        </p>
+        <>
+            <Head>
+                <title>Workout</title>
+            </Head>
+            <WorkoutContext.Provider value={{ workout, setWorkout }}>
+                <main>
+                    <div className="container mx-auto px-2 md:px-4 py-6">
+                        <div className="flex flex-col gap-2 items-center mb-6">
+                            <h2 className="text-lg">{workout.title}</h2>
+                            <p className="text-md">
+                                {new Date(workout.date).toLocaleString("en-CA", {
+                                    dateStyle: "full",
+                                })}
+                            </p>
+                            <div className="max-w-[400px] text-center">
+                                <p className="text-md text-default-500">
+                                    <span className="font-bold">Notes: </span>
+                                    {workout.notes}
+                                </p>
+                            </div>
+                            <div>
+                                <Button
+                                    color="primary"
+                                    variant="light"
+                                    size="md"
+                                    startContent={<EditIcon />}
+                                    onPress={detailsModal.onOpen}
+                                >
+                                    Edit Details
+                                </Button>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+                            {workout.exercises.length > 0 &&
+                                workout.exercises.map((exercise, index) => {
+                                    return (
+                                        <ExerciseCard
+                                            key={`exercise-${index}`}
+                                            exercise={exercise}
+                                            exerciseIndex={index}
+                                        />
+                                    );
+                                })}
+                        </div>
+                        <div className="flex justify-center mb-8">
+                            <Button
+                                color="primary"
+                                variant="solid"
+                                radius="full"
+                                size="md"
+                                onPress={addExerciseModal.onOpen}
+                            >
+                                Add Exercise
+                            </Button>
+                        </div>
+                        <div className="flex justify-center gap-4 mb-6">
+                            <Button
+                                isLoading={isSaving}
+                                color="success"
+                                variant="flat"
+                                radius="full"
+                                size="lg"
+                                onPress={() => saveWorkout(userId, workout)}
+                            >
+                                Save Workout
+                            </Button>
+                            <Button
+                                isLoading={isDeleting}
+                                color="danger"
+                                variant="flat"
+                                radius="full"
+                                size="lg"
+                                onPress={deleteModal.onOpen}
+                            >
+                                {workout.id === 0
+                                    ? "Cancel Workout"
+                                    : "Delete Workout"}
+                            </Button>
+                        </div>
                     </div>
-                    <div>
-                        <Button
-                            color="primary"
-                            variant="light"
-                            size="md"
-                            startContent={<EditIcon />}
-                            onPress={detailsModal.onOpen}
-                        >
-                            Edit Details
-                        </Button>
-                    </div>
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
-                    {workout.exercises.length > 0 &&
-                        workout.exercises.map((exercise, index) => {
-                            return (
-                                <ExerciseCard
-                                    key={`exercise-${index}`}
-                                    exercise={exercise}
-                                    exerciseIndex={index}
-                                />
-                            );
-                        })}
-                </div>
-                <div className="flex justify-center mb-8">
-                    <Button
-                        color="primary"
-                        variant="solid"
-                        radius="full"
-                        size="md"
-                        onPress={addExerciseModal.onOpen}
-                    >
-                        Add Exercise
-                    </Button>
-                </div>
-                <div className="flex justify-center gap-4 mb-6">
-                    <Button
-                        isLoading={isSaving}
-                        color="success"
-                        variant="flat"
-                        radius="full"
-                        size="lg"
-                        onPress={() => saveWorkout(userId, workout)}
-                    >
-                        Save Workout
-                    </Button>
-                    <Button
-                        isLoading={isDeleting}
-                        color="danger"
-                        variant="flat"
-                        radius="full"
-                        size="lg"
-                        onPress={deleteModal.onOpen}
-                    >
-                        {workout.id === 0 ? "Cancel Workout" : "Delete Workout"}
-                    </Button>
-                </div>
-            </div>
+                </main>
 
-            <WorkoutDetailsModal
-                isOpen={detailsModal.isOpen}
-                onOpenChange={detailsModal.onOpenChange}
-            />
+                <WorkoutDetailsModal
+                    isOpen={detailsModal.isOpen}
+                    onOpenChange={detailsModal.onOpenChange}
+                />
 
-            <FeedbackModal
-                isOpen={feedbackModal.isOpen}
-                onOpenChange={feedbackModal.onOpenChange}
-                title={feedback !== "" ? "Success" : error !== "" && "Error"}
-                message={feedback !== "" ? feedback : error !== "" && error}
-                color={error !== "" ? "red-600" : "inherit"}
-                setFeedback={setFeedback}
-                setError={setError}
-            />
+                <FeedbackModal
+                    isOpen={feedbackModal.isOpen}
+                    onOpenChange={feedbackModal.onOpenChange}
+                    title={
+                        feedback !== "" ? "Success" : error !== "" && "Error"
+                    }
+                    message={feedback !== "" ? feedback : error !== "" && error}
+                    color={error !== "" ? "red-600" : "inherit"}
+                    setFeedback={setFeedback}
+                    setError={setError}
+                />
 
-            <SelectExerciseModal
-                userId={userId}
-                isOpen={addExerciseModal.isOpen}
-                onOpenChange={addExerciseModal.onOpenChange}
-                callbackFunction={addExercise}
-                exerciseIndex={undefined}
-                update={false}
-            />
+                <SelectExerciseModal
+                    userId={userId}
+                    isOpen={addExerciseModal.isOpen}
+                    onOpenChange={addExerciseModal.onOpenChange}
+                    callbackFunction={addExercise}
+                    exerciseIndex={undefined}
+                    update={false}
+                />
 
-            <DeleteWorkoutModal
-                isOpen={deleteModal.isOpen}
-                onOpenChange={deleteModal.onOpenChange}
-                callbackFunction={() => discardWorkout(userId, workout.id)}
-            />
-        </WorkoutContext.Provider>
+                <DeleteWorkoutModal
+                    isOpen={deleteModal.isOpen}
+                    onOpenChange={deleteModal.onOpenChange}
+                    callbackFunction={() => discardWorkout(userId, workout.id)}
+                />
+            </WorkoutContext.Provider>
+        </>
     );
 }

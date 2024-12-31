@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 
+import Head from "next/head";
+
 import { Button } from "@nextui-org/react";
 
 import CalculatorForm from "@/components/calculator/CalculatorForm";
@@ -46,58 +48,65 @@ export default function Calculator() {
     };
 
     return (
-        <div className="container mx-auto px-2 md:px-4 py-6">
-            <section>
-                <h2 className="text-xl text-center mb-6">
-                    One-Rep Max Calculator
-                </h2>
-                <CalculatorForm
-                    setSetData={setSetData}
-                    setOneRepMax={setOneRepMax}
-                />
-                <div className="text-center mb-6">
-                    <p className="text-lg mb-2">Estimated One-Rep Max:</p>
-                    {oneRepMax > 0 ? (
-                        <>
-                            <p className="font-bold text-xl text-primary mb-4">
-                                {oneRepMax} {conversionWeightUnit}
-                            </p>
-                            <Button
-                                aria-label="weight unit"
-                                color="default"
-                                variant="bordered"
-                                size="sm"
-                                onPress={convertWeightUnit}
-                            >
-                                <span
-                                    className={
-                                        conversionWeightUnit === "lbs"
-                                            ? "text-primary font-bold"
-                                            : ""
-                                    }
-                                >
-                                    lbs
-                                </span>
-                                /
-                                <span
-                                    className={
-                                        conversionWeightUnit === "kg"
-                                            ? "text-primary font-bold"
-                                            : ""
-                                    }
-                                >
-                                    kg
-                                </span>
-                            </Button>
-                        </>
-                    ) : (
-                        <p className="text-foreground-500">
-                            Enter values above to calculate
-                        </p>
-                    )}
+        <>
+            <Head>
+                <title>One-Rep Max Calculator</title>
+            </Head>
+            <main>
+                <div className="container mx-auto px-2 md:px-4 py-6">
+                    <section>
+                        <h2 className="text-xl text-center mb-6">
+                            One-Rep Max Calculator
+                        </h2>
+                        <CalculatorForm
+                            setSetData={setSetData}
+                            setOneRepMax={setOneRepMax}
+                        />
+                        <div className="text-center mb-6">
+                            <p className="text-lg mb-2">Estimated One-Rep Max:</p>
+                            {oneRepMax > 0 ? (
+                                <>
+                                    <p className="font-bold text-xl text-primary mb-4">
+                                        {oneRepMax} {conversionWeightUnit}
+                                    </p>
+                                    <Button
+                                        aria-label="weight unit"
+                                        color="default"
+                                        variant="bordered"
+                                        size="sm"
+                                        onPress={convertWeightUnit}
+                                    >
+                                        <span
+                                            className={
+                                                conversionWeightUnit === "lbs"
+                                                    ? "text-primary font-bold"
+                                                    : ""
+                                            }
+                                        >
+                                            lbs
+                                        </span>
+                                        /
+                                        <span
+                                            className={
+                                                conversionWeightUnit === "kg"
+                                                    ? "text-primary font-bold"
+                                                    : ""
+                                            }
+                                        >
+                                            kg
+                                        </span>
+                                    </Button>
+                                </>
+                            ) : (
+                                <p className="text-foreground-500">
+                                    Enter values above to calculate
+                                </p>
+                            )}
+                        </div>
+                        <RPEDataTable oneRepMax={oneRepMax} />
+                    </section>
                 </div>
-                <RPEDataTable oneRepMax={oneRepMax} />
-            </section>
-        </div>
+            </main>
+        </>
     );
 }
