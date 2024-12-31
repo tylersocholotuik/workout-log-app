@@ -1,4 +1,4 @@
-type RPEData = {
+export type RPEData = {
     [key: number]: {
         [key: number]: number;
     };

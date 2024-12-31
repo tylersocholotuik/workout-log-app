@@ -3,11 +3,11 @@ import { useState, useEffect } from "react";
 import { Button } from "@nextui-org/react";
 
 import CalculatorForm from "@/components/calculator/CalculatorForm";
+import RPEDataTable from "@/components/calculator/RPEDataTable";
 
 export default function Calculator() {
     const [setData, setSetData] = useState({});
     const [oneRepMax, setOneRepMax] = useState(0);
-    const [rpeTableData, setRPETableData] = useState({});
     const [conversionWeightUnit, setConversionWeightUnit] = useState("lbs");
     const { weightUnit } = setData;
 
@@ -54,9 +54,8 @@ export default function Calculator() {
                 <CalculatorForm
                     setSetData={setSetData}
                     setOneRepMax={setOneRepMax}
-                    setRPETableData={setRPETableData}
                 />
-                <div className="text-center">
+                <div className="text-center mb-6">
                     <p className="text-lg mb-2">Estimated One-Rep Max:</p>
                     {oneRepMax > 0 ? (
                         <>
@@ -97,6 +96,7 @@ export default function Calculator() {
                         </p>
                     )}
                 </div>
+                <RPEDataTable oneRepMax={oneRepMax} />
             </section>
         </div>
     );

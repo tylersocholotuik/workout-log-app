@@ -7,7 +7,6 @@ import { calculateOneRepMax } from "@/utils/calculator/calc-functions";
 export default function CalculatorForm({
     setSetData,
     setOneRepMax,
-    setRPETableData,
 }) {
     const [weight, setWeight] = useState("");
     const [weightUnit, setWeightUnit] = useState("lbs");
@@ -18,7 +17,6 @@ export default function CalculatorForm({
 
     useEffect(() => {
         updateOneRepMax(weight, reps, rpe);
-        console.log(rpe.currentKey);
     }, [weight, reps, rpe, weightUnit]);
 
     const toggleWeightUnit = () => {
@@ -188,7 +186,7 @@ export default function CalculatorForm({
             </div>
             <div className="justify-self-center">
                 <Button
-                    color="danger"
+                    color="primary"
                     variant="light"
                     size="md"
                     onPress={Clear}
