@@ -21,14 +21,21 @@ import { Workout } from "@/utils/models/models";
 export default function WorkoutList({ workouts }) {
     // workouts are in descending order by date
     const firstWorkoutDate = workouts[workouts.length - 1].date;
+    // Parse dates to CalendarDate object to be used in Next UI
+    // date range picker. parseDate function needs an ISO string with
+    // time removed
+    const firstWorkoutDateString = parseDate(
+        new Date(firstWorkoutDate).toISOString().split("T")[0]
+    );
     const lastWorkoutDate = workouts[0].date;
+    const lastWorkoutDateString = parseDate(
+        new Date(lastWorkoutDate).toISOString().split("T")[0]
+    );
 
     const [groupByOption, setGroupByOption] = useState("none");
     const [dateRange, setDateRange] = useState({
-        start: parseDate(
-            new Date(firstWorkoutDate).toISOString().split("T")[0]
-        ),
-        end: parseDate(new Date(lastWorkoutDate).toISOString().split("T")[0]),
+        start: firstWorkoutDateString,
+        end: lastWorkoutDateString,
     });
     const [filteredWorkouts, setFilteredWorkouts] =
         useState<Workout[]>(workouts);
@@ -107,12 +114,8 @@ export default function WorkoutList({ workouts }) {
     // sets date range back to the range of the first workout to last workout
     const resetDateRange = () => {
         const dateRange = {
-            start: parseDate(
-                new Date(firstWorkoutDate).toISOString().split("T")[0]
-            ),
-            end: parseDate(
-                new Date(lastWorkoutDate).toISOString().split("T")[0]
-            ),
+            start: firstWorkoutDateString,
+            end: lastWorkoutDateString,
         };
 
         filterWorkoutsByDateRange(workouts, dateRange);
@@ -132,7 +135,11 @@ export default function WorkoutList({ workouts }) {
                             variant="light"
                             size="md"
                             startContent={
-                                <Icon icon="system-uicons:filtering" width="21" height="21" />
+                                <Icon
+                                    icon="system-uicons:filtering"
+                                    width="21"
+                                    height="21"
+                                />
                             }
                         >
                             Filering/Grouping
