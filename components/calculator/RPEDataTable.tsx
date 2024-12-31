@@ -60,55 +60,54 @@ export default function RPEDataTable({ oneRepMax }: { oneRepMax: number }) {
         },
     ];
 
-    const rpeEntries = Object.entries(tableData);
-
     useEffect(() => {
         setTableData(generateTableData(oneRepMax));
-        console.log(generateTableData(oneRepMax));
     }, [oneRepMax]);
 
     return (
-        <Table aria-label="RPE data table" isCompact isStriped>
-            <TableHeader columns={columns}>
-                {(column) => (
-                    <TableColumn key={column.key}>{column.label}</TableColumn>
-                )}
-            </TableHeader>
-            <TableBody>
-                <TableRow>
-                    <TableCell>
-                        <span className="text-foreground-500 font-semibold">
-                            RPE
-                        </span>
-                    </TableCell>
-                    <TableCell>{""}</TableCell>
-                    <TableCell>{""}</TableCell>
-                    <TableCell>{""}</TableCell>
-                    <TableCell>{""}</TableCell>
-                    <TableCell>{""}</TableCell>
-                    <TableCell>{""}</TableCell>
-                    <TableCell>{""}</TableCell>
-                    <TableCell>{""}</TableCell>
-                    <TableCell>{""}</TableCell>
-                    <TableCell>{""}</TableCell>
-                </TableRow>
-                {Object.entries(tableData)
-                    .sort(
-                        ([keyA], [keyB]) => parseFloat(keyB) - parseFloat(keyA)
-                    )
-                    .map(([rpeKey, rpeData]) => (
-                        <TableRow key={`rpe-${rpeKey}`}>
-                            <TableCell>{rpeKey}</TableCell>
-                            {Object.entries(rpeData).map(
-                                ([repsKey, repsData]) => (
-                                    <TableCell key={`reps-${repsKey}`}>
-                                        {repsData > 0 ? repsData : "-"}
-                                    </TableCell>
-                                )
-                            )}
-                        </TableRow>
-                    ))}
-            </TableBody>
-        </Table>
+        <div className="max-w-[800px] mx-auto">
+            <Table aria-label="RPE data table" isCompact isStriped>
+                <TableHeader columns={columns}>
+                    {(column) => (
+                        <TableColumn key={column.key}>{column.label}</TableColumn>
+                    )}
+                </TableHeader>
+                <TableBody>
+                    <TableRow>
+                        <TableCell>
+                            <span className="text-foreground-500 font-semibold">
+                                RPE
+                            </span>
+                        </TableCell>
+                        <TableCell>{""}</TableCell>
+                        <TableCell>{""}</TableCell>
+                        <TableCell>{""}</TableCell>
+                        <TableCell>{""}</TableCell>
+                        <TableCell>{""}</TableCell>
+                        <TableCell>{""}</TableCell>
+                        <TableCell>{""}</TableCell>
+                        <TableCell>{""}</TableCell>
+                        <TableCell>{""}</TableCell>
+                        <TableCell>{""}</TableCell>
+                    </TableRow>
+                    {Object.entries(tableData)
+                        .sort(
+                            ([keyA], [keyB]) => parseFloat(keyB) - parseFloat(keyA)
+                        )
+                        .map(([rpeKey, rpeData]) => (
+                            <TableRow key={`rpe-${rpeKey}`}>
+                                <TableCell>{rpeKey}</TableCell>
+                                {Object.entries(rpeData).map(
+                                    ([repsKey, repsData]) => (
+                                        <TableCell key={`reps-${repsKey}`}>
+                                            {repsData > 0 ? repsData : "-"}
+                                        </TableCell>
+                                    )
+                                )}
+                            </TableRow>
+                        ))}
+                </TableBody>
+            </Table>
+        </div>
     );
 }
