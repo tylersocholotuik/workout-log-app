@@ -91,8 +91,8 @@ export default function Calculator() {
                             </Button>
                         </>
                     ) : (
-                        <p className="italic text-default-500">
-                            enter values above to calculate
+                        <p className="text-foreground-500">
+                            Enter values above to calculate
                         </p>
                     )}
                 </div>

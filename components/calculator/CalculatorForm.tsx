@@ -103,10 +103,10 @@ export default function CalculatorForm({ setSetData, setOneRepMax }) {
 
     return (
         <div>
-            <div className="flex flex-row justify-center items-end gap-4 mb-2">
+            <div className="flex flex-row justify-center items-end gap-2 mb-2">
                 <div>
                     <Input
-                        className="w-[90px]"
+                        className="w-[80px]"
                         id="weight"
                         label="Weight"
                         labelPlacement="outside"
