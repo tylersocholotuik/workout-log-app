@@ -193,7 +193,7 @@ export default function ExerciseCard({
         <>
             <Card classNames={{ footer: "justify-center py-2" }}>
                 <CardHeader className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                         {exercise.exercise && (
                             <h3 className="text-md text-primary">
                                 {exercise.exercise.name}
@@ -214,7 +214,7 @@ export default function ExerciseCard({
                                     isIconOnly
                                     onPress={changeExerciseModal.onOpen}
                                 >
-                                    <Icon icon="material-symbols:change-circle-rounded" width="20" height="20" />
+                                    <Icon icon="material-symbols:change-circle-rounded" width="18" height="18" />
                                 </Button>
                             </Tooltip>
                         </div>
