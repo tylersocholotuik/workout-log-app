@@ -2,13 +2,25 @@ import { useState, useEffect } from "react";
 
 import Head from "next/head";
 
-import { Button , Tooltip} from "@nextui-org/react";
+import { Button, Tooltip } from "@nextui-org/react";
 
 import CalculatorForm from "@/components/calculator/CalculatorForm";
 import RPEDataTable from "@/components/calculator/RPEDataTable";
 
+export interface SetDataType {
+    weight: number | string;
+    weightUnit: string;
+    reps: number | string;
+    rpe: number | string;
+}
+
 export default function Calculator() {
-    const [setData, setSetData] = useState({});
+    const [setData, setSetData] = useState<SetDataType>({
+        weight: "",
+        weightUnit: "lbs",
+        reps: "",
+        rpe: "",
+    });
     const [oneRepMax, setOneRepMax] = useState(0);
     const [conversionWeightUnit, setConversionWeightUnit] = useState("lbs");
     const { weightUnit } = setData;
@@ -20,6 +32,8 @@ export default function Calculator() {
     }, [weightUnit]);
 
     const convertWeightUnit = () => {
+        const LBS_TO_KG = 0.453592;
+        const KG_TO_LBS = 2.20462;
         // toggle the weight conversion unit and update state
         const conversionUnit = conversionWeightUnit === "lbs" ? "kg" : "lbs";
         setConversionWeightUnit(conversionUnit);
@@ -34,14 +48,14 @@ export default function Calculator() {
             (doUnitConversion && weightUnit === "lbs") ||
             (!doUnitConversion && weightUnit === "kg")
         ) {
-            // convet from lbs to kg
-            conversionRate = 0.453592;
+            // convert from lbs to kg
+            conversionRate = LBS_TO_KG;
         } else if (
             (!doUnitConversion && weightUnit === "lbs") ||
             (doUnitConversion && weightUnit === "kg")
         ) {
             // convert from kg to lbs
-            conversionRate = 2.20462;
+            conversionRate = KG_TO_LBS;
         }
 
         setOneRepMax(Math.round(oneRepMax * conversionRate));
@@ -63,13 +77,18 @@ export default function Calculator() {
                             setOneRepMax={setOneRepMax}
                         />
                         <div className="text-center mb-6">
-                            <p className="text-lg mb-2">Estimated One-Rep Max:</p>
+                            <p className="text-lg mb-2">
+                                Estimated One-Rep Max:
+                            </p>
                             {oneRepMax > 0 ? (
                                 <>
                                     <p className="font-bold text-xl text-primary mb-4">
                                         {oneRepMax} {conversionWeightUnit}
                                     </p>
-                                    <Tooltip content="Toggle weight unit conversion" placement="bottom">
+                                    <Tooltip
+                                        content="Toggle weight unit conversion"
+                                        placement="bottom"
+                                    >
                                         <Button
                                             aria-label="weight unit"
                                             color="default"
@@ -79,7 +98,8 @@ export default function Calculator() {
                                         >
                                             <span
                                                 className={
-                                                    conversionWeightUnit === "lbs"
+                                                    conversionWeightUnit ===
+                                                    "lbs"
                                                         ? "text-primary font-bold"
                                                         : ""
                                                 }
@@ -89,7 +109,8 @@ export default function Calculator() {
                                             /
                                             <span
                                                 className={
-                                                    conversionWeightUnit === "kg"
+                                                    conversionWeightUnit ===
+                                                    "kg"
                                                         ? "text-primary font-bold"
                                                         : ""
                                                 }
@@ -105,7 +126,10 @@ export default function Calculator() {
                                 </p>
                             )}
                         </div>
-                        <RPEDataTable oneRepMax={oneRepMax} />
+                        <RPEDataTable 
+                            oneRepMax={oneRepMax}
+                            weightUnit={conversionWeightUnit}
+                         />
                     </section>
                 </div>
             </main>

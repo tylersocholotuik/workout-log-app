@@ -12,7 +12,15 @@ import { generateTableData } from "@/utils/calculator/calc-functions";
 
 import { rpeData } from "@/utils/calculator/rpeData";
 
-export default function RPEDataTable({ oneRepMax }: { oneRepMax: number }) {
+interface RPEDataTableProps {
+    oneRepMax: number;
+    weightUnit: string;
+}
+
+export default function RPEDataTable({
+    oneRepMax,
+    weightUnit,
+}: RPEDataTableProps) {
     const [tableData, setTableData] = useState<typeof rpeData>({});
 
     const columns = [
@@ -87,21 +95,21 @@ export default function RPEDataTable({ oneRepMax }: { oneRepMax: number }) {
                 <TableBody>
                     <>
                         <TableRow>
-                            <TableCell>
-                                <span className="text-foreground-500 font-semibold">
-                                    RPE
-                                </span>
-                            </TableCell>
-                            <TableCell>{""}</TableCell>
-                            <TableCell>{""}</TableCell>
-                            <TableCell>{""}</TableCell>
-                            <TableCell>{""}</TableCell>
-                            <TableCell>{""}</TableCell>
-                            <TableCell>{""}</TableCell>
-                            <TableCell>{""}</TableCell>
-                            <TableCell>{""}</TableCell>
-                            <TableCell>{""}</TableCell>
-                            <TableCell>{""}</TableCell>
+                            {columns.map((column, index) =>
+                                index === 0 ? (
+                                    <TableCell key={`header-${index}`}>
+                                        <span className="text-foreground-500 font-semibold">
+                                            RPE
+                                        </span>
+                                    </TableCell>
+                                ) : (
+                                    <TableCell key={`header-${index}`}>
+                                        <span className="text-foreground-500 font-semibold">
+                                            {`(${weightUnit})`}
+                                        </span>
+                                    </TableCell>
+                                )
+                            )}
                         </TableRow>
                         {Object.entries(tableData)
                             .sort(

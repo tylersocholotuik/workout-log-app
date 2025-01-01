@@ -6,15 +6,10 @@ import { Button, Input, Select, SelectItem, Tooltip } from "@nextui-org/react";
 
 import { calculateOneRepMax } from "@/utils/calculator/calc-functions";
 
+import { SetDataType } from "@/pages/calculator";
+
 interface CalculatorFormProps {
-    setSetData: Dispatch<
-        SetStateAction<{
-            weight: number;
-            weightUnit: string;
-            reps: number;
-            rpe: number;
-        }>
-    >;
+    setSetData: Dispatch<SetStateAction<SetDataType>>;
     setOneRepMax: Dispatch<SetStateAction<number>>;
 }
 
@@ -24,8 +19,8 @@ export default function CalculatorForm({
 }: CalculatorFormProps) {
     const [weight, setWeight] = useState("");
     const [weightUnit, setWeightUnit] = useState("lbs");
-    const [reps, setReps] = useState<string>("");
-    const [rpe, setRPE] = useState(new Set([""]));
+    const [reps, setReps] = useState("");
+    const [rpe, setRPE] = useState("");
 
     const rpeValues = ["6", "6.5", "7", "7.5", "8", "8.5", "9", "9.5", "10"];
 
@@ -81,16 +76,38 @@ export default function CalculatorForm({
         }
     };
 
-    const updateOneRepMax = (weight: string, reps: string, rpe: Set<string>) => {
-        const rpeString = rpe.currentKey;
-        let weightNumber;
-        let repsNumber;
-        let rpeNumber;
+    const handleRPEChange = (value: string) => {
+        const parsedValue = parseFloat(value);
 
-        if (weight !== "" && reps !== "" && rpeString !== undefined) {
-            weightNumber = parseFloat(weight);
-            repsNumber = parseInt(reps);
-            rpeNumber = parseFloat(rpeString);
+        let isValid = false;
+        // rules for RPE:
+        // min: 6
+        // max: 10
+        // steps of 0.5
+        if (value.length === 1) {
+            isValid =
+                // allows input value of 1 if length is 1 so you can enter 10
+                ((parsedValue >= 6 || parsedValue === 1) &&
+                    parsedValue % 0.5 === 0) ||
+                value === "";
+        } else {
+            isValid =
+                (parsedValue >= 6 &&
+                    parsedValue <= 10 &&
+                    parsedValue % 0.5 === 0) ||
+                value === "";
+        }
+
+        if (isValid) {
+            setRPE(value);
+        }
+    };
+
+    const updateOneRepMax = (weight: string, reps: string, rpe: string) => {
+        if (weight !== "" && reps !== "" && rpe !== "") {
+            const weightNumber = parseFloat(weight);
+            const repsNumber = parseInt(reps);
+            const rpeNumber = parseFloat(rpe);
 
             const oneRepMax = calculateOneRepMax(
                 weightNumber,
@@ -113,8 +130,8 @@ export default function CalculatorForm({
         setWeight("");
         setReps("");
         setWeightUnit("lbs");
-        setRPE(new Set([""]));
-        setSetData({});
+        setRPE("");
+        setSetData({ weight: "", weightUnit: "lbs", reps: "", rpe: "" });
         setOneRepMax(0);
     };
 
@@ -124,12 +141,16 @@ export default function CalculatorForm({
                 <div>
                     <Tooltip content="Range: 0-9999">
                         <Input
+                            classNames={{
+                                label: "text-inherit"
+                            }}
                             className="w-[80px]"
                             id="weight"
                             label="Weight"
                             labelPlacement="outside"
                             variant="bordered"
                             size="sm"
+                            color="primary"
                             type="number"
                             min={0}
                             max={9999}
@@ -180,12 +201,16 @@ export default function CalculatorForm({
                 <div>
                     <Tooltip content="Range: 1-10">
                         <Input
+                            classNames={{
+                                label: "text-inherit"
+                            }}
                             className="w-[60px]"
                             id="reps"
                             label="Reps"
                             labelPlacement="outside"
                             variant="bordered"
                             size="sm"
+                            color="primary"
                             type="number"
                             min={1}
                             max={10}
@@ -196,21 +221,36 @@ export default function CalculatorForm({
                     </Tooltip>
                 </div>
                 <div>
-                    <Tooltip content="Rate of Perceived Exertion">
-                        <Select
-                            className="w-[80px]"
+                    <Tooltip
+                        content={
+                            <div className="px-1 py-2">
+                                <div className="text-small font-bold">
+                                    Rate of Perceived Exertion
+                                </div>
+                                <div className="text-tiny">
+                                    Range: 6-10, steps of 0.5
+                                </div>
+                            </div>
+                        }
+                    >
+                        <Input
+                            classNames={{
+                                label: "text-inherit"
+                            }}
+                            className="w-[60px]"
                             id="rpe"
                             label="RPE"
                             labelPlacement="outside"
                             variant="bordered"
                             size="sm"
-                            selectedKeys={rpe}
-                            onSelectionChange={setRPE}
-                        >
-                            {rpeValues.map((value) => (
-                                <SelectItem key={value}>{value}</SelectItem>
-                            ))}
-                        </Select>
+                            color="primary"
+                            type="number"
+                            min={6}
+                            max={10}
+                            step={0.5}
+                            value={rpe}
+                            onValueChange={handleRPEChange}
+                        />
                     </Tooltip>
                 </div>
             </div>
