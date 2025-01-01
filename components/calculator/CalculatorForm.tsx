@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 import { Dispatch, SetStateAction } from "react";
 
-import { Button, Input, Select, SelectItem } from "@nextui-org/react";
+import { Button, Input, Select, SelectItem, Tooltip } from "@nextui-org/react";
 
 import { calculateOneRepMax } from "@/utils/calculator/calc-functions";
 
@@ -122,88 +122,96 @@ export default function CalculatorForm({
         <div>
             <div className="flex flex-row justify-center items-end gap-2 mb-2">
                 <div>
-                    <Input
-                        className="w-[80px]"
-                        id="weight"
-                        label="Weight"
-                        labelPlacement="outside"
-                        variant="bordered"
-                        size="sm"
-                        type="number"
-                        min={0}
-                        max={9999}
-                        step={0.5}
-                        endContent={
-                            <div className="pointer-events-none flex items-center">
-                                <span className="text-default-400 text-small">
-                                    {weightUnit}
-                                </span>
-                            </div>
-                        }
-                        value={weight}
-                        onValueChange={handleWeightChange}
-                    />
+                    <Tooltip content="Range: 0-9999">
+                        <Input
+                            className="w-[80px]"
+                            id="weight"
+                            label="Weight"
+                            labelPlacement="outside"
+                            variant="bordered"
+                            size="sm"
+                            type="number"
+                            min={0}
+                            max={9999}
+                            step={0.5}
+                            endContent={
+                                <div className="pointer-events-none flex items-center">
+                                    <span className="text-default-400 text-small">
+                                        {weightUnit}
+                                    </span>
+                                </div>
+                            }
+                            value={weight}
+                            onValueChange={handleWeightChange}
+                        />
+                    </Tooltip>
                 </div>
                 <div className="">
-                    <Button
-                        aria-label="weight unit"
-                        color="default"
-                        variant="bordered"
-                        size="sm"
-                        onPress={toggleWeightUnit}
-                    >
-                        <span
-                            className={
-                                weightUnit === "lbs"
-                                    ? "text-primary font-bold"
-                                    : ""
-                            }
+                    <Tooltip content="Weight Unit">
+                        <Button
+                            aria-label="weight unit"
+                            color="default"
+                            variant="bordered"
+                            size="sm"
+                            onPress={toggleWeightUnit}
                         >
-                            lbs
-                        </span>
-                        /
-                        <span
-                            className={
-                                weightUnit === "kg"
-                                    ? "text-primary font-bold"
-                                    : ""
-                            }
-                        >
-                            kg
-                        </span>
-                    </Button>
+                            <span
+                                className={
+                                    weightUnit === "lbs"
+                                        ? "text-primary font-bold"
+                                        : ""
+                                }
+                            >
+                                lbs
+                            </span>
+                            /
+                            <span
+                                className={
+                                    weightUnit === "kg"
+                                        ? "text-primary font-bold"
+                                        : ""
+                                }
+                            >
+                                kg
+                            </span>
+                        </Button>
+                    </Tooltip>
                 </div>
                 <div>
-                    <Input
-                        className="w-[60px]"
-                        id="reps"
-                        label="Reps"
-                        labelPlacement="outside"
-                        variant="bordered"
-                        size="sm"
-                        type="number"
-                        min={1}
-                        max={10}
-                        step={1}
-                        value={reps}
-                        onValueChange={handleRepsChange}
-                    />
+                    <Tooltip content="Range: 1-10">
+                        <Input
+                            className="w-[60px]"
+                            id="reps"
+                            label="Reps"
+                            labelPlacement="outside"
+                            variant="bordered"
+                            size="sm"
+                            type="number"
+                            min={1}
+                            max={10}
+                            step={1}
+                            value={reps}
+                            onValueChange={handleRepsChange}
+                        />
+                    </Tooltip>
                 </div>
                 <div>
-                    <Select
-                        className="w-[80px]"
-                        id="rpe"
-                        label="RPE"
-                        labelPlacement="outside"
-                        variant="bordered"
-                        size="sm"
-                        selectedKeys={rpe}
-                        onSelectionChange={setRPE}
-                    >
-                        {rpeValues.map((value) => (
-                            <SelectItem key={value}>{value}</SelectItem>
-                        ))}
-                    </Select>
+                    <Tooltip content="Rate of Perceived Exertion">
+                        <Select
+                            className="w-[80px]"
+                            id="rpe"
+                            label="RPE"
+                            labelPlacement="outside"
+                            variant="bordered"
+                            size="sm"
+                            selectedKeys={rpe}
+                            onSelectionChange={setRPE}
+                        >
+                            {rpeValues.map((value) => (
+                                <SelectItem key={value}>{value}</SelectItem>
+                            ))}
+                        </Select>
+                    </Tooltip>
                 </div>
             </div>
             <div className="justify-self-center">
