@@ -83,7 +83,7 @@ export default function WorkoutDetailsModal({ isOpen, onOpenChange }) {
                                 variant="bordered"
                                 isRequired
                                 maxLength={50}
-                                description={`${title.length}/50 characters`}
+                                description={`${ title ? title.length : "0"}/50 characters`}
                                 errorMessage={titleError}
                                 isInvalid={titleError !== ""}
                                 value={title}
@@ -110,7 +110,7 @@ export default function WorkoutDetailsModal({ isOpen, onOpenChange }) {
                             <Textarea
                                 label="Notes"
                                 variant="bordered"
-                                description={`${notes ? notes.length : "0"}/250 characters`}
+                                description={`${notes !== "" ? notes.length : "0"}/250 characters`}
                                 maxLength={250}
                                 errorMessage={notesError}
                                 isInvalid={notesError !== ""}
