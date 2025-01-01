@@ -186,6 +186,7 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }: SetsTable
                     <TableRow key={`exercise-${exerciseIndex}-set-${index}`}>
                         <TableCell>
                             <Input
+                                classNames={{input: 'text-center'}}
                                 id={`exercise-${exerciseIndex}-set-${index}-weight`}
                                 type="number"
                                 variant="bordered"
@@ -215,6 +216,7 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }: SetsTable
                         </TableCell>
                         <TableCell>
                             <Input
+                                classNames={{input: 'text-center'}}
                                 id={`exercise-${exerciseIndex}-set-${index}-reps`}
                                 type="number"
                                 variant="bordered"
@@ -233,6 +235,7 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }: SetsTable
                         </TableCell>
                         <TableCell>
                             <Input
+                                classNames={{input: 'text-center'}}
                                 id={`exercise-${exerciseIndex}-set-${index}-rpe`}
                                 type="number"
                                 variant="bordered"
