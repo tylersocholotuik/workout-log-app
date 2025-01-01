@@ -48,13 +48,7 @@ async function seedDatabase(exerciseData: Exercise[], workoutData: Workout) {
             notes,
             date,
             deleted: false,
-            user: {
-                create: {
-                    email: 'socholotuikt@gmail.com',
-                    firstName: 'Tyler',
-                    lastName: 'Socholotuik',
-                }
-            },
+            userId: "b24993de-ff97-4547-87d0-9997638c319b",
             exercises: {
                 create: exercises.map((exercise) => ({
                     exercise: {

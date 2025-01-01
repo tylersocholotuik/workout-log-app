@@ -39,7 +39,7 @@ export class UserExercise {
 export class Workout {
     id: number;
     title: string;
-    notes: string | null = "";
+    notes: string | null;
     date: Date;
     userId: string;
     exercises: WorkoutExercise[];
@@ -50,7 +50,7 @@ export class Workout {
         title: string = `${new Date().toLocaleString("en-CA", {
             dateStyle: "short",
         })} Workout`,
-        notes: string | null = null,
+        notes: string | null = "",
         date: Date = new Date(),
         userId: string = "",
         exercises: WorkoutExercise[] = [],
