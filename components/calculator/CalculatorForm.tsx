@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 import { Dispatch, SetStateAction } from "react";
 
-import { Button, Input, Select, SelectItem, Tooltip } from "@nextui-org/react";
+import { Button, Input, Select, SelectItem } from "@nextui-org/react";
 
 import { calculateOneRepMax } from "@/utils/calculator/calc-functions";
 
@@ -81,7 +81,7 @@ export default function CalculatorForm({
         }
     };
 
-    const updateOneRepMax = (weight: string, reps: string, rpe) => {
+    const updateOneRepMax = (weight: string, reps: string, rpe: Set<string>) => {
         const rpeString = rpe.currentKey;
         let weightNumber;
         let repsNumber;

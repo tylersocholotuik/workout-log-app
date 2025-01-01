@@ -155,7 +155,7 @@ export default function SelectExerciseModal({
         }
     };
 
-    const createNewExercise = async (userId: string, name: string) => {
+    const createNewExercise = async (userId: string | string[] | undefined, name: string) => {
         setError("");
         setFeedback("");
         setisCreating(true);

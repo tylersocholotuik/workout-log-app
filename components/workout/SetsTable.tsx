@@ -14,7 +14,7 @@ import {
 
 import { DeleteIcon } from "@/icons/DeleteIcon";
 
-import { WorkoutContext } from "@/pages/[userId]/workout/[workoutId]";
+import { useWorkoutContext } from "@/pages/[userId]/workout/[workoutId]";
 
 import { Set, WeightUnit } from "@/utils/models/models";
 
@@ -25,7 +25,7 @@ interface SetsTableProps {
 };
 
 export default function SetsTable({ sets, weightUnit, exerciseIndex }: SetsTableProps) {
-    const { workout, setWorkout } = useContext(WorkoutContext);
+    const { workout, setWorkout } = useWorkoutContext();
 
     const [localSets, setLocalSets] = useState(sets);
 
@@ -202,7 +202,7 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }: SetsTable
                                         </span>
                                     </div>
                                 }
-                                value={localSets[index].weight}
+                                value={`${localSets[index].weight}` || ""}
                                 onValueChange={(newValue) => {
                                     handleInputChange(
                                         index,
@@ -224,7 +224,7 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }: SetsTable
                                 min="0"
                                 max="9999"
                                 step="1"
-                                value={localSets[index]?.reps ?? ""}
+                                value={`${localSets[index].reps}` || ""}
                                 onValueChange={(newValue) => {
                                     handleInputChange(index, "reps", newValue);
                                 }}
@@ -242,7 +242,7 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }: SetsTable
                                 min="0"
                                 max="10"
                                 step="0.5"
-                                value={localSets[index]?.rpe ?? ""}
+                                value={`${localSets[index].rpe}` || ""}
                                 onValueChange={(newValue) => {
                                     handleInputChange(index, "rpe", newValue);
                                 }}

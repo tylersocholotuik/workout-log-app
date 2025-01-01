@@ -1,4 +1,11 @@
-import { useEffect, useState, createContext } from "react";
+import {
+    useEffect,
+    useState,
+    createContext,
+    useContext,
+    Dispatch,
+    SetStateAction,
+} from "react";
 import { useRouter } from "next/router";
 
 import Head from "next/head";
@@ -29,7 +36,24 @@ import {
 } from "@/utils/models/models";
 import FeedbackModal from "@/components/workout/FeedbackModal";
 
-export const WorkoutContext = createContext({});
+interface WorkoutContextType {
+    workout: Workout;
+    setWorkout: Dispatch<SetStateAction<Workout>>;
+}
+
+export const WorkoutContext = createContext<WorkoutContextType | undefined>(
+    undefined
+);
+
+export const useWorkoutContext = () => {
+    const context = useContext(WorkoutContext);
+    if (!context) {
+        throw new Error(
+            "useWorkoutContext must be used within a WorkoutProvider"
+        );
+    }
+    return context;
+};
 
 export default function WorkoutLog() {
     const [workout, setWorkout] = useState<Workout>(new Workout());
@@ -282,9 +306,12 @@ export default function WorkoutLog() {
                         <div className="flex flex-col gap-2 items-center mb-6">
                             <h2 className="text-lg">{workout.title}</h2>
                             <p className="text-md">
-                                {new Date(workout.date).toLocaleString("en-CA", {
-                                    dateStyle: "full",
-                                })}
+                                {new Date(workout.date).toLocaleString(
+                                    "en-CA",
+                                    {
+                                        dateStyle: "full",
+                                    }
+                                )}
                             </p>
                             <div className="max-w-[400px] text-center">
                                 <p className="text-md text-default-500">
@@ -363,9 +390,15 @@ export default function WorkoutLog() {
                     isOpen={feedbackModal.isOpen}
                     onOpenChange={feedbackModal.onOpenChange}
                     title={
-                        feedback !== "" ? "Success" : error !== "" ? "Error" : ""
+                        feedback !== ""
+                            ? "Success"
+                            : error !== ""
+                            ? "Error"
+                            : ""
                     }
-                    message={feedback !== "" ? feedback : error !== "" ? error : ""}
+                    message={
+                        feedback !== "" ? feedback : error !== "" ? error : ""
+                    }
                     color={error !== "" ? "red-600" : "inherit"}
                     setFeedback={setFeedback}
                     setError={setError}

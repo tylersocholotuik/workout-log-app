@@ -27,7 +27,7 @@ import { Exercise, UserExercise, WorkoutExercise, Set } from "@/utils/models/mod
 
 import SelectExerciseModal from "./SelectExerciseModal";
 
-import { WorkoutContext } from "@/pages/[userId]/workout/[workoutId]";
+import { useWorkoutContext } from "@/pages/[userId]/workout/[workoutId]";
 
 import { calculateOneRepMax } from "@/utils/calculator/calc-functions";
 
@@ -37,7 +37,7 @@ interface ExerciseCardProps {
 };
 
 export default function ExerciseCard({ exercise, exerciseIndex }: ExerciseCardProps) {
-    const { workout, setWorkout } = useContext(WorkoutContext);
+    const { workout, setWorkout } = useWorkoutContext();
 
     const [notes, setNotes] = useState(exercise.notes);
     const [weightUnit, setWeightUnit] = useState(exercise.weightUnit);
