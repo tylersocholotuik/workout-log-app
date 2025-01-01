@@ -14,14 +14,14 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-model User {
-  id            String          @id @default(cuid())
-  email         String          @unique
-  firstName     String
-  lastName      String
-  workouts      Workout[]
-  userExercises UserExercise[]  
-}
+// model User {
+//   id            String          @id @default(cuid())
+//   email         String          @unique
+//   firstName     String
+//   lastName      String
+//   workouts      Workout[]
+//   userExercises UserExercise[]  
+// }
 
 model Exercise {
   id                Int                 @id @default(autoincrement())
@@ -32,8 +32,7 @@ model Exercise {
 model UserExercise {
   id                Int                 @id @default(autoincrement())
   name              String              @unique
-  userId            String
-  user              User                @relation(fields: [userId], references: [id])
+  userId            String              // from Supabase auth.users.id
   workoutExercises  WorkoutExercise[]
   deleted           Boolean
 }
@@ -43,8 +42,7 @@ model Workout {
   title     String
   notes     String?
   date      DateTime            @default(now())
-  userId    String
-  user      User                @relation(fields: [userId], references: [id])
+  userId    String              // from Supabase auth.users.id
   exercises WorkoutExercise[]
   deleted   Boolean 
 }

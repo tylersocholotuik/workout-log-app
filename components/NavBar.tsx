@@ -44,7 +44,7 @@ export default function NavBar() {
     ];
 
     // setting userId until authentication is implemented
-    const userId = "cm4zr6sti0000priwve9whn6t";
+    const userId = "b24993de-ff97-4547-87d0-9997638c319b";
 
     const isActive = (path: string): boolean => {
         return router.pathname.includes(path);
