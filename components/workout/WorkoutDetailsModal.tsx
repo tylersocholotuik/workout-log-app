@@ -110,7 +110,7 @@ export default function WorkoutDetailsModal({ isOpen, onOpenChange }) {
                             <Textarea
                                 label="Notes"
                                 variant="bordered"
-                                description={`${notes.length}/250 characters`}
+                                description={`${notes ? notes.length : "0"}/250 characters`}
                                 maxLength={250}
                                 errorMessage={notesError}
                                 isInvalid={notesError !== ""}
