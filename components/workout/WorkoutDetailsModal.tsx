@@ -16,7 +16,12 @@ import { getLocalTimeZone, parseDate } from "@internationalized/date";
 
 import { WorkoutContext } from "@/pages/[userId]/workout/[workoutId]";
 
-export default function WorkoutDetailsModal({ isOpen, onOpenChange }) {
+interface WorkoutDetailsModalProps {
+    isOpen: boolean,
+    onOpenChange: () => void
+}
+
+export default function WorkoutDetailsModal({ isOpen, onOpenChange }: WorkoutDetailsModalProps) {
     const { workout, setWorkout } = useContext(WorkoutContext);
 
     const [title, setTitle] = useState(workout.title);

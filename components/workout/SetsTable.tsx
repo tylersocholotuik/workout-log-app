@@ -16,7 +16,15 @@ import { DeleteIcon } from "@/icons/DeleteIcon";
 
 import { WorkoutContext } from "@/pages/[userId]/workout/[workoutId]";
 
-export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
+import { Set, WeightUnit } from "@/utils/models/models";
+
+interface SetsTableProps {
+    sets: Set[],
+    weightUnit: WeightUnit,
+    exerciseIndex: number
+};
+
+export default function SetsTable({ sets, weightUnit, exerciseIndex }: SetsTableProps) {
     const { workout, setWorkout } = useContext(WorkoutContext);
 
     const [localSets, setLocalSets] = useState(sets);
@@ -194,7 +202,7 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
                                         </span>
                                     </div>
                                 }
-                                value={localSets[index]?.weight ?? ""}
+                                value={localSets[index].weight}
                                 onValueChange={(newValue) => {
                                     handleInputChange(
                                         index,

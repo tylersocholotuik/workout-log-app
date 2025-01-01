@@ -15,7 +15,7 @@ import {
     PopoverContent,
     Tooltip,
     Switch,
-    useDisclosure
+    useDisclosure,
 } from "@nextui-org/react";
 
 import { Icon } from "@iconify/react";
@@ -23,7 +23,7 @@ import { DeleteIcon } from "@/icons/DeleteIcon";
 
 import SetsTable from "./SetsTable";
 
-import { Exercise, UserExercise, Set } from "@/utils/models/models";
+import { Exercise, UserExercise, WorkoutExercise, Set } from "@/utils/models/models";
 
 import SelectExerciseModal from "./SelectExerciseModal";
 
@@ -31,10 +31,12 @@ import { WorkoutContext } from "@/pages/[userId]/workout/[workoutId]";
 
 import { calculateOneRepMax } from "@/utils/calculator/calc-functions";
 
-export default function ExerciseCard({
-    exercise,
-    exerciseIndex,
-}) {
+interface ExerciseCardProps {
+    exercise: WorkoutExercise,
+    exerciseIndex: number
+};
+
+export default function ExerciseCard({ exercise, exerciseIndex }: ExerciseCardProps) {
     const { workout, setWorkout } = useContext(WorkoutContext);
 
     const [notes, setNotes] = useState(exercise.notes);
@@ -76,74 +78,74 @@ export default function ExerciseCard({
     };
 
     const changeExercise = (
-            newExercise: Exercise | UserExercise,
-            exerciseIndex: number
-        ) => {
-            // create deep copy of workout
-            let updatedWorkout = {
-                ...workout,
-                exercises: workout.exercises.map((exercise) => ({
-                    ...exercise,
-                    sets: exercise.sets.map((set) => ({
-                        ...set,
-                    })),
+        newExercise: Exercise | UserExercise,
+        exerciseIndex: number
+    ) => {
+        // create deep copy of workout
+        let updatedWorkout = {
+            ...workout,
+            exercises: workout.exercises.map((exercise) => ({
+                ...exercise,
+                sets: exercise.sets.map((set) => ({
+                    ...set,
                 })),
-            };
-            
-            // checking if the new exercise is a stock exercise, and the previous was a 
-            // user exercise. If so, set user exercise to null and map new exercise
-            // properties to exercise
-            if (
-                !("userId" in newExercise) &&
-                "userExerciseId" in updatedWorkout.exercises[exerciseIndex]
-            ) {
-                updatedWorkout = {
-                    ...workout,
-                    exercises: workout.exercises.map((exercise, index) =>
-                        index === exerciseIndex
-                            ? {
-                                  ...exercise,
-                                  exercise: {
-                                    id: newExercise.id,
-                                    name: newExercise.name
-                                  },
-                                  userExercise: null,
-                                  exerciseId: newExercise.id,
-                                  userExerciseId: null,
-                                  sets: exercise.sets.map((set) => ({
-                                      ...set,
-                                  })),
-                              }
-                            : exercise
-                    ),
-                };
-            } else {
-                // if it is a user exercise, set exercise to null and map
-                // newExercise properties to userExercise
-                updatedWorkout = {
-                    ...workout,
-                    exercises: workout.exercises.map((exercise, index) =>
-                        index === exerciseIndex
-                            ? {
-                                  ...exercise,
-                                  userExercise: {
-                                    id: newExercise.id,
-                                    name: newExercise.name
-                                  },
-                                  exercise: null,
-                                  exerciseId: null,
-                                  userExerciseId: newExercise.id,
-                                  sets: exercise.sets.map((set) => ({
-                                      ...set,
-                                  })),
-                              }
-                            : exercise
-                    ),
-                };
-            }
-
-            setWorkout(updatedWorkout);
+            })),
         };
+
+        // checking if the new exercise is a stock exercise, and the previous was a
+        // user exercise. If so, set user exercise to null and map new exercise
+        // properties to exercise
+        if (
+            !("userId" in newExercise) &&
+            "userExerciseId" in updatedWorkout.exercises[exerciseIndex]
+        ) {
+            updatedWorkout = {
+                ...workout,
+                exercises: workout.exercises.map((exercise, index) =>
+                    index === exerciseIndex
+                        ? {
+                              ...exercise,
+                              exercise: {
+                                  id: newExercise.id,
+                                  name: newExercise.name,
+                              },
+                              userExercise: null,
+                              exerciseId: newExercise.id,
+                              userExerciseId: null,
+                              sets: exercise.sets.map((set) => ({
+                                  ...set,
+                              })),
+                          }
+                        : exercise
+                ),
+            };
+        } else {
+            // if it is a user exercise, set exercise to null and map
+            // newExercise properties to userExercise
+            updatedWorkout = {
+                ...workout,
+                exercises: workout.exercises.map((exercise, index) =>
+                    index === exerciseIndex
+                        ? {
+                              ...exercise,
+                              userExercise: {
+                                  id: newExercise.id,
+                                  name: newExercise.name,
+                              },
+                              exercise: null,
+                              exerciseId: null,
+                              userExerciseId: newExercise.id,
+                              sets: exercise.sets.map((set) => ({
+                                  ...set,
+                              })),
+                          }
+                        : exercise
+                ),
+            };
+        }
+
+        setWorkout(updatedWorkout);
+    };
 
     const saveInputChange = (
         exerciseIndex: number,
@@ -214,7 +216,11 @@ export default function ExerciseCard({
                                     isIconOnly
                                     onPress={changeExerciseModal.onOpen}
                                 >
-                                    <Icon icon="material-symbols:change-circle-rounded" width="18" height="18" />
+                                    <Icon
+                                        icon="material-symbols:change-circle-rounded"
+                                        width="18"
+                                        height="18"
+                                    />
                                 </Button>
                             </Tooltip>
                         </div>

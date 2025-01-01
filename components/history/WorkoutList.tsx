@@ -18,7 +18,11 @@ import WorkoutCard from "./WorkoutCard";
 
 import { Workout } from "@/utils/models/models";
 
-export default function WorkoutList({ workouts }) {
+interface WorkoutListProps {
+    workouts: Workout[]
+};
+
+export default function WorkoutList({ workouts }: WorkoutListProps) {
     // workouts are in descending order by date
     const firstWorkoutDate = workouts[workouts.length - 1].date;
     // Parse dates to CalendarDate object to be used in Next UI

@@ -7,7 +7,13 @@ import {
     Link,
 } from "@nextui-org/react";
 
-export default function WorkoutCard({ workout }) {
+import { Workout } from "@/utils/models/models";
+
+interface WorkoutCardProps {
+    workout: Workout
+};
+
+export default function WorkoutCard({ workout }: WorkoutCardProps) {
     const workoutDate = new Date(workout.date);
     return (
         <Card>

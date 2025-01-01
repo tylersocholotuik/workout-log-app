@@ -1,10 +1,27 @@
 import { useState, useEffect } from "react";
 
+import { Dispatch, SetStateAction } from "react";
+
 import { Button, Input, Select, SelectItem, Tooltip } from "@nextui-org/react";
 
 import { calculateOneRepMax } from "@/utils/calculator/calc-functions";
 
-export default function CalculatorForm({ setSetData, setOneRepMax }) {
+interface CalculatorFormProps {
+    setSetData: Dispatch<
+        SetStateAction<{
+            weight: number;
+            weightUnit: string;
+            reps: number;
+            rpe: number;
+        }>
+    >;
+    setOneRepMax: Dispatch<SetStateAction<number>>;
+}
+
+export default function CalculatorForm({
+    setSetData,
+    setOneRepMax,
+}: CalculatorFormProps) {
     const [weight, setWeight] = useState("");
     const [weightUnit, setWeightUnit] = useState("lbs");
     const [reps, setReps] = useState<string>("");

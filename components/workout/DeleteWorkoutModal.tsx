@@ -7,7 +7,17 @@ import {
     Button,
 } from "@nextui-org/react";
 
-export default function DeleteWorkoutModal({ isOpen, onOpenChange, callbackFunction }) {
+interface DeleteWorkoutModalProps {
+    isOpen: boolean;
+    onOpenChange: () => void;
+    callbackFunction: () => void;
+}
+
+export default function DeleteWorkoutModal({
+    isOpen,
+    onOpenChange,
+    callbackFunction,
+}: DeleteWorkoutModalProps) {
     return (
         <Modal
             isOpen={isOpen}
@@ -21,7 +31,9 @@ export default function DeleteWorkoutModal({ isOpen, onOpenChange, callbackFunct
                             Delete Workout
                         </ModalHeader>
                         <ModalBody>
-                            <p className="">Are you sure you want to delete this workout?</p>
+                            <p className="">
+                                Are you sure you want to delete this workout?
+                            </p>
                         </ModalBody>
                         <ModalFooter>
                             <Button

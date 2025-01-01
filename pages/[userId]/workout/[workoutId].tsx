@@ -363,9 +363,9 @@ export default function WorkoutLog() {
                     isOpen={feedbackModal.isOpen}
                     onOpenChange={feedbackModal.onOpenChange}
                     title={
-                        feedback !== "" ? "Success" : error !== "" && "Error"
+                        feedback !== "" ? "Success" : error !== "" ? "Error" : ""
                     }
-                    message={feedback !== "" ? feedback : error !== "" && error}
+                    message={feedback !== "" ? feedback : error !== "" ? error : ""}
                     color={error !== "" ? "red-600" : "inherit"}
                     setFeedback={setFeedback}
                     setError={setError}
@@ -376,7 +376,6 @@ export default function WorkoutLog() {
                     isOpen={addExerciseModal.isOpen}
                     onOpenChange={addExerciseModal.onOpenChange}
                     callbackFunction={addExercise}
-                    exerciseIndex={undefined}
                     update={false}
                 />
 

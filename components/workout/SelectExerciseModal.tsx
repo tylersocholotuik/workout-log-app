@@ -29,6 +29,18 @@ import {
     addUserExercise,
 } from "@/utils/api/exercises";
 
+interface SelectExerciseModalProps {
+    userId: string | string[] | undefined;
+    isOpen: boolean;
+    onOpenChange: () => void;
+    callbackFunction: (
+        newExercise: Exercise | UserExercise,
+        exerciseIndex?: number
+    ) => void;
+    exerciseIndex?: number;
+    update: boolean;
+}
+
 export default function SelectExerciseModal({
     userId,
     isOpen,
@@ -36,7 +48,7 @@ export default function SelectExerciseModal({
     callbackFunction,
     exerciseIndex,
     update,
-}) {
+}: SelectExerciseModalProps) {
     const [exercises, setExercises] = useState<Exercise[]>([]);
     const [userExercises, setUserExercises] = useState<UserExercise[]>([]);
     const [selectedKey, setSelectedKey] = useState<Selection>(new Set());
@@ -47,7 +59,9 @@ export default function SelectExerciseModal({
     const [filteredUserExercises, setFilteredUserExercises] =
         useState(userExercises);
     const [exerciseName, setExerciseName] = useState("");
-    const [newExercise, setNewExercise] = useState<UserExercise>(new UserExercise())
+    const [newExercise, setNewExercise] = useState<UserExercise>(
+        new UserExercise()
+    );
     const [isCreating, setisCreating] = useState(false);
     const [error, setError] = useState("");
     const [feedback, setFeedback] = useState("");
@@ -167,7 +181,10 @@ export default function SelectExerciseModal({
                 throw new Error(`Exercise name '${name}' already exists.`);
             }
 
-            const newExerciseData = await addUserExercise(userId, exerciseName.trim());
+            const newExerciseData = await addUserExercise(
+                userId,
+                exerciseName.trim()
+            );
             setNewExercise(newExerciseData);
             // reload userExercises to have access to new exercise
             const userData = await getUserExercises(userId);
@@ -199,7 +216,7 @@ export default function SelectExerciseModal({
         const selectedExercise = getSelectedExercise();
         if (selectedExercise) {
             if (!update) {
-                // callbackFunction = addExercise 
+                // callbackFunction = addExercise
                 callbackFunction(selectedExercise);
             } else {
                 // callbackFunction = changeExercise
@@ -220,10 +237,10 @@ export default function SelectExerciseModal({
         if (!update) {
             callbackFunction(newExercise);
         } else {
-            callbackFunction(newExercise, exerciseIndex)
+            callbackFunction(newExercise, exerciseIndex);
         }
         clearState();
-    }
+    };
 
     const columns = [
         {

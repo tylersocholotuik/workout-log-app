@@ -7,6 +7,18 @@ import {
     Button,
 } from "@nextui-org/react";
 
+import { Dispatch, SetStateAction } from "react";
+
+interface FeedbackModalProps {
+    isOpen: boolean,
+    onOpenChange: () => void,
+    title: string,
+    message: string,
+    color: string,
+    setFeedback: Dispatch<SetStateAction<string>>,
+    setError: Dispatch<SetStateAction<string>>
+}
+
 export default function FeedbackModal({
     isOpen,
     onOpenChange,
@@ -15,7 +27,7 @@ export default function FeedbackModal({
     color,
     setFeedback,
     setError,
-}) {
+}: FeedbackModalProps) {
 
     const resetMessage = () => {
         setFeedback("");
