@@ -10,12 +10,19 @@ import { useRouter } from "next/router";
 
 import Head from "next/head";
 
+import CalculatorModal from "@/components/workout/CalculatorModal";
 import DeleteWorkoutModal from "@/components/workout/DeleteWorkoutModal";
 import ExerciseCard from "@/components/workout/ExerciseCard";
 import SelectExerciseModal from "@/components/workout/SelectExerciseModal";
 import WorkoutDetailsModal from "@/components/workout/WorkoutDetailsModal";
 
-import { Alert, Button, Spinner, useDisclosure } from "@nextui-org/react";
+import {
+    Alert,
+    Button,
+    Spinner,
+    useDisclosure,
+    Divider,
+} from "@nextui-org/react";
 
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { EditIcon } from "@/icons/EditIcon";
@@ -68,6 +75,7 @@ export default function WorkoutLog() {
     const deleteModal = useDisclosure();
     const addExerciseModal = useDisclosure();
     const feedbackModal = useDisclosure();
+    const calculatorModal = useDisclosure();
 
     const router = useRouter();
 
@@ -229,6 +237,7 @@ export default function WorkoutLog() {
                                     color="primary"
                                     size="lg"
                                     variant="solid"
+                                    radius="full"
                                     onPress={() => setStartNewWorkout(true)}
                                     startContent={
                                         <Icon
@@ -246,6 +255,7 @@ export default function WorkoutLog() {
                                     color="secondary"
                                     size="lg"
                                     variant="solid"
+                                    radius="full"
                                     onPress={() =>
                                         router.push(`/${userId}/history`)
                                     }
@@ -303,7 +313,7 @@ export default function WorkoutLog() {
             <WorkoutContext.Provider value={{ workout, setWorkout }}>
                 <main>
                     <div className="container mx-auto px-2 md:px-4 py-6">
-                        <div className="flex flex-col gap-2 items-center mb-6">
+                        <div className="flex flex-col gap-2 items-center mb-4">
                             <h2 className="text-lg">{workout.title}</h2>
                             <p className="text-md">
                                 {new Date(workout.date).toLocaleString(
@@ -330,6 +340,25 @@ export default function WorkoutLog() {
                                     Edit Details
                                 </Button>
                             </div>
+                        </div>
+                        <Divider />
+                        <div className="justify-self-center my-8">
+                            <Button
+                                aria-label="one-rep max calculator"
+                                color="primary"
+                                variant="light"
+                                radius="full"
+                                onPress={calculatorModal.onOpen}
+                                startContent={
+                                    <Icon
+                                        icon="mdi:calculator"
+                                        width="24"
+                                        height="24"
+                                    />
+                                }
+                            >
+                                1RM Calculator
+                            </Button>
                         </div>
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
                             {workout.exercises.length > 0 &&
@@ -416,6 +445,11 @@ export default function WorkoutLog() {
                     isOpen={deleteModal.isOpen}
                     onOpenChange={deleteModal.onOpenChange}
                     callbackFunction={() => discardWorkout(userId, workout.id)}
+                />
+
+                <CalculatorModal
+                    isOpen={calculatorModal.isOpen}
+                    onOpenChange={calculatorModal.onOpenChange}
                 />
             </WorkoutContext.Provider>
         </>

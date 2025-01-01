@@ -22,8 +22,6 @@ export default function CalculatorForm({
     const [reps, setReps] = useState("");
     const [rpe, setRPE] = useState("");
 
-    const rpeValues = ["6", "6.5", "7", "7.5", "8", "8.5", "9", "9.5", "10"];
-
     useEffect(() => {
         updateOneRepMax(weight, reps, rpe);
     }, [weight, reps, rpe, weightUnit]);
@@ -104,7 +102,12 @@ export default function CalculatorForm({
     };
 
     const updateOneRepMax = (weight: string, reps: string, rpe: string) => {
-        if (weight !== "" && reps !== "" && rpe !== "") {
+        if (
+            weight !== "" &&
+            reps !== "" &&
+            rpe !== "" &&
+            parseFloat(rpe) >= 6
+        ) {
             const weightNumber = parseFloat(weight);
             const repsNumber = parseInt(reps);
             const rpeNumber = parseFloat(rpe);
@@ -142,7 +145,7 @@ export default function CalculatorForm({
                     <Tooltip content="Range: 0-9999">
                         <Input
                             classNames={{
-                                label: "text-inherit"
+                                label: "text-inherit",
                             }}
                             className="w-[80px]"
                             id="weight"
@@ -202,7 +205,7 @@ export default function CalculatorForm({
                     <Tooltip content="Range: 1-10">
                         <Input
                             classNames={{
-                                label: "text-inherit"
+                                label: "text-inherit",
                             }}
                             className="w-[60px]"
                             id="reps"
@@ -235,7 +238,7 @@ export default function CalculatorForm({
                     >
                         <Input
                             classNames={{
-                                label: "text-inherit"
+                                label: "text-inherit",
                             }}
                             className="w-[60px]"
                             id="rpe"
