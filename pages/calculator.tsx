@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 import Head from "next/head";
 
-import { Button } from "@nextui-org/react";
+import { Button , Tooltip} from "@nextui-org/react";
 
 import CalculatorForm from "@/components/calculator/CalculatorForm";
 import RPEDataTable from "@/components/calculator/RPEDataTable";
@@ -69,33 +69,35 @@ export default function Calculator() {
                                     <p className="font-bold text-xl text-primary mb-4">
                                         {oneRepMax} {conversionWeightUnit}
                                     </p>
-                                    <Button
-                                        aria-label="weight unit"
-                                        color="default"
-                                        variant="bordered"
-                                        size="sm"
-                                        onPress={convertWeightUnit}
-                                    >
-                                        <span
-                                            className={
-                                                conversionWeightUnit === "lbs"
-                                                    ? "text-primary font-bold"
-                                                    : ""
-                                            }
+                                    <Tooltip content="Toggle weight unit conversion" placement="bottom">
+                                        <Button
+                                            aria-label="weight unit"
+                                            color="default"
+                                            variant="bordered"
+                                            size="sm"
+                                            onPress={convertWeightUnit}
                                         >
-                                            lbs
-                                        </span>
-                                        /
-                                        <span
-                                            className={
-                                                conversionWeightUnit === "kg"
-                                                    ? "text-primary font-bold"
-                                                    : ""
-                                            }
-                                        >
-                                            kg
-                                        </span>
-                                    </Button>
+                                            <span
+                                                className={
+                                                    conversionWeightUnit === "lbs"
+                                                        ? "text-primary font-bold"
+                                                        : ""
+                                                }
+                                            >
+                                                lbs
+                                            </span>
+                                            /
+                                            <span
+                                                className={
+                                                    conversionWeightUnit === "kg"
+                                                        ? "text-primary font-bold"
+                                                        : ""
+                                                }
+                                            >
+                                                kg
+                                            </span>
+                                        </Button>
+                                    </Tooltip>
                                 </>
                             ) : (
                                 <p className="text-foreground-500">
