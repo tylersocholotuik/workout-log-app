@@ -166,7 +166,7 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }) {
                                     </div>
                                 </div>
                             }
-                            placement="bottom"
+                            placement="top"
                         >
                             {column.label}
                         </Tooltip>
