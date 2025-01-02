@@ -79,7 +79,6 @@ export default function NavBar() {
                 setError(`Error during logout: ${error.message}`);
             } else {
                 setFeedback("Logout successful");
-                // setIsLoggedIn(false);
                 localStorage.clear();
                 router.push("/");
             }

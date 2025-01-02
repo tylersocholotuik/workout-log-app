@@ -22,14 +22,21 @@ import FeedbackModal from "@/components/workout/FeedbackModal";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 export default function App() {
+    // bound to email input for magic link
     const [linkEmail, setLinkEmail] = useState("");
+    // bound to inputs for email and password login
     const [loginEmail, setLoginEmail] = useState("");
     const [loginPassword, setLoginPassword] = useState("");
+    // bound to inputs for sign up
     const [signupEmail, setSignupEmail] = useState("");
     const [signupPassword, setSignupPassword] = useState("");
     const [displayName, setDisplayName] = useState("");
     const [feedback, setFeedback] = useState("");
-    const [error, setError] = useState("");
+    // for general errors thrown by supabase
+    const [linkError, setLinkError] = useState("");
+    const [loginError, setLoginError] = useState("");
+    const [signupError, setSignupError] = useState("");
+    // for input specific errors
     const [linkEmailError, setLinkEmailError] = useState("");
     const [loginEmailError, setLoginEmailError] = useState("");
     const [signupEmailError, setSignupEmailError] = useState("");
@@ -46,6 +53,7 @@ export default function App() {
 
     useEffect(() => {
         if (isSignedIn()) {
+            // redirect to home page after sign in
             router.push("/");
         }
     }, [user]);
@@ -77,7 +85,7 @@ export default function App() {
             });
     
             if (error) {
-                setError(error.message);
+                setLinkError(error.message);
             } else {
                 setFeedback(`A login link has be sent to ${linkEmail}`);
                 resetForms();
@@ -113,7 +121,7 @@ export default function App() {
             });
 
             if (error) {
-                setError(`Error: ${error.message}`);
+                setLoginError(error.message);
             } else {
                 setFeedback(`Login Successful.`);
                 resetForms();
@@ -122,7 +130,9 @@ export default function App() {
     };
 
     const clearErrors = () => {
-        setError("");
+        setLinkError("");
+        setLoginError("");
+        setSignupError("");
         setLinkEmailError("");
         setLoginEmailError("");
         setSignupEmailError("");
@@ -165,18 +175,21 @@ export default function App() {
                                     type="email"
                                     variant="faded"
                                     isInvalid={
-                                        linkEmailError !== "" || error !== ""
+                                        linkEmailError !== "" || linkError !== ""
                                     }
                                     errorMessage={
                                         linkEmailError !== ""
                                             ? linkEmailError
-                                            : error !== ""
-                                            ? error
+                                            : linkError !== ""
+                                            ? linkError
                                             : undefined
                                     }
                                     value={linkEmail}
                                     onValueChange={setLinkEmail}
-                                    onChange={() => setLinkEmailError("")}
+                                    onChange={() => {
+                                        setLinkEmailError("");
+                                        setLinkError("");
+                                    }}
                                 />
                                 <div className="w-full">
                                     <Button
@@ -202,11 +215,22 @@ export default function App() {
                                     placeholder="Enter your email"
                                     type="email"
                                     variant="faded"
-                                    isInvalid={loginEmailError !== ""}
-                                    errorMessage={loginEmailError}
+                                    isInvalid={
+                                        loginEmailError !== "" || loginError !== ""
+                                    }
+                                    errorMessage={
+                                        loginEmailError !== ""
+                                            ? loginEmailError
+                                            : loginError !== ""
+                                            ? loginError
+                                            : undefined
+                                    }
                                     value={loginEmail}
                                     onValueChange={setLoginEmail}
-                                    onChange={() => setLoginEmailError("")}
+                                    onChange={() => {
+                                        setLoginEmailError("");
+                                        setLoginError("");
+                                    }}
                                 />
                                 <Input
                                     isRequired
@@ -214,11 +238,22 @@ export default function App() {
                                     placeholder="Enter your password"
                                     type="password"
                                     variant="faded"
-                                    isInvalid={loginPasswordError !== ""}
-                                    errorMessage={loginPasswordError}
+                                    isInvalid={
+                                        loginPasswordError !== "" || loginError !== ""
+                                    }
+                                    errorMessage={
+                                        loginPasswordError !== ""
+                                            ? loginPasswordError
+                                            : loginError !== ""
+                                            ? loginError
+                                            : undefined
+                                    }
                                     value={loginPassword}
                                     onValueChange={setLoginPassword}
-                                    onChange={() => setLoginPasswordError("")}
+                                    onChange={() => {
+                                        setLoginPasswordError("");
+                                        setLoginError("");
+                                    }}
                                 />
                                 <div className="w-full">
                                     <Button
@@ -246,8 +281,16 @@ export default function App() {
                                     placeholder="Enter your email"
                                     type="email"
                                     variant="faded"
-                                    isInvalid={signupEmailError !== ""}
-                                    errorMessage={signupEmailError}
+                                    isInvalid={
+                                        signupEmailError !== "" || signupError !== ""
+                                    }
+                                    errorMessage={
+                                        signupEmailError !== ""
+                                            ? signupEmailError
+                                            : signupError !== ""
+                                            ? signupError
+                                            : undefined
+                                    }
                                     value={signupEmail}
                                     onValueChange={setSignupEmail}
                                     onChange={() => setSignupEmailError("")}
@@ -260,8 +303,16 @@ export default function App() {
                                     type="password"
                                     minLength={6}
                                     variant="faded"
-                                    isInvalid={signupPasswordError !== ""}
-                                    errorMessage={signupPasswordError}
+                                    isInvalid={
+                                        signupPasswordError !== "" || signupError !== ""
+                                    }
+                                    errorMessage={
+                                        signupPasswordError !== ""
+                                            ? signupPasswordError
+                                            : signupError !== ""
+                                            ? signupError
+                                            : undefined
+                                    }
                                     value={signupPassword}
                                     onValueChange={setSignupPassword}
                                     onChange={() => setSignupPasswordError("")}
@@ -274,8 +325,16 @@ export default function App() {
                                     maxLength={50}
                                     type="text"
                                     variant="faded"
-                                    isInvalid={displayNameError !== ""}
-                                    errorMessage={displayNameError}
+                                    isInvalid={
+                                        displayNameError !== "" || signupError !== ""
+                                    }
+                                    errorMessage={
+                                        displayNameError !== ""
+                                            ? displayNameError
+                                            : signupError !== ""
+                                            ? signupError
+                                            : undefined
+                                    }
                                     value={displayName}
                                     onValueChange={setDisplayName}
                                     onChange={() => setDisplayNameError("")}
@@ -304,13 +363,11 @@ export default function App() {
             <FeedbackModal
                 isOpen={feedbackModal.isOpen}
                 onOpenChange={feedbackModal.onOpenChange}
-                title={
-                    feedback !== "" ? "Success" : error !== "" ? "Error" : ""
-                }
-                message={feedback !== "" ? feedback : error !== "" ? error : ""}
-                color={error !== "" ? "red-600" : "inherit"}
+                title="Success"
+                message={feedback}
+                color="inherit"
                 setFeedback={setFeedback}
-                setError={setError}
+                setError={setLinkError}
             />
         </div>
     );
