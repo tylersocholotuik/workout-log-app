@@ -14,7 +14,7 @@ import {
 
 import { getLocalTimeZone, parseDate } from "@internationalized/date";
 
-import { useWorkoutContext } from "@/pages/[userId]/workout/[workoutId]";
+import { useWorkoutContext } from "@/pages/workout/[workoutId]";
 
 interface WorkoutDetailsModalProps {
     isOpen: boolean,

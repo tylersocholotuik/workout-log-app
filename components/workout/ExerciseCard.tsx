@@ -27,7 +27,7 @@ import { Exercise, UserExercise, WorkoutExercise, Set } from "@/utils/models/mod
 
 import SelectExerciseModal from "./SelectExerciseModal";
 
-import { useWorkoutContext } from "@/pages/[userId]/workout/[workoutId]";
+import { useWorkoutContext } from "@/pages/workout/[workoutId]";
 
 import { calculateOneRepMax } from "@/utils/calculator/calc-functions";
 

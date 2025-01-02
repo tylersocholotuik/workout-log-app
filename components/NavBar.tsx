@@ -55,14 +55,14 @@ export default function NavBar() {
     const menuItems = [
         {
             name: "Workout",
-            path: "/[userId]/workout/[workoutId]",
+            path: "/workout/[workoutId]",
             icon: (
                 <Icon icon="arcticons:my-workout-plan" width="24" height="24" />
             ),
         },
         {
             name: "History",
-            path: "/[userId]/history",
+            path: "/history",
             icon: (
                 <Icon icon="material-symbols:history" width="24" height="24" />
             ),
@@ -73,9 +73,6 @@ export default function NavBar() {
             icon: <Icon icon="mdi:calculator" width="24" height="24" />,
         },
     ];
-
-    // setting userId until authentication is implemented
-    const userId = "b24993de-ff97-4547-87d0-9997638c319b";
 
     const isActive = (path: string): boolean => {
         return router.pathname.includes(path);
@@ -152,7 +149,6 @@ export default function NavBar() {
                                         isActive(item.path) ? "page" : undefined
                                     }
                                     href={item.path
-                                        .replace("[userId]", `${userId}`)
                                         .replace("[workoutId]", "0")}
                                     showAnchorIcon
                                     anchorIcon={item.icon}
@@ -199,7 +195,6 @@ export default function NavBar() {
                                     isActive(item.path) ? "page" : undefined
                                 }
                                 href={item.path
-                                    .replace("[userId]", `${userId}`)
                                     .replace("[workoutId]", "0")}
                                 size="sm"
                             >

@@ -164,7 +164,7 @@ export default function WorkoutLog() {
                 newWorkout = await addWorkout(userId, workoutData);
                 setFeedback("Workout Saved");
                 // reload the page with the new workoutId
-                await router.push(`/${userId}/workout/${newWorkout.id}`);
+                await router.push(`/workout/${newWorkout.id}`);
             } else {
                 newWorkout = await updateWorkout(userId, workoutData);
                 setWorkout(newWorkout);
@@ -211,7 +211,7 @@ export default function WorkoutLog() {
                 if (success) {
                     setWorkout(new Workout());
                     setStartNewWorkout(false);
-                    router.push(`/${userId}/workout/0`);
+                    router.push(`/workout/0`);
                 }
             }
         }
@@ -268,7 +268,7 @@ export default function WorkoutLog() {
                                     variant="solid"
                                     radius="full"
                                     onPress={() =>
-                                        router.push(`/${userId}/history`)
+                                        router.push(`/history`)
                                     }
                                     startContent={
                                         <Icon

@@ -58,7 +58,7 @@ export default function WorkoutCard({ workout }: WorkoutCardProps) {
                 <Link
                     showAnchorIcon
                     isBlock
-                    href={`/${workout.userId}/workout/${workout.id}`}
+                    href={`/workout/${workout.id}`}
                 >
                     View/Edit
                 </Link>

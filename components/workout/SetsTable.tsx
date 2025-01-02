@@ -14,7 +14,7 @@ import {
 
 import { DeleteIcon } from "@/icons/DeleteIcon";
 
-import { useWorkoutContext } from "@/pages/[userId]/workout/[workoutId]";
+import { useWorkoutContext } from "@/pages/workout/[workoutId]";
 
 import { Set, WeightUnit } from "@/utils/models/models";
 
