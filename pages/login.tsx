@@ -4,9 +4,9 @@ import { supabase } from "@/utils/supabase/supabaseClient";
 
 import {
     Input,
-    Form,
     Button,
     Card,
+    CardHeader,
     CardBody,
     useDisclosure
 } from "@nextui-org/react";
@@ -45,7 +45,10 @@ export default function App() {
 
     return (
         <div className="flex flex-col absolute top-1/2 left-2/4 -translate-x-1/2 -translate-y-1/2">
-            <Card className="max-w-full w-[340px]">
+            <Card className="max-w-full w-[340px] sm:w-[500px]">
+                <CardHeader className="justify-center">
+                    <h2 className="text-lg">Login With Magic Link</h2>
+                </CardHeader>
                 <CardBody className="overflow-hidden">
                     <form className="flex flex-col gap-4">
                         <Input
@@ -53,19 +56,23 @@ export default function App() {
                             label="Email"
                             placeholder="Enter your email"
                             type="email"
+                            variant="faded"
                             isInvalid={error !== ""}
                             errorMessage={error}
                             value={email}
                             onValueChange={setEmail}
                             onChange={() => setError("")}
                         />
-                        <div className="flex gap-2 justify-end">
+                        <p className="text-sm my-6">
+                            A login link from <span className="font-semibold">Supabase Auth</span>  will be sent to your email. If this is your first time, an account will be created automatically.
+                        </p>
+                        <div className="flex gap-2 justify-center">
                             <Button
                                 fullWidth
                                 color="primary"
                                 onPress={signInWithEmail}
                             >
-                                Login / Signup
+                                Send Link
                             </Button>
                         </div>
                     </form>
