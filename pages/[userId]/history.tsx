@@ -10,20 +10,24 @@ import { getWorkouts } from "@/utils/api/workouts";
 
 import { Workout } from "@/utils/models/models";
 
+import { useAuth } from "@/components/auth/AuthProvider";
+
 export default function History() {
     const [workouts, setWorkouts] = useState<Workout[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
 
-    const router = useRouter();
-
-    const { userId } = router.query;
+    const { authorizeUser, user } = useAuth();
 
     useEffect(() => {
-        if (userId) {
-            loadWorkouts(userId);
+        authorizeUser();
+    });
+
+    useEffect(() => {
+        if (user.id) {
+            loadWorkouts(user.id);
         }
-    }, [router.isReady]);
+    }, [user.id]);
 
     const loadWorkouts = async (userId: string | string[] | undefined) => {
         setError("");
