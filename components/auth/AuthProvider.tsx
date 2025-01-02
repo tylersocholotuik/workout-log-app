@@ -29,7 +29,7 @@ export default function AuthProvider({ children }) {
     const router = useRouter();
 
     const protectedPages = [
-        "/workout",
+        "/workout/[workoutId]",
         "/history"
     ];
 

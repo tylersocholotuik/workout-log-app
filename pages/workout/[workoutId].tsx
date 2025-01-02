@@ -75,7 +75,7 @@ export default function WorkoutLog() {
     const [startNewWorkout, setStartNewWorkout] = useState(false);
     const [userId, setUserId] = useState("");
     
-    const { authorizeUser, user } = useAuth();
+    const { user } = useAuth();
 
     const detailsModal = useDisclosure();
     const deleteModal = useDisclosure();
@@ -91,10 +91,6 @@ export default function WorkoutLog() {
     if (typeof workoutId === "string") {
         id = parseInt(workoutId);
     }
-
-    useEffect(() => {
-        authorizeUser();
-    }, [user]);
 
     useEffect(() => {
         if (router.isReady && workoutId && user) {
