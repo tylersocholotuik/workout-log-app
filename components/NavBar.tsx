@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "@/utils/supabase/supabaseClient";
 
@@ -20,7 +20,25 @@ import DarkModeSwitch from "./DarkModeSwitch";
 
 export default function NavBar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+
     const router = useRouter();
+
+    useEffect(() => {
+        isUserLoggedIn();
+    }, [isLoggedIn]);
+
+    const isUserLoggedIn = async () => {
+        const {
+            data: { session },
+        } = await supabase.auth.getSession();
+
+        if (session) {
+            setIsLoggedIn(true);
+        } else {
+            setIsLoggedIn(false);
+        }
+    };
 
     const menuItems = [
         {
@@ -52,8 +70,25 @@ export default function NavBar() {
     };
 
     const logOut = async () => {
-        await supabase.auth.signOut();
-    }
+        try {
+            // Refresh the session
+            const { error: refreshError } = await supabase.auth.refreshSession();
+            if (refreshError) {
+                console.warn("Error refreshing session:", refreshError);
+            }
+    
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+                console.error("Error during logout:", error);
+            } else {
+                console.log("Logout successful");
+                setIsLoggedIn(false);
+                localStorage.clear();
+            }
+        } catch (e) {
+            console.error("Unexpected error during logout:", e);
+        }
+    };
 
     return (
         <Navbar
@@ -113,14 +148,17 @@ export default function NavBar() {
             </NavbarContent>
 
             <NavbarContent justify="end">
-                <NavbarItem className="flex">
-                    <Link href="/login">Login</Link>
-                </NavbarItem>
-                <NavbarItem>
-                    <Button color="danger" onPress={logOut} variant="flat">
-                        Logout
-                    </Button>
-                </NavbarItem>
+                {!isLoggedIn ? (
+                    <NavbarItem className="hidden lg:flex">
+                        <Link href="/login">Login</Link>
+                    </NavbarItem>
+                ) : (
+                    <NavbarItem className="hidden lg:flex">
+                        <Button color="danger" variant="light" onPress={logOut}>
+                            Logout
+                        </Button>
+                    </NavbarItem>
+                )}
                 <NavbarItem>
                     <DarkModeSwitch />
                 </NavbarItem>
@@ -146,6 +184,16 @@ export default function NavBar() {
                         </Link>
                     </NavbarMenuItem>
                 ))}
+                <NavbarMenuItem>
+                    <Link color="foreground" href="/login">
+                        Login
+                    </Link>
+                </NavbarMenuItem>
+                <NavbarMenuItem>
+                    <Link color="danger" onPress={logOut}>
+                        Logout
+                    </Link>
+                </NavbarMenuItem>
             </NavbarMenu>
         </Navbar>
     );

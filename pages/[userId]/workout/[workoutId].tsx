@@ -74,6 +74,7 @@ export default function WorkoutLog() {
     const [error, setError] = useState("");
     const [startNewWorkout, setStartNewWorkout] = useState(false);
     const [userId, setUserId] = useState("");
+    const [user, setUser] = useState(null);
 
     const detailsModal = useDisclosure();
     const deleteModal = useDisclosure();
@@ -107,6 +108,8 @@ export default function WorkoutLog() {
             // redirect to login page if not logged in
             router.push("/login");
         } else {
+            setUser(session.user);
+            console.log(session.user);
             if (router.isReady && workoutId) {
                 setUserId(session.user.id);
                 loadWorkout(session.user.id, id);
