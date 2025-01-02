@@ -18,15 +18,15 @@ export default function History() {
 
     const { authorizeUser, user } = useAuth();
 
-    useEffect(() => {
-        authorizeUser();
-    });
+    // useEffect(() => {
+    //     authorizeUser();
+    // }, []);
 
     useEffect(() => {
-        if (user.id) {
+        if (user) {
             loadWorkouts(user.id);
         }
-    }, [user.id]);
+    }, [user]);
 
     const loadWorkouts = async (userId: string | string[] | undefined) => {
         setError("");

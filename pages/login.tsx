@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 
+import { useRouter } from "next/router";
+
 import { supabase } from "@/utils/supabase/supabaseClient";
 
 import {
@@ -16,6 +18,8 @@ import {
 } from "@nextui-org/react";
 
 import FeedbackModal from "@/components/workout/FeedbackModal";
+
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export default function App() {
     const [linkEmail, setLinkEmail] = useState("");
@@ -34,7 +38,17 @@ export default function App() {
     const [displayNameError, setDisplayNameError] = useState("");
     const [selected, setSelected] = useState("login");
 
+    const { user, isSignedIn } = useAuth();
+
+    const router = useRouter();
+
     const feedbackModal = useDisclosure();
+
+    useEffect(() => {
+        if (isSignedIn()) {
+            router.push("/");
+        }
+    }, [user]);
 
     useEffect(() => {
         if (feedback !== "") {
@@ -55,6 +69,11 @@ export default function App() {
         } else {
             const { error } = await supabase.auth.signInWithOtp({
                 email: linkEmail,
+                // do not want to automatically create user with link
+                // user must sign up
+                options: {
+                    shouldCreateUser: false
+                }
             });
     
             if (error) {

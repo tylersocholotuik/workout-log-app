@@ -20,37 +20,24 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import DarkModeSwitch from "./DarkModeSwitch";
 import FeedbackModal from "./workout/FeedbackModal";
 
+import { useAuth } from "./auth/AuthProvider";
+
 export default function NavBar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [feedback, setFeedback] = useState("");
     const [error, setError] = useState("");
 
     const router = useRouter();
 
-    const feedbackModal = useDisclosure();
+    const { user, isSignedIn } = useAuth();
 
-    useEffect(() => {
-        isUserLoggedIn();
-    }, [isLoggedIn]);
+    const feedbackModal = useDisclosure();
 
     useEffect(() => {
         if (feedback !== "" || error !== "") {
             feedbackModal.onOpen();
         }
     }, [feedback, error]);
-
-    const isUserLoggedIn = async () => {
-        const {
-            data: { session },
-        } = await supabase.auth.getSession();
-
-        if (session) {
-            setIsLoggedIn(true);
-        } else {
-            setIsLoggedIn(false);
-        }
-    };
 
     const menuItems = [
         {
@@ -92,8 +79,9 @@ export default function NavBar() {
                 setError(`Error during logout: ${error.message}`);
             } else {
                 setFeedback("Logout successful");
-                setIsLoggedIn(false);
+                // setIsLoggedIn(false);
                 localStorage.clear();
+                router.push("/");
             }
         } catch (e) {
             setError(`Unexpected error during logout: ${e}`);
@@ -161,7 +149,7 @@ export default function NavBar() {
                 </NavbarContent>
 
                 <NavbarContent justify="end">
-                    {!isLoggedIn ? (
+                    {!isSignedIn() ? (
                         <NavbarItem className="hidden sm:flex">
                             <Link href="/login">Login</Link>
                         </NavbarItem>
