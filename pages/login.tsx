@@ -1,24 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { supabase } from "@/utils/supabase/supabaseClient";
 
 import {
-    Tabs,
-    Tab,
     Input,
-    Link,
+    Form,
     Button,
     Card,
     CardBody,
+    useDisclosure
 } from "@nextui-org/react";
 
+import FeedbackModal from "@/components/workout/FeedbackModal";
+
 export default function App() {
-    const [selected, setSelected] = useState("login");
     const [email, setEmail] = useState("");
     const [feedback, setFeedback] = useState("");
     const [error, setError] = useState("");
 
+    const feedbackModal = useDisclosure();
+
+    useEffect(() => {
+        if (feedback !== "") {
+            feedbackModal.onOpen();
+        }
+    }, [feedback]);
+
     const signInWithEmail = async () => {
+        setFeedback("");
+        setError("");
+
         const { data, error } = await supabase.auth.signInWithOtp({
             email: email,
         });
@@ -42,8 +53,11 @@ export default function App() {
                             label="Email"
                             placeholder="Enter your email"
                             type="email"
+                            isInvalid={error !== ""}
+                            errorMessage={error}
                             value={email}
                             onValueChange={setEmail}
+                            onChange={() => setError("")}
                         />
                         <div className="flex gap-2 justify-end">
                             <Button
@@ -57,8 +71,18 @@ export default function App() {
                     </form>
                 </CardBody>
             </Card>
-            {feedback && <p>{feedback}</p>}
-            {feedback && <p className="text-red-600">{error}</p>}
+
+            <FeedbackModal
+                isOpen={feedbackModal.isOpen}
+                onOpenChange={feedbackModal.onOpenChange}
+                title={
+                    feedback !== "" ? "Success" : error !== "" ? "Error" : ""
+                }
+                message={feedback !== "" ? feedback : error !== "" ? error : ""}
+                color={error !== "" ? "red-600" : "inherit"}
+                setFeedback={setFeedback}
+                setError={setError}
+            />
         </div>
     );
 }

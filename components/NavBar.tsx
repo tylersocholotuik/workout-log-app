@@ -12,21 +12,33 @@ import {
     NavbarItem,
     Link,
     Button,
+    useDisclosure,
 } from "@nextui-org/react";
 
 import { Icon } from "@iconify/react/dist/iconify.js";
 
 import DarkModeSwitch from "./DarkModeSwitch";
+import FeedbackModal from "./workout/FeedbackModal";
 
 export default function NavBar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [feedback, setFeedback] = useState("");
+    const [error, setError] = useState("");
 
     const router = useRouter();
+
+    const feedbackModal = useDisclosure();
 
     useEffect(() => {
         isUserLoggedIn();
     }, [isLoggedIn]);
+
+    useEffect(() => {
+        if (feedback !== "" || error !== "") {
+            feedbackModal.onOpen();
+        }
+    }, [feedback, error]);
 
     const isUserLoggedIn = async () => {
         const {
@@ -72,60 +84,112 @@ export default function NavBar() {
     const logOut = async () => {
         try {
             // Refresh the session
-            const { error: refreshError } = await supabase.auth.refreshSession();
+            const { error: refreshError } =
+                await supabase.auth.refreshSession();
             if (refreshError) {
                 console.warn("Error refreshing session:", refreshError);
             }
-    
+
             const { error } = await supabase.auth.signOut();
             if (error) {
-                console.error("Error during logout:", error);
+                setError(`Error during logout: ${error.message}`);
             } else {
-                console.log("Logout successful");
+                setFeedback("Logout successful");
                 setIsLoggedIn(false);
                 localStorage.clear();
             }
         } catch (e) {
-            console.error("Unexpected error during logout:", e);
+            setError(`Unexpected error during logout: ${e}`);
         }
     };
 
     return (
-        <Navbar
-            maxWidth="full"
-            isBordered
-            shouldHideOnScroll
-            isMenuOpen={isMenuOpen}
-            onMenuOpenChange={setIsMenuOpen}
-        >
-            <NavbarContent className="sm:hidden" justify="start">
-                <NavbarMenuToggle
-                    aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-                />
-            </NavbarContent>
+        <>
+            <Navbar
+                maxWidth="full"
+                isBordered
+                shouldHideOnScroll
+                isMenuOpen={isMenuOpen}
+                onMenuOpenChange={setIsMenuOpen}
+            >
+                <NavbarContent className="sm:hidden" justify="start">
+                    <NavbarMenuToggle
+                        aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+                    />
+                </NavbarContent>
 
-            <NavbarContent className="sm:hidden pr-3" justify="center">
-                <NavbarBrand>
+                <NavbarContent className="sm:hidden pr-3" justify="center">
+                    <NavbarBrand>
+                        <Link href="/" color="foreground">
+                            <p className="font-bold text-inherit">EZLog</p>
+                        </Link>
+                    </NavbarBrand>
+                </NavbarContent>
+
+                <NavbarContent className="hidden sm:flex">
                     <Link href="/" color="foreground">
                         <p className="font-bold text-inherit">EZLog</p>
                     </Link>
-                </NavbarBrand>
-            </NavbarContent>
+                </NavbarContent>
 
-            <NavbarContent className="hidden sm:flex">
-                <Link href="/" color="foreground">
-                    <p className="font-bold text-inherit">EZLog</p>
-                </Link>
-            </NavbarContent>
+                <NavbarContent
+                    className="hidden sm:flex gap-4"
+                    justify="center"
+                >
+                    {menuItems.map((item) => {
+                        return (
+                            <NavbarItem
+                                key={item.name}
+                                isActive={isActive(item.path)}
+                            >
+                                <Link
+                                    color={
+                                        isActive(item.path)
+                                            ? undefined
+                                            : "foreground"
+                                    }
+                                    aria-current={
+                                        isActive(item.path) ? "page" : undefined
+                                    }
+                                    href={item.path
+                                        .replace("[userId]", `${userId}`)
+                                        .replace("[workoutId]", "0")}
+                                    showAnchorIcon
+                                    anchorIcon={item.icon}
+                                >
+                                    {item.name}
+                                </Link>
+                            </NavbarItem>
+                        );
+                    })}
+                </NavbarContent>
 
-            <NavbarContent className="hidden sm:flex gap-4" justify="center">
-                {menuItems.map((item) => {
-                    return (
-                        <NavbarItem
-                            key={item.name}
-                            isActive={isActive(item.path)}
-                        >
+                <NavbarContent justify="end">
+                    {!isLoggedIn ? (
+                        <NavbarItem className="hidden sm:flex">
+                            <Link href="/login">Login</Link>
+                        </NavbarItem>
+                    ) : (
+                        <NavbarItem className="hidden sm:flex">
+                            <Button
+                                color="danger"
+                                variant="light"
+                                onPress={logOut}
+                            >
+                                Logout
+                            </Button>
+                        </NavbarItem>
+                    )}
+                    <NavbarItem>
+                        <DarkModeSwitch />
+                    </NavbarItem>
+                </NavbarContent>
+
+                <NavbarMenu>
+                    {menuItems.map((item, index) => (
+                        <NavbarMenuItem key={`${item}-${index}`}>
                             <Link
+                                className="w-full"
                                 color={
                                     isActive(item.path)
                                         ? undefined
@@ -137,64 +201,42 @@ export default function NavBar() {
                                 href={item.path
                                     .replace("[userId]", `${userId}`)
                                     .replace("[workoutId]", "0")}
-                                showAnchorIcon
-                                anchorIcon={item.icon}
+                                size="sm"
                             >
                                 {item.name}
                             </Link>
-                        </NavbarItem>
-                    );
-                })}
-            </NavbarContent>
-
-            <NavbarContent justify="end">
-                {!isLoggedIn ? (
-                    <NavbarItem className="hidden lg:flex">
-                        <Link href="/login">Login</Link>
-                    </NavbarItem>
-                ) : (
-                    <NavbarItem className="hidden lg:flex">
-                        <Button color="danger" variant="light" onPress={logOut}>
-                            Logout
-                        </Button>
-                    </NavbarItem>
-                )}
-                <NavbarItem>
-                    <DarkModeSwitch />
-                </NavbarItem>
-            </NavbarContent>
-
-            <NavbarMenu>
-                {menuItems.map((item, index) => (
-                    <NavbarMenuItem key={`${item}-${index}`}>
-                        <Link
-                            className="w-full"
-                            color={
-                                isActive(item.path) ? undefined : "foreground"
-                            }
-                            aria-current={
-                                isActive(item.path) ? "page" : undefined
-                            }
-                            href={item.path
-                                .replace("[userId]", `${userId}`)
-                                .replace("[workoutId]", "0")}
-                            size="sm"
-                        >
-                            {item.name}
+                        </NavbarMenuItem>
+                    ))}
+                    <NavbarMenuItem>
+                        <Link color="foreground" href="/login">
+                            Login
                         </Link>
                     </NavbarMenuItem>
-                ))}
-                <NavbarMenuItem>
-                    <Link color="foreground" href="/login">
-                        Login
-                    </Link>
-                </NavbarMenuItem>
-                <NavbarMenuItem>
-                    <Link color="danger" onPress={logOut}>
-                        Logout
-                    </Link>
-                </NavbarMenuItem>
-            </NavbarMenu>
-        </Navbar>
+                    <NavbarMenuItem>
+                        <Link color="danger" onPress={logOut}>
+                            Logout
+                        </Link>
+                    </NavbarMenuItem>
+                </NavbarMenu>
+            </Navbar>
+
+            <FeedbackModal 
+                isOpen={feedbackModal.isOpen}
+                onOpenChange={feedbackModal.onOpenChange}
+                title={
+                    feedback !== ""
+                        ? "Success"
+                        : error !== ""
+                        ? "Error"
+                        : ""
+                }
+                message={
+                    feedback !== "" ? feedback : error !== "" ? error : ""
+                }
+                color={error !== "" ? "red-600" : "inherit"}
+                setFeedback={setFeedback}
+                setError={setError}
+            />
+        </>
     );
 }

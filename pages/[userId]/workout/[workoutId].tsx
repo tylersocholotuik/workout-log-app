@@ -9,8 +9,6 @@ import {
 
 import { useRouter } from "next/router";
 
-import { supabase } from "@/utils/supabase/supabaseClient";
-
 import Head from "next/head";
 
 import CalculatorModal from "@/components/workout/CalculatorModal";
@@ -46,6 +44,8 @@ import {
 } from "@/utils/models/models";
 import FeedbackModal from "@/components/workout/FeedbackModal";
 
+import { useAuth } from "@/components/auth/AuthProvider";
+
 interface WorkoutContextType {
     workout: Workout;
     setWorkout: Dispatch<SetStateAction<Workout>>;
@@ -74,7 +74,8 @@ export default function WorkoutLog() {
     const [error, setError] = useState("");
     const [startNewWorkout, setStartNewWorkout] = useState(false);
     const [userId, setUserId] = useState("");
-    const [user, setUser] = useState(null);
+    
+    const { authorizeUser, user } = useAuth();
 
     const detailsModal = useDisclosure();
     const deleteModal = useDisclosure();
@@ -93,29 +94,20 @@ export default function WorkoutLog() {
 
     useEffect(() => {
         authorizeUser();
-    }, [router.isReady, workoutId]);
+    }, []);
+
+    useEffect(() => {
+        if (router.isReady && workoutId && user.id) {
+            setUserId(user.id);
+            loadWorkout(user.id, id);
+        } 
+    }, [router.isReady, workoutId, user.id]);
 
     useEffect(() => {
         if (feedback !== "" || error !== "") {
             feedbackModal.onOpen();
         }
     }, [feedback, error]);
-
-    const authorizeUser = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-
-        if (!session) {
-            // redirect to login page if not logged in
-            router.push("/login");
-        } else {
-            setUser(session.user);
-            console.log(session.user);
-            if (router.isReady && workoutId) {
-                setUserId(session.user.id);
-                loadWorkout(session.user.id, id);
-            }
-        }
-    }
 
     const loadWorkout = async (
         userId: string | string[] | undefined,
