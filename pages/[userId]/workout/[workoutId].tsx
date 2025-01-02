@@ -6,7 +6,10 @@ import {
     Dispatch,
     SetStateAction,
 } from "react";
+
 import { useRouter } from "next/router";
+
+import { supabase } from "@/utils/supabase/supabaseClient";
 
 import Head from "next/head";
 
@@ -70,6 +73,7 @@ export default function WorkoutLog() {
     const [feedback, setFeedback] = useState("");
     const [error, setError] = useState("");
     const [startNewWorkout, setStartNewWorkout] = useState(false);
+    const [userId, setUserId] = useState("");
 
     const detailsModal = useDisclosure();
     const deleteModal = useDisclosure();
@@ -79,7 +83,7 @@ export default function WorkoutLog() {
 
     const router = useRouter();
 
-    const { userId, workoutId } = router.query;
+    const { workoutId } = router.query;
     let id = 0;
 
     if (typeof workoutId === "string") {
@@ -87,9 +91,7 @@ export default function WorkoutLog() {
     }
 
     useEffect(() => {
-        if (!router.isReady || !workoutId) return;
-
-        loadWorkout(userId, id);
+        authorizeUser();
     }, [router.isReady, workoutId]);
 
     useEffect(() => {
@@ -97,6 +99,20 @@ export default function WorkoutLog() {
             feedbackModal.onOpen();
         }
     }, [feedback, error]);
+
+    const authorizeUser = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session) {
+            // redirect to login page if not logged in
+            router.push("/login");
+        } else {
+            if (router.isReady && workoutId) {
+                setUserId(session.user.id);
+                loadWorkout(session.user.id, id);
+            }
+        }
+    }
 
     const loadWorkout = async (
         userId: string | string[] | undefined,

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
+import { supabase } from "@/utils/supabase/supabaseClient";
 
 import {
     Navbar,
@@ -49,6 +50,10 @@ export default function NavBar() {
     const isActive = (path: string): boolean => {
         return router.pathname.includes(path);
     };
+
+    const logOut = async () => {
+        await supabase.auth.signOut();
+    }
 
     return (
         <Navbar
@@ -108,12 +113,12 @@ export default function NavBar() {
             </NavbarContent>
 
             <NavbarContent justify="end">
-                <NavbarItem className="hidden lg:flex">
+                <NavbarItem className="flex">
                     <Link href="/login">Login</Link>
                 </NavbarItem>
                 <NavbarItem>
-                    <Button as={Link} color="primary" href="#" variant="flat">
-                        Sign Up
+                    <Button color="danger" onPress={logOut} variant="flat">
+                        Logout
                     </Button>
                 </NavbarItem>
                 <NavbarItem>
