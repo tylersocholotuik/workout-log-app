@@ -23,6 +23,7 @@ import {
     Spinner,
     useDisclosure,
     Divider,
+    Link
 } from "@nextui-org/react";
 
 import { Icon } from "@iconify/react/dist/iconify.js";
@@ -74,6 +75,7 @@ export default function WorkoutLog() {
     const [error, setError] = useState("");
     const [startNewWorkout, setStartNewWorkout] = useState(false);
     const [userId, setUserId] = useState("");
+    const [isUnauthorized, setIsUnauthorized] = useState(false);
     
     const { user } = useAuth();
 
@@ -114,6 +116,9 @@ export default function WorkoutLog() {
         if (user && id > 0) {
             try {
                 const data = await getWorkout(userId, workoutId);
+                if (data?.id !== user.id) {
+                    setIsUnauthorized(true);
+                }
                 setWorkout(data);
             } catch (error) {
                 if (error instanceof Error) {
@@ -222,6 +227,27 @@ export default function WorkoutLog() {
                 <main>
                     <div className="absolute top-1/2 left-2/4 -translate-x-1/2 -translate-y-1/2">
                         <Spinner size="lg" />
+                    </div>
+                </main>
+            </>
+        );
+    }
+
+    // This will appear if the logged in user's id does not match the userId of the loaded workout.
+    // Workout id's can be typed into the url, so this prevents users from viewing someone else's 
+    // workout.
+    if (isUnauthorized) {
+        return (
+            <>
+                <Head>
+                    <title>Workout</title>
+                </Head>
+                <main>
+                    <div className="absolute top-1/2 left-2/4 -translate-x-1/2 -translate-y-1/2 w-full p-4">
+                        <div className="flex flex-col min-[370px]:items-center gap-4">
+                            <p className="text-xl lg:text-3xl">Oops! This is someone else&apos;s workout!</p>
+                            <Link size="lg" href="/">Return to home page</Link>
+                        </div>
                     </div>
                 </main>
             </>
