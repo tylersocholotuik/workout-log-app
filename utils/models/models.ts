@@ -129,3 +129,19 @@ export class Set {
 }
 
 export type WeightUnit = "lbs" | "kg";
+
+// view model for the ExerciseHistoryModal component
+export type ExerciseHistory = {
+    notes: string;
+    weightUnit: WeightUnit;
+    workout: {
+        date: string;
+    };
+    sets: [
+        {
+            weight: number;
+            reps: number;
+            rpe: number;
+        }
+    ];
+};

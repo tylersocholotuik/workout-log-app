@@ -28,18 +28,24 @@ import {
     UserExercise,
     WorkoutExercise,
     Set,
+    ExerciseHistory
 } from "@/utils/models/models";
 
 import SelectExerciseModal from "./SelectExerciseModal";
+import ExerciseHistoryModal from "./ExerciseHistoryModal";
 
 import { useWorkoutContext } from "@/pages/workout/[workoutId]";
 
 import { calculateOneRepMax } from "@/utils/calculator/calc-functions";
 
+import { getExerciseHistory } from "@/utils/api/exercises";
+
 interface ExerciseCardProps {
     exercise: WorkoutExercise;
     exerciseIndex: number;
 }
+
+import { supabase } from "@/utils/supabase/supabaseClient";
 
 export default function ExerciseCard({
     exercise,
@@ -51,12 +57,26 @@ export default function ExerciseCard({
     const [weightUnit, setWeightUnit] = useState(exercise.weightUnit);
     const [oneRepMax, setOneRepMax] = useState<number | null>();
     const [showOneRepMax, setShowOneRepMax] = useState(true);
+    const [exerciseHistory, setExerciseHistory] = useState<ExerciseHistory[]>([]);
+    const [userId, setUserId] = useState("");
 
     const changeExerciseModal = useDisclosure();
+    const exerciseHistoryModal = useDisclosure();
+
+    useEffect(() => {
+        getUserId();
+    }, []);
 
     useEffect(() => {
         updateOneRepMax(exercise.sets);
     }, [workout]);
+
+    const getUserId = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            setUserId(user.id);
+        }
+    }
 
     const addSet = () => {
         const newSet = new Set();
@@ -201,6 +221,20 @@ export default function ExerciseCard({
         }
     };
 
+    // gets a list including the date, notes, and sets for the selected exercise
+    // for each time the user performed that exercise.
+    const fetchExerciseHistory = async (
+        userId: string | string | undefined,
+        exerciseId?: number | null | undefined,
+        userExerciseId?: number | null | undefined
+    ) => {
+        const data = await getExerciseHistory(userId, exerciseId, userExerciseId);
+        console.log(data);
+        setExerciseHistory(data);
+
+        exerciseHistoryModal.onOpen();
+    };
+
     return (
         <>
             <Card classNames={{ footer: "justify-center py-2" }}>
@@ -228,6 +262,24 @@ export default function ExerciseCard({
                                 >
                                     <Icon
                                         icon="material-symbols:change-circle-rounded"
+                                        width="18"
+                                        height="18"
+                                    />
+                                </Button>
+                            </Tooltip>
+                        </div>
+                        <div>
+                            <Tooltip content="Exercise History">
+                                <Button
+                                    aria-label="view exercise history"
+                                    color="default"
+                                    size="sm"
+                                    variant="light"
+                                    isIconOnly
+                                    onPress={() => fetchExerciseHistory(userId, exercise.exercise?.id, exercise.userExercise?.id)}
+                                >
+                                    <Icon
+                                        icon="material-symbols:history"
                                         width="18"
                                         height="18"
                                     />
@@ -358,6 +410,13 @@ export default function ExerciseCard({
                 callbackFunction={changeExercise}
                 exerciseIndex={exerciseIndex}
                 update={true}
+            />
+
+            <ExerciseHistoryModal 
+                isOpen={exerciseHistoryModal.isOpen}
+                onOpenChange={exerciseHistoryModal.onOpenChange}
+                exerciseHistory={exerciseHistory}
+                exerciseName={exercise.exercise?.name ?? exercise.userExercise?.name ?? ""}
             />
         </>
     );
