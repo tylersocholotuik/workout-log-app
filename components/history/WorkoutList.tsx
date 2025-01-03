@@ -24,14 +24,14 @@ interface WorkoutListProps {
 
 export default function WorkoutList({ workouts }: WorkoutListProps) {
     // workouts are in descending order by date
-    const firstWorkoutDate = workouts[workouts.length - 1].date;
+    const firstWorkoutDate = workouts[workouts.length - 1]?.date ?? new Date();
     // Parse dates to CalendarDate object to be used in Next UI
     // date range picker. parseDate function needs an ISO string with
     // time removed
     const firstWorkoutDateString = parseDate(
         new Date(firstWorkoutDate).toISOString().split("T")[0]
     );
-    const lastWorkoutDate = workouts[0].date;
+    const lastWorkoutDate = workouts[0]?.date ?? new Date();
     const lastWorkoutDateString = parseDate(
         new Date(lastWorkoutDate).toISOString().split("T")[0]
     );

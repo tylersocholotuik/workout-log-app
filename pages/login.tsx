@@ -15,12 +15,13 @@ import {
     Tabs,
     Tab,
     Link,
-    Alert
+    Alert,
 } from "@nextui-org/react";
 
 import FeedbackModal from "@/components/workout/FeedbackModal";
 
 import { useAuth } from "@/components/auth/AuthProvider";
+import { error } from "console";
 
 export default function App() {
     // bound to email input for magic link
@@ -31,6 +32,7 @@ export default function App() {
     // bound to inputs for sign up
     const [signupEmail, setSignupEmail] = useState("");
     const [signupPassword, setSignupPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
     const [displayName, setDisplayName] = useState("");
     const [feedback, setFeedback] = useState("");
     // for general errors thrown by supabase
@@ -43,6 +45,7 @@ export default function App() {
     const [signupEmailError, setSignupEmailError] = useState("");
     const [loginPasswordError, setLoginPasswordError] = useState("");
     const [signupPasswordError, setSignupPasswordError] = useState("");
+    const [confirmPasswordError, setConfirmPasswordError] = useState("");
     const [displayNameError, setDisplayNameError] = useState("");
     const [selected, setSelected] = useState("login");
 
@@ -81,10 +84,10 @@ export default function App() {
                 // do not want to automatically create user with link
                 // user must sign up
                 options: {
-                    shouldCreateUser: false
-                }
+                    shouldCreateUser: false,
+                },
             });
-    
+
             if (error) {
                 setLinkError(error.message);
             } else {
@@ -130,6 +133,76 @@ export default function App() {
         }
     };
 
+    const registerUser = async () => {
+        clearErrors();
+        const errors: string[] = [];
+
+        if (signupEmail === "") {
+            errors.push("Email is required.");
+        }
+
+        if (signupPassword === "") {
+            errors.push("Password is required.");
+        }
+
+        if (signupPassword !== "" && signupPassword.length < 6) {
+            errors.push("Password must be at least 6 characters");
+        }
+
+        if (signupPassword !== confirmPassword) {
+            errors.push("Passwords do not match.");
+        }
+
+        if (displayName === "") {
+            errors.push("Display name is required.");
+        }
+
+        if (displayName.length > 25) {
+            errors.push("Display name must be less than 25 characters.");
+        }
+
+        if (errors.length > 0) {
+            errors.forEach((error) => {
+                if (error === "Email is required.") {
+                    setSignupEmailError(error);
+                }
+                if (
+                    error === "Password is required." ||
+                    error === "Password must be at least 6 characters"
+                ) {
+                    setSignupPasswordError(error);
+                }
+                if (error === "Passwords do not match.") {
+                    setSignupPasswordError(error);
+                    setConfirmPasswordError(error);
+                }
+                if (
+                    error === "Display name is required." ||
+                    error === "Display name must be less than 25 characters."
+                ) {
+                    setDisplayNameError(error);
+                }
+            });
+        } else {
+            const { error } = await supabase.auth.signUp({
+                email: signupEmail,
+                password: signupPassword,
+                options: {
+                    data: {
+                        display_name: displayName,
+                    },
+                },
+            });
+
+            if (error) {
+                setSignupError(error.message);
+            } else {
+                setFeedback(`A confirmation email has been sent to ${signupEmail}`);
+                resetForms();
+            }
+        }
+    };
+
     const clearErrors = () => {
         setLinkError("");
         setLoginError("");
@@ -139,6 +212,7 @@ export default function App() {
         setSignupEmailError("");
         setLoginPasswordError("");
         setSignupPasswordError("");
+        setConfirmPasswordError("");
         setDisplayNameError("");
     };
 
@@ -148,6 +222,7 @@ export default function App() {
         setSignupEmail("");
         setLoginPassword("");
         setSignupPassword("");
+        setConfirmPassword("");
         setDisplayName("");
         clearErrors();
     };
@@ -176,7 +251,8 @@ export default function App() {
                                     type="email"
                                     variant="bordered"
                                     isInvalid={
-                                        linkEmailError !== "" || linkError !== ""
+                                        linkEmailError !== "" ||
+                                        linkError !== ""
                                     }
                                     errorMessage={
                                         linkEmailError !== ""
@@ -217,7 +293,8 @@ export default function App() {
                                     type="email"
                                     variant="bordered"
                                     isInvalid={
-                                        loginEmailError !== "" || loginError !== ""
+                                        loginEmailError !== "" ||
+                                        loginError !== ""
                                     }
                                     errorMessage={
                                         loginEmailError !== ""
@@ -240,7 +317,8 @@ export default function App() {
                                     type="password"
                                     variant="bordered"
                                     isInvalid={
-                                        loginPasswordError !== "" || loginError !== ""
+                                        loginPasswordError !== "" ||
+                                        loginError !== ""
                                     }
                                     errorMessage={
                                         loginPasswordError !== ""
@@ -256,7 +334,10 @@ export default function App() {
                                         setLoginError("");
                                     }}
                                 />
-                                <p className="text-sm">Forgot your password? Login with Magic Link above.</p>
+                                <p className="text-sm">
+                                    Forgot your password? Login with Magic Link
+                                    above.
+                                </p>
                                 <div className="w-full">
                                     <Button
                                         fullWidth
@@ -284,7 +365,8 @@ export default function App() {
                                     type="email"
                                     variant="bordered"
                                     isInvalid={
-                                        signupEmailError !== "" || signupError !== ""
+                                        signupEmailError !== "" ||
+                                        signupError !== ""
                                     }
                                     errorMessage={
                                         signupEmailError !== ""
@@ -305,14 +387,10 @@ export default function App() {
                                     type="password"
                                     minLength={6}
                                     variant="bordered"
-                                    isInvalid={
-                                        signupPasswordError !== "" || signupError !== ""
-                                    }
+                                    isInvalid={signupPasswordError !== ""}
                                     errorMessage={
                                         signupPasswordError !== ""
                                             ? signupPasswordError
-                                            : signupError !== ""
-                                            ? signupError
                                             : undefined
                                     }
                                     value={signupPassword}
@@ -321,20 +399,34 @@ export default function App() {
                                 />
                                 <Input
                                     isRequired
+                                    label="Confirm Password"
+                                    placeholder="Enter your password"
+                                    description="Minimum 6 characters"
+                                    type="password"
+                                    minLength={6}
+                                    variant="bordered"
+                                    isInvalid={confirmPasswordError !== ""}
+                                    errorMessage={
+                                        confirmPasswordError !== ""
+                                            ? confirmPasswordError
+                                            : undefined
+                                    }
+                                    value={confirmPassword}
+                                    onValueChange={setConfirmPassword}
+                                    onChange={() => setConfirmPasswordError("")}
+                                />
+                                <Input
+                                    isRequired
                                     label="Display Name"
                                     placeholder="Enter your display name"
-                                    description="Maximum 50 characters"
-                                    maxLength={50}
+                                    description="Maximum 25 characters"
+                                    maxLength={25}
                                     type="text"
                                     variant="bordered"
-                                    isInvalid={
-                                        displayNameError !== "" || signupError !== ""
-                                    }
+                                    isInvalid={displayNameError !== ""}
                                     errorMessage={
                                         displayNameError !== ""
                                             ? displayNameError
-                                            : signupError !== ""
-                                            ? signupError
                                             : undefined
                                     }
                                     value={displayName}
@@ -345,12 +437,12 @@ export default function App() {
                                     color="warning"
                                     variant="bordered"
                                     title="Passwords currently can not be reset. Make sure you choose a password you can remember."
-                                 />
+                                />
                                 <div className="w-full mt-4">
                                     <Button
                                         fullWidth
                                         color="primary"
-                                        onPress={signInWithEmail}
+                                        onPress={registerUser}
                                     >
                                         Sign up
                                     </Button>
