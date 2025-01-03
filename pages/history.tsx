@@ -16,14 +16,11 @@ export default function History() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
 
-    const { authorizeUser, user } = useAuth();
-
-    // useEffect(() => {
-    //     authorizeUser();
-    // }, []);
+    const { user } = useAuth();
 
     useEffect(() => {
         if (user) {
+            console.log(user.user_metadata.display_name);
             loadWorkouts(user.id);
         }
     }, [user]);
@@ -65,6 +62,9 @@ export default function History() {
             </Head>
             <main>
                 <div className="container mx-auto px-2 md:px-4 py-6">
+                    <h2 className="text-center text-xl mb-2">
+                        Workout History
+                    </h2>
                     <WorkoutList workouts={workouts} />
                 </div>
             </main>

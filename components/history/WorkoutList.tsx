@@ -130,7 +130,6 @@ export default function WorkoutList({ workouts }: WorkoutListProps) {
     return (
         <section>
             <div className="flex justify-center items-center gap-2"></div>
-            <h2 className="text-center text-xl mb-2">Workout History</h2>
             <div className="justify-self-center mb-6">
                 <Popover placement="bottom">
                     <PopoverTrigger>
