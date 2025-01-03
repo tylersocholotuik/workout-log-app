@@ -37,8 +37,8 @@ export default function DeleteWorkoutModal({
                         </ModalBody>
                         <ModalFooter>
                             <Button
-                                color="danger"
-                                variant="ghost"
+                                color="default"
+                                variant="flat"
                                 onPress={onClose}
                             >
                                 Cancel

@@ -445,8 +445,8 @@ export default function SelectExerciseModal({
                         </ModalBody>
                         <ModalFooter>
                             <Button
-                                color="danger"
-                                variant="ghost"
+                                color="default"
+                                variant="flat"
                                 onPress={() => {
                                     clearState();
                                     onClose();

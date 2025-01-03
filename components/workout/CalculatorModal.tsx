@@ -152,11 +152,11 @@ export default function CalculatorModal({
                         </ModalBody>
                         <ModalFooter>
                             <Button
-                                color="danger"
-                                variant="light"
+                                color="primary"
+                                variant="solid"
                                 onPress={onClose}
                             >
-                                Close
+                                Done
                             </Button>
                         </ModalFooter>
                     </>

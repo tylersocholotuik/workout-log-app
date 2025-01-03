@@ -123,11 +123,11 @@ export default function WorkoutDetailsModal({ isOpen, onOpenChange }: WorkoutDet
                         </ModalBody>
                         <ModalFooter>
                             <Button
-                                color="danger"
-                                variant="ghost"
+                                color="default"
+                                variant="flat"
                                 onPress={onClose}
                             >
-                                Close
+                                Cancel
                             </Button>
                             <Button
                                 color="primary"

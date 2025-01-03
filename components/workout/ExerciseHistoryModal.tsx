@@ -74,7 +74,7 @@ export default function ExerciseHistoryModal({
                                 variant="solid"
                                 onPress={onClose}
                             >
-                                Close
+                                Done
                             </Button>
                         </ModalFooter>
                     </>
