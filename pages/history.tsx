@@ -20,7 +20,6 @@ export default function History() {
 
     useEffect(() => {
         if (user) {
-            console.log(user.user_metadata.display_name);
             loadWorkouts(user.id);
         }
     }, [user]);

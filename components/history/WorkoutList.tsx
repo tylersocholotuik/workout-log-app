@@ -19,8 +19,8 @@ import WorkoutCard from "./WorkoutCard";
 import { Workout } from "@/utils/models/models";
 
 interface WorkoutListProps {
-    workouts: Workout[]
-};
+    workouts: Workout[];
+}
 
 export default function WorkoutList({ workouts }: WorkoutListProps) {
     // workouts are in descending order by date

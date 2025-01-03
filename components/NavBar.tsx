@@ -12,32 +12,20 @@ import {
     NavbarItem,
     Link,
     Button,
-    useDisclosure,
 } from "@nextui-org/react";
 
 import { Icon } from "@iconify/react/dist/iconify.js";
 
 import DarkModeSwitch from "./DarkModeSwitch";
-import FeedbackModal from "./workout/FeedbackModal";
 
 import { useAuth } from "./auth/AuthProvider";
 
 export default function NavBar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [feedback, setFeedback] = useState("");
-    const [error, setError] = useState("");
 
     const router = useRouter();
 
     const { user, isSignedIn } = useAuth();
-
-    const feedbackModal = useDisclosure();
-
-    useEffect(() => {
-        if (feedback !== "" || error !== "") {
-            feedbackModal.onOpen();
-        }
-    }, [feedback, error]);
 
     const menuItems = [
         {
@@ -76,14 +64,13 @@ export default function NavBar() {
 
             const { error } = await supabase.auth.signOut();
             if (error) {
-                setError(`Error during logout: ${error.message}`);
+                console.error(`Error during logout: ${error.message}`);
             } else {
-                setFeedback("Logout successful");
                 localStorage.clear();
                 router.push("/");
             }
-        } catch (e) {
-            setError(`Unexpected error during logout: ${e}`);
+        } catch (err) {
+            console.error(`Unexpected error during logout: ${err}`);
         }
     };
 
@@ -135,8 +122,7 @@ export default function NavBar() {
                                     aria-current={
                                         isActive(item.path) ? "page" : undefined
                                     }
-                                    href={item.path
-                                        .replace("[workoutId]", "0")}
+                                    href={item.path.replace("[workoutId]", "0")}
                                     showAnchorIcon
                                     anchorIcon={item.icon}
                                 >
@@ -148,6 +134,17 @@ export default function NavBar() {
                 </NavbarContent>
 
                 <NavbarContent justify="end">
+                    {user && (
+                        <NavbarMenuItem className="hidden lg:flex">
+                            <div className="flex items-center gap-1">
+                                <Icon icon="mdi:user" width="16" height="16" />
+                                <p className="text-sm">
+                                    {user.user_metadata.display_name ??
+                                        user.email}
+                                </p>
+                            </div>
+                        </NavbarMenuItem>
+                    )}
                     {!isSignedIn() ? (
                         <NavbarItem className="hidden sm:flex">
                             <Link href="/login">Login</Link>
@@ -181,44 +178,39 @@ export default function NavBar() {
                                 aria-current={
                                     isActive(item.path) ? "page" : undefined
                                 }
-                                href={item.path
-                                    .replace("[workoutId]", "0")}
+                                href={item.path.replace("[workoutId]", "0")}
                                 size="sm"
                             >
                                 {item.name}
                             </Link>
                         </NavbarMenuItem>
                     ))}
-                    <NavbarMenuItem>
-                        <Link color="foreground" href="/login">
-                            Login
-                        </Link>
-                    </NavbarMenuItem>
-                    <NavbarMenuItem>
-                        <Link color="danger" onPress={logOut}>
-                            Logout
-                        </Link>
-                    </NavbarMenuItem>
+                    {user && (
+                        <NavbarMenuItem className="mt-4">
+                            <div className="flex items-center gap-1">
+                                <Icon icon="mdi:user" width="16" height="16" />
+                                <p className="text-sm">
+                                    {user.user_metadata.display_name ??
+                                        user.email}
+                                </p>
+                            </div>
+                        </NavbarMenuItem>
+                    )}
+                    {!isSignedIn() ? (
+                        <NavbarMenuItem>
+                            <Link color="foreground" href="/login">
+                                Login
+                            </Link>
+                        </NavbarMenuItem>
+                    ) : (
+                        <NavbarMenuItem>
+                            <Link color="danger" onPress={logOut}>
+                                Logout
+                            </Link>
+                        </NavbarMenuItem>
+                    )}
                 </NavbarMenu>
             </Navbar>
-
-            <FeedbackModal 
-                isOpen={feedbackModal.isOpen}
-                onOpenChange={feedbackModal.onOpenChange}
-                title={
-                    feedback !== ""
-                        ? "Success"
-                        : error !== ""
-                        ? "Error"
-                        : ""
-                }
-                message={
-                    feedback !== "" ? feedback : error !== "" ? error : ""
-                }
-                color={error !== "" ? "red-600" : "inherit"}
-                setFeedback={setFeedback}
-                setError={setError}
-            />
         </>
     );
 }
