@@ -21,7 +21,6 @@ import {
 import FeedbackModal from "@/components/workout/FeedbackModal";
 
 import { useAuth } from "@/components/auth/AuthProvider";
-import { error } from "console";
 
 export default function App() {
     // bound to email input for magic link
@@ -54,6 +53,11 @@ export default function App() {
     const router = useRouter();
 
     const feedbackModal = useDisclosure();
+
+    interface ErrorDictionary {
+        field: string;
+        message: string;
+    }
 
     useEffect(() => {
         if (isSignedIn()) {
@@ -99,23 +103,26 @@ export default function App() {
 
     const loginWithPassword = async () => {
         clearErrors();
-        const errors: string[] = [];
+        const errors: ErrorDictionary[] = [];
 
         if (loginEmail === "") {
-            errors.push("Email is required.");
+            errors.push({ field: "email", message: "Email is required." });
         }
 
         if (loginPassword === "") {
-            errors.push("Password is required.");
+            errors.push({
+                field: "password",
+                message: "Password is required.",
+            });
         }
 
         if (errors.length > 0) {
             errors.forEach((error) => {
-                if (error === "Email is required.") {
-                    setLoginEmailError(error);
+                if (error.field === "email") {
+                    setLoginEmailError(error.message);
                 }
-                if (error === "Password is required.") {
-                    setLoginPasswordError(error);
+                if (error.field === "password") {
+                    setLoginPasswordError(error.message);
                 }
             });
         } else {
@@ -135,52 +142,61 @@ export default function App() {
 
     const registerUser = async () => {
         clearErrors();
-        const errors: string[] = [];
+        const errors: ErrorDictionary[] = [];
 
         if (signupEmail === "") {
-            errors.push("Email is required.");
+            errors.push({ field: "email", message: "Email is required." });
         }
 
         if (signupPassword === "") {
-            errors.push("Password is required.");
+            errors.push({
+                field: "password",
+                message: "Password is required.",
+            });
         }
 
         if (signupPassword !== "" && signupPassword.length < 6) {
-            errors.push("Password must be at least 6 characters");
+            errors.push({
+                field: "password",
+                message: "Password must be at least 6 characters",
+            });
         }
 
         if (signupPassword !== confirmPassword) {
-            errors.push("Passwords do not match.");
+            errors.push({
+                field: "confirm_password",
+                message: "Passwords do not match.",
+            });
         }
 
         if (displayName === "") {
-            errors.push("Display name is required.");
+            errors.push({
+                field: "name",
+                message: "Display name is required.",
+            });
         }
 
         if (displayName.length > 25) {
-            errors.push("Display name must be less than 25 characters.");
+            errors.push({
+                field: "name",
+                message: "Display name must be less than 25 characters.",
+            });
         }
 
         if (errors.length > 0) {
             errors.forEach((error) => {
-                if (error === "Email is required.") {
-                    setSignupEmailError(error);
+                if (error.field === "email") {
+                    setSignupEmailError(error.message);
                 }
-                if (
-                    error === "Password is required." ||
-                    error === "Password must be at least 6 characters"
-                ) {
-                    setSignupPasswordError(error);
+                if (error.field === "password") {
+                    setSignupPasswordError(error.message);
                 }
-                if (error === "Passwords do not match.") {
-                    setSignupPasswordError(error);
-                    setConfirmPasswordError(error);
+                if (error.field === "confirm_password") {
+                    setSignupPasswordError(error.message);
+                    setConfirmPasswordError(error.message);
                 }
-                if (
-                    error === "Display name is required." ||
-                    error === "Display name must be less than 25 characters."
-                ) {
-                    setDisplayNameError(error);
+                if (error.field === "name") {
+                    setDisplayNameError(error.message);
                 }
             });
         } else {
@@ -197,7 +213,9 @@ export default function App() {
             if (error) {
                 setSignupError(error.message);
             } else {
-                setFeedback(`A confirmation email has been sent to ${signupEmail}`);
+                setFeedback(
+                    `A confirmation email has been sent to ${signupEmail}`
+                );
                 resetForms();
             }
         }
@@ -377,7 +395,10 @@ export default function App() {
                                     }
                                     value={signupEmail}
                                     onValueChange={setSignupEmail}
-                                    onChange={() => setSignupEmailError("")}
+                                    onChange={() => {
+                                        setSignupEmailError("");
+                                        setSignupError("");
+                                    }}
                                 />
                                 <Input
                                     isRequired
