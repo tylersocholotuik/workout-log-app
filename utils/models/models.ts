@@ -1,7 +1,7 @@
 export class Exercise {
     id: number;
     name: string;
-    workoutExercises: WorkoutExercise[] | null;
+    workoutExercises?: WorkoutExercise[] | null;
 
     constructor(
         id: number = 0,
@@ -18,7 +18,7 @@ export class UserExercise {
     id: number;
     name: string;
     userId: string;
-    workoutExercises: WorkoutExercise[] | null;
+    workoutExercises?: WorkoutExercise[] | null;
     deleted: boolean;
 
     constructor(
@@ -39,7 +39,7 @@ export class UserExercise {
 export class Workout {
     id: string;
     title: string;
-    notes: string | null;
+    notes: string;
     date: Date;
     userId: string;
     exercises: WorkoutExercise[];
@@ -50,7 +50,7 @@ export class Workout {
         title: string = `${new Date().toLocaleString("en-CA", {
             dateStyle: "short",
         })} Workout`,
-        notes: string | null = "",
+        notes: string = "",
         date: Date = new Date(),
         userId: string = "",
         exercises: WorkoutExercise[] = [],
@@ -68,7 +68,7 @@ export class Workout {
 
 export class WorkoutExercise {
     id: number;
-    notes: string | null;
+    notes: string;
     weightUnit: WeightUnit;
     exerciseId: number | null;
     userExerciseId: number | null;
@@ -80,7 +80,7 @@ export class WorkoutExercise {
 
     constructor(
         id: number = 0,
-        notes: string | null = "",
+        notes: string = "",
         weightUnit: WeightUnit = "lbs",
         exerciseId: number | null = null,
         userExerciseId: number | null = null,

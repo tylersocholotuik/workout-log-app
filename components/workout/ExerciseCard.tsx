@@ -1,4 +1,4 @@
-import { useContext, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 import {
     Button,
@@ -23,7 +23,12 @@ import { DeleteIcon } from "@/icons/DeleteIcon";
 
 import SetsTable from "./SetsTable";
 
-import { Exercise, UserExercise, WorkoutExercise, Set } from "@/utils/models/models";
+import {
+    Exercise,
+    UserExercise,
+    WorkoutExercise,
+    Set,
+} from "@/utils/models/models";
 
 import SelectExerciseModal from "./SelectExerciseModal";
 
@@ -32,11 +37,14 @@ import { useWorkoutContext } from "@/pages/workout/[workoutId]";
 import { calculateOneRepMax } from "@/utils/calculator/calc-functions";
 
 interface ExerciseCardProps {
-    exercise: WorkoutExercise,
-    exerciseIndex: number
-};
+    exercise: WorkoutExercise;
+    exerciseIndex: number;
+}
 
-export default function ExerciseCard({ exercise, exerciseIndex }: ExerciseCardProps) {
+export default function ExerciseCard({
+    exercise,
+    exerciseIndex,
+}: ExerciseCardProps) {
     const { workout, setWorkout } = useWorkoutContext();
 
     const [notes, setNotes] = useState(exercise.notes);
@@ -131,6 +139,8 @@ export default function ExerciseCard({ exercise, exerciseIndex }: ExerciseCardPr
                               userExercise: {
                                   id: newExercise.id,
                                   name: newExercise.name,
+                                  userId: workout.userId,
+                                  deleted: false,
                               },
                               exercise: null,
                               exerciseId: null,

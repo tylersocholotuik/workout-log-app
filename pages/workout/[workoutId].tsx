@@ -23,7 +23,7 @@ import {
     Spinner,
     useDisclosure,
     Divider,
-    Link
+    Link,
 } from "@nextui-org/react";
 
 import { Icon } from "@iconify/react/dist/iconify.js";
@@ -76,7 +76,7 @@ export default function WorkoutLog() {
     const [startNewWorkout, setStartNewWorkout] = useState(false);
     const [userId, setUserId] = useState("");
     const [isUnauthorized, setIsUnauthorized] = useState(false);
-    
+
     const { user } = useAuth();
 
     const detailsModal = useDisclosure();
@@ -88,17 +88,12 @@ export default function WorkoutLog() {
     const router = useRouter();
 
     const { workoutId } = router.query;
-    let id = 0;
-
-    if (typeof workoutId === "string") {
-        id = parseInt(workoutId);
-    }
 
     useEffect(() => {
         if (router.isReady && workoutId && user) {
             setUserId(user.id);
-            loadWorkout(user.id, id);
-        } 
+            loadWorkout(user.id, workoutId);
+        }
     }, [router.isReady, workoutId, user]);
 
     useEffect(() => {
@@ -109,14 +104,16 @@ export default function WorkoutLog() {
 
     const loadWorkout = async (
         userId: string | string[] | undefined,
-        workoutId: number
+        workoutId: string | string[]
     ) => {
         // id is greater than 0 if navigating from workout history page
         // load the selected workout. Otherwise, it's a new workout.
-        if (user && id > 0) {
+        if (user && workoutId !== "new-workout") {
             try {
                 const data = await getWorkout(userId, workoutId);
-                if (data?.id !== user.id) {
+                // ensuring the logged in user id matches the userId
+                // of the workout
+                if (data?.userId !== user.id) {
                     setIsUnauthorized(true);
                 }
                 setWorkout(data);
@@ -161,7 +158,7 @@ export default function WorkoutLog() {
 
             let newWorkout: Workout;
 
-            if (id === 0) {
+            if (workoutId === "new-workout") {
                 newWorkout = await addWorkout(userId, workoutData);
                 setFeedback("Workout Saved");
                 // reload the page with the new workoutId
@@ -182,14 +179,14 @@ export default function WorkoutLog() {
 
     const discardWorkout = async (
         userId: string | string[] | undefined,
-        workoutId: number
+        workoutId: string
     ) => {
         let success = false;
 
         setFeedback("");
         setError("");
 
-        if (workoutId === 0) {
+        if (workoutId === "new-workout") {
             // if it is a new unsaved workout, simply initialize a
             // new workout
             setWorkout(new Workout());
@@ -212,7 +209,7 @@ export default function WorkoutLog() {
                 if (success) {
                     setWorkout(new Workout());
                     setStartNewWorkout(false);
-                    router.push(`/workout/0`);
+                    router.push(`/workout/new-workout`);
                 }
             }
         }
@@ -234,7 +231,7 @@ export default function WorkoutLog() {
     }
 
     // This will appear if the logged in user's id does not match the userId of the loaded workout.
-    // Workout id's can be typed into the url, so this prevents users from viewing someone else's 
+    // Workout id's can be typed into the url, so this prevents users from viewing someone else's
     // workout.
     if (isUnauthorized) {
         return (
@@ -245,8 +242,12 @@ export default function WorkoutLog() {
                 <main>
                     <div className="absolute top-1/2 left-2/4 -translate-x-1/2 -translate-y-1/2 w-full p-4">
                         <div className="flex flex-col min-[370px]:items-center gap-4">
-                            <p className="text-xl lg:text-3xl">Oops! This is someone else&apos;s workout!</p>
-                            <Link size="lg" href="/">Return to home page</Link>
+                            <p className="text-xl lg:text-3xl">
+                                Oops! This is someone else&apos;s workout!
+                            </p>
+                            <Link size="lg" href="/">
+                                Return to home page
+                            </Link>
                         </div>
                     </div>
                 </main>
@@ -256,7 +257,7 @@ export default function WorkoutLog() {
 
     // if navigating directly to workout page, prompt user to either start a new workout
     // or load an existing workout
-    if (id === 0 && !startNewWorkout) {
+    if (workoutId === "new-workout" && !startNewWorkout) {
         return (
             <>
                 <Head>
@@ -289,9 +290,7 @@ export default function WorkoutLog() {
                                     size="lg"
                                     variant="solid"
                                     radius="full"
-                                    onPress={() =>
-                                        router.push(`/history`)
-                                    }
+                                    onPress={() => router.push(`/history`)}
                                     startContent={
                                         <Icon
                                             icon="material-symbols:history"
@@ -435,7 +434,8 @@ export default function WorkoutLog() {
                                 size="lg"
                                 onPress={deleteModal.onOpen}
                             >
-                                {workout.id === 0
+                                {workout.id === "" ||
+                                workout.id === "new-workout"
                                     ? "Cancel Workout"
                                     : "Delete Workout"}
                             </Button>

@@ -215,23 +215,24 @@ export default function WorkoutList({ workouts }: WorkoutListProps) {
                 </div>
             ) : (
                 <div>
-                    {Object.keys(groupedWorkouts).map((key) => {
-                        return (
-                            <section key={key} className="mb-6">
-                                <h3 className="text-center mb-6">{key}</h3>
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                    {groupedWorkouts[key].map((workout) => {
-                                        return (
-                                            <WorkoutCard
-                                                key={workout.id}
-                                                workout={workout}
-                                            />
-                                        );
-                                    })}
-                                </div>
-                            </section>
-                        );
-                    })}
+                    {groupedWorkouts &&
+                        Object.keys(groupedWorkouts).map((key) => {
+                            return (
+                                <section key={key} className="mb-6">
+                                    <h3 className="text-center mb-6">{key}</h3>
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                        {groupedWorkouts[key].map((workout) => {
+                                            return (
+                                                <WorkoutCard
+                                                    key={workout.id}
+                                                    workout={workout}
+                                                />
+                                            );
+                                        })}
+                                    </div>
+                                </section>
+                            );
+                        })}
                 </div>
             )}
         </section>

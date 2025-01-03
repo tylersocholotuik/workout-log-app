@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "@/utils/supabase/supabaseClient";
 
@@ -122,7 +122,7 @@ export default function NavBar() {
                                     aria-current={
                                         isActive(item.path) ? "page" : undefined
                                     }
-                                    href={item.path.replace("[workoutId]", "0")}
+                                    href={item.path.replace("[workoutId]", "new-workout")}
                                     showAnchorIcon
                                     anchorIcon={item.icon}
                                 >
@@ -178,7 +178,7 @@ export default function NavBar() {
                                 aria-current={
                                     isActive(item.path) ? "page" : undefined
                                 }
-                                href={item.path.replace("[workoutId]", "0")}
+                                href={item.path.replace("[workoutId]", "new-workout")}
                                 size="sm"
                             >
                                 {item.name}
