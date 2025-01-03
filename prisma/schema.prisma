@@ -29,7 +29,7 @@ model UserExercise {
 }
 
 model Workout {
-  id        Int                 @id @default(autoincrement())
+  id        String              @id @default(cuid())
   title     String
   notes     String?
   date      DateTime            @default(now())
@@ -44,7 +44,7 @@ model WorkoutExercise {
   weightUnit      String
   exerciseId      Int?
   userExerciseId  Int?
-  workoutId       Int
+  workoutId       String
   exercise        Exercise?      @relation(fields: [exerciseId], references: [id])
   userExercise    UserExercise?  @relation(fields: [userExerciseId], references: [id])
   workout         Workout        @relation(fields: [workoutId], references: [id])

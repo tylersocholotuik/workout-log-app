@@ -37,7 +37,7 @@ export class UserExercise {
 }
 
 export class Workout {
-    id: number;
+    id: string;
     title: string;
     notes: string | null;
     date: Date;
@@ -46,7 +46,7 @@ export class Workout {
     deleted: boolean;
 
     constructor(
-        id: number = 0,
+        id: string = "",
         title: string = `${new Date().toLocaleString("en-CA", {
             dateStyle: "short",
         })} Workout`,
@@ -74,7 +74,7 @@ export class WorkoutExercise {
     userExerciseId: number | null;
     exercise: Exercise | null;
     userExercise: UserExercise | null;
-    workoutId: number;
+    workoutId: string;
     sets: Set[];
     deleted: boolean;
 
@@ -86,7 +86,7 @@ export class WorkoutExercise {
         userExerciseId: number | null = null,
         exercise: Exercise | null = null,
         userExercise: UserExercise | null = null,
-        workoutId: number = 0,
+        workoutId: string = "",
         sets: Set[] = [],
         deleted: boolean = false
     ) {

@@ -78,7 +78,6 @@ const addWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     const { userId, workoutData } = req.body;
 
-    // temporary, remove after testing
     const existingWorkout = await prisma.workout.findFirst({
       where: { date: workoutData.date, title: workoutData.title },
     });
@@ -292,7 +291,7 @@ const deleteWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 };
 
-const getWorkout = async (id: number) => {
+const getWorkout = async (id: string) => {
   const workout = await prisma.workout.findUnique({
     where: { id },
     include: {

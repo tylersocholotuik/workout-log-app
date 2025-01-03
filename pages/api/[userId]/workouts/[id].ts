@@ -19,14 +19,17 @@ export const getWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     const { userId, id } = req.query;
 
-    // Validate and cast userId to string
+    if (typeof id !== "string") {
+      return res.status(400).json({ error: "Invalid workoutId parameter" });
+    }
+
     if (typeof userId !== "string") {
       return res.status(400).json({ error: "Invalid userId parameter" });
     }
 
     const workout = await prisma.workout.findUnique({
       where: {
-        id: parseInt(id as string),
+        id: id,
         userId,
         deleted: false,
       },
