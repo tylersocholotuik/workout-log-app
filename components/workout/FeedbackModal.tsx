@@ -15,8 +15,8 @@ interface FeedbackModalProps {
     title: string,
     message: string,
     color: string,
-    setFeedback: Dispatch<SetStateAction<string>>,
-    setError: Dispatch<SetStateAction<string>>
+    setFeedback: Dispatch<SetStateAction<string>> | undefined,
+    setError: Dispatch<SetStateAction<string>> | undefined
 }
 
 export default function FeedbackModal({
@@ -30,8 +30,8 @@ export default function FeedbackModal({
 }: FeedbackModalProps) {
 
     const resetMessage = () => {
-        setFeedback("");
-        setError("");
+        if (setFeedback !== undefined) setFeedback("");
+        if (setError !== undefined) setError("");
     }
 
     return (

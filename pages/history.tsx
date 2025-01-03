@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 
 import Head from "next/head";
 
-import { Spinner } from "@nextui-org/react";
+import { Spinner, useDisclosure } from "@nextui-org/react";
 import WorkoutList from "@/components/history/WorkoutList";
+import FeedbackModal from "@/components/workout/FeedbackModal";
 
 import { getWorkouts } from "@/utils/api/workouts";
 
@@ -16,6 +17,8 @@ export default function History() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
 
+    const errorModal = useDisclosure();
+
     const { user } = useAuth();
 
     useEffect(() => {
@@ -23,6 +26,12 @@ export default function History() {
             loadWorkouts(user.id);
         }
     }, [user]);
+
+    useEffect(() => {
+        if (error !== "") {
+            errorModal.onOpen();
+        }
+    }, [error]);
 
     const loadWorkouts = async (userId: string | string[] | undefined) => {
         setError("");
@@ -67,6 +76,16 @@ export default function History() {
                     <WorkoutList workouts={workouts} />
                 </div>
             </main>
+
+            <FeedbackModal 
+                isOpen={errorModal.isOpen}
+                onOpenChange={errorModal.onOpenChange}
+                color="text-red-500"
+                title="Error"
+                message={error}
+                setError={setError}
+                setFeedback={undefined}
+            />
         </>
     );
 }
