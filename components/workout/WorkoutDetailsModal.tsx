@@ -42,7 +42,7 @@ export default function WorkoutDetailsModal({ isOpen, onOpenChange }: WorkoutDet
         setWorkout(updatedWorkout);
     };
 
-    const isValid = (title: string, notes: string, date: string) => {
+    const isValid = (title: string, notes: string) => {
         setTitleError("");
         setDateError("");
         setNotesError("");
@@ -62,18 +62,12 @@ export default function WorkoutDetailsModal({ isOpen, onOpenChange }: WorkoutDet
             return false;
         }
 
-        if (!date) {
-            setDateError("Date is required");
-            return false;
-        }
-
         return true;
     };
 
     return (
         <Modal
             isOpen={isOpen}
-            placement="top-center"
             onOpenChange={onOpenChange}
         >
             <ModalContent>
@@ -139,7 +133,7 @@ export default function WorkoutDetailsModal({ isOpen, onOpenChange }: WorkoutDet
                                 color="primary"
                                 variant="solid"
                                 onPress={() => {
-                                    if (isValid(title, notes, date)) {
+                                    if (isValid(title, notes)) {
                                         saveChanges();
                                         onClose();
                                     }
