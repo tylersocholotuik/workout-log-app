@@ -15,6 +15,7 @@ import {
     Tabs,
     Tab,
     Link,
+    Alert
 } from "@nextui-org/react";
 
 import FeedbackModal from "@/components/workout/FeedbackModal";
@@ -155,7 +156,7 @@ export default function App() {
         <div className="container mx-auto px-2 md:px-4 py-6">
             <Card className="max-w-full w-[340px] sm:w-[500px] justify-self-center">
                 <CardHeader className="justify-center">
-                    <h2 className="text-lg">Login</h2>
+                    <h2 className="text-lg">Login / Sign up</h2>
                 </CardHeader>
                 <CardBody className="overflow-hidden">
                     <Tabs
@@ -173,7 +174,7 @@ export default function App() {
                                     label="Email"
                                     placeholder="Enter your email"
                                     type="email"
-                                    variant="faded"
+                                    variant="bordered"
                                     isInvalid={
                                         linkEmailError !== "" || linkError !== ""
                                     }
@@ -214,7 +215,7 @@ export default function App() {
                                     label="Email"
                                     placeholder="Enter your email"
                                     type="email"
-                                    variant="faded"
+                                    variant="bordered"
                                     isInvalid={
                                         loginEmailError !== "" || loginError !== ""
                                     }
@@ -237,7 +238,7 @@ export default function App() {
                                     label="Password"
                                     placeholder="Enter your password"
                                     type="password"
-                                    variant="faded"
+                                    variant="bordered"
                                     isInvalid={
                                         loginPasswordError !== "" || loginError !== ""
                                     }
@@ -255,6 +256,7 @@ export default function App() {
                                         setLoginError("");
                                     }}
                                 />
+                                <p className="text-sm">Forgot your password? Login with Magic Link above.</p>
                                 <div className="w-full">
                                     <Button
                                         fullWidth
@@ -264,7 +266,7 @@ export default function App() {
                                         Login
                                     </Button>
                                 </div>
-                                <p>
+                                <p className="text-sm">
                                     Don&#39;t have an account?&nbsp;
                                     <Link onPress={() => setSelected("signup")}>
                                         Sign up
@@ -280,7 +282,7 @@ export default function App() {
                                     label="Email"
                                     placeholder="Enter your email"
                                     type="email"
-                                    variant="faded"
+                                    variant="bordered"
                                     isInvalid={
                                         signupEmailError !== "" || signupError !== ""
                                     }
@@ -302,7 +304,7 @@ export default function App() {
                                     description="Minimum 6 characters"
                                     type="password"
                                     minLength={6}
-                                    variant="faded"
+                                    variant="bordered"
                                     isInvalid={
                                         signupPasswordError !== "" || signupError !== ""
                                     }
@@ -324,7 +326,7 @@ export default function App() {
                                     description="Maximum 50 characters"
                                     maxLength={50}
                                     type="text"
-                                    variant="faded"
+                                    variant="bordered"
                                     isInvalid={
                                         displayNameError !== "" || signupError !== ""
                                     }
@@ -339,6 +341,11 @@ export default function App() {
                                     onValueChange={setDisplayName}
                                     onChange={() => setDisplayNameError("")}
                                 />
+                                <Alert
+                                    color="warning"
+                                    variant="bordered"
+                                    title="Passwords currently can not be reset. Make sure you choose a password you can remember."
+                                 />
                                 <div className="w-full mt-4">
                                     <Button
                                         fullWidth
@@ -348,7 +355,7 @@ export default function App() {
                                         Sign up
                                     </Button>
                                 </div>
-                                <p>
+                                <p className="text-sm">
                                     Already have an account?&nbsp;
                                     <Link onPress={() => setSelected("login")}>
                                         Login
