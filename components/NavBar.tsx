@@ -173,9 +173,15 @@ export default function NavBar() {
                                                 user?.email}
                                         </Button>
                                     </DropdownTrigger>
-                                    <DropdownMenu aria-label="Static Actions">
-                                        <DropdownItem key="account">
-                                            Account
+                                    <DropdownMenu
+                                        aria-label="Static Actions"
+                                        disabledKeys={["account"]}
+                                    >
+                                        <DropdownItem 
+                                            key="account"
+                                            description="Currently unavailable"
+                                        >
+                                           Manage account
                                         </DropdownItem>
                                         <DropdownItem
                                             key="logout"
@@ -205,9 +211,15 @@ export default function NavBar() {
                                             <ChevronDownIcon />
                                         </Button>
                                     </DropdownTrigger>
-                                    <DropdownMenu aria-label="User Actions">
-                                        <DropdownItem key="account">
-                                            Account
+                                    <DropdownMenu
+                                        aria-label="User Actions"
+                                        disabledKeys={["account"]}
+                                    >
+                                        <DropdownItem 
+                                            key="account"
+                                            description="Currently unavailable"
+                                        >
+                                            Manage account
                                         </DropdownItem>
                                         <DropdownItem
                                             key="logout"
@@ -272,12 +284,22 @@ export default function NavBar() {
                                 </div>
                             </NavbarMenuItem>
                             <NavbarMenuItem>
-                                <Link className="hover:cursor-pointer" color="foreground" size="sm">
-                                    Account
+                                <Link
+                                    className="hover:cursor-pointer"
+                                    color="foreground"
+                                    size="sm"
+                                    isDisabled
+                                >
+                                    Manage account
                                 </Link>
                             </NavbarMenuItem>
                             <NavbarMenuItem>
-                                <Link className="hover:cursor-pointer" color="danger" size="sm" onPress={logOut}>
+                                <Link
+                                    className="hover:cursor-pointer"
+                                    color="danger"
+                                    size="sm"
+                                    onPress={logOut}
+                                >
                                     Logout
                                 </Link>
                             </NavbarMenuItem>
