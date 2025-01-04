@@ -16,6 +16,10 @@ import {
     Tooltip,
     Switch,
     useDisclosure,
+    Dropdown,
+    DropdownTrigger,
+    DropdownMenu,
+    DropdownItem,
 } from "@nextui-org/react";
 
 import { Icon } from "@iconify/react";
@@ -259,50 +263,71 @@ export default function ExerciseCard({
                             </h3>
                         )}
                         <div>
-                            <Tooltip content="Change exercise">
-                                <Button
-                                    aria-label="change exercise"
-                                    color="default"
-                                    size="sm"
-                                    variant="light"
-                                    isIconOnly
-                                    onPress={changeExerciseModal.onOpen}
-                                >
-                                    <Icon
-                                        icon="material-symbols:change-circle-rounded"
-                                        width="18"
-                                        height="18"
-                                    />
-                                </Button>
-                            </Tooltip>
-                        </div>
-                        <div>
-                            <Tooltip content="Exercise History">
-                                <Button
-                                    aria-label="view exercise history"
-                                    color="default"
-                                    size="sm"
-                                    variant="light"
-                                    isIconOnly
-                                    onPress={() =>
-                                        fetchExerciseHistory(
-                                            userId,
-                                            exercise.exercise?.id,
-                                            exercise.userExercise?.id
-                                        )
-                                    }
-                                >
-                                    <Icon
-                                        icon="material-symbols:history"
-                                        width="18"
-                                        height="18"
-                                    />
-                                </Button>
-                            </Tooltip>
+                            <Dropdown>
+                                <DropdownTrigger>
+                                    <Button
+                                        aria-label="Actions"
+                                        variant="light"
+                                        size="sm"
+                                        isIconOnly
+                                    >
+                                        <Tooltip content="Actions" offset={12}>
+                                            <Icon
+                                                icon="tabler:dots"
+                                                width="16"
+                                                height="16"
+                                            />
+                                        </Tooltip>
+                                    </Button>
+                                </DropdownTrigger>
+                                <DropdownMenu aria-label="Static Actions">
+                                    <DropdownItem
+                                        key="change"
+                                        onPress={changeExerciseModal.onOpen}
+                                        startContent={
+                                            <Icon
+                                                icon="material-symbols:change-circle-rounded"
+                                                width="18"
+                                                height="18"
+                                            />
+                                        }
+                                    >
+                                        Change exercise
+                                    </DropdownItem>
+                                    <DropdownItem
+                                        key="history"
+                                        onPress={() =>
+                                            fetchExerciseHistory(
+                                                userId,
+                                                exercise.exercise?.id,
+                                                exercise.userExercise?.id
+                                            )
+                                        }
+                                        startContent={
+                                            <Icon
+                                                icon="material-symbols:history"
+                                                width="18"
+                                                height="18"
+                                            />
+                                        }
+                                    >
+                                        Exercise history
+                                    </DropdownItem>
+                                    <DropdownItem
+                                        key="delete"
+                                        color="danger"
+                                        className="text-danger"
+                                        onPress={deleteExercise}
+                                        startContent={<DeleteIcon />}
+                                    >
+                                        Delete exercise
+                                    </DropdownItem>
+                                </DropdownMenu>
+                            </Dropdown>
                         </div>
                     </div>
                     <div className="flex gap-1 items-center">
-                        <Popover showArrow offset={10} placement="bottom">
+                        <Popover showArrow offset={10} placement="left-start">
                             <PopoverTrigger>
                                 <Button
                                     aria-label="exercise options"
@@ -328,11 +353,11 @@ export default function ExerciseCard({
                                         >
                                             Options
                                         </p>
-                                        <div className="flex flex-col gap-2 w-full mb-2">
+                                        <div className="flex flex-col gap-2 w-full mb-4">
                                             <RadioGroup
                                                 label="Weight Unit"
                                                 id={`exercise-${exerciseIndex}-weight-unit`}
-                                                orientation="vertical"
+                                                orientation="horizontal"
                                                 value={weightUnit}
                                                 onValueChange={(newValue) => {
                                                     setWeightUnit(newValue);
@@ -360,17 +385,6 @@ export default function ExerciseCard({
                                 )}
                             </PopoverContent>
                         </Popover>
-                        <Tooltip content="Delete Exercise">
-                            <Button
-                                isIconOnly
-                                aria-label="delete exercise"
-                                color="danger"
-                                variant="light"
-                                onPress={deleteExercise}
-                            >
-                                <DeleteIcon />
-                            </Button>
-                        </Tooltip>
                     </div>
                 </CardHeader>
                 <Divider />
@@ -411,11 +425,7 @@ export default function ExerciseCard({
                     )}
                 </CardBody>
                 <CardFooter>
-                    <Button
-                        color="primary"
-                        variant="light"
-                        onPress={addSet}
-                    >
+                    <Button color="primary" variant="light" onPress={addSet}>
                         Add Set
                     </Button>
                 </CardFooter>
