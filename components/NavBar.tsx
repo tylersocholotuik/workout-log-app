@@ -87,7 +87,6 @@ export default function NavBar() {
             <Navbar
                 maxWidth="full"
                 isBordered
-                shouldHideOnScroll
                 isMenuOpen={isMenuOpen}
                 onMenuOpenChange={setIsMenuOpen}
             >
