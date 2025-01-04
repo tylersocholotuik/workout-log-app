@@ -134,7 +134,6 @@ export default function App() {
             if (error) {
                 setLoginError(error.message);
             } else {
-                setFeedback(`Login Successful.`);
                 resetForms();
             }
         }
