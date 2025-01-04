@@ -12,9 +12,14 @@ import {
     NavbarItem,
     Link,
     Button,
+    Dropdown,
+    DropdownMenu,
+    DropdownItem,
+    DropdownTrigger,
 } from "@nextui-org/react";
 
 import { Icon } from "@iconify/react/dist/iconify.js";
+import { ChevronDownIcon } from "@/icons/ChevronDownIcon";
 
 import DarkModeSwitch from "./DarkModeSwitch";
 
@@ -29,10 +34,15 @@ export default function NavBar() {
 
     const menuItems = [
         {
+            name: "Home",
+            path: "/",
+            icon: <Icon icon="ic:baseline-home" width="24" height="24" />,
+        },
+        {
             name: "Workout",
             path: "/workout/[workoutId]",
             icon: (
-                <Icon icon="arcticons:my-workout-plan" width="24" height="24" />
+                <Icon icon="arcticons:my-workout-plan" width="28" height="28" />
             ),
         },
         {
@@ -122,7 +132,10 @@ export default function NavBar() {
                                     aria-current={
                                         isActive(item.path) ? "page" : undefined
                                     }
-                                    href={item.path.replace("[workoutId]", "new-workout")}
+                                    href={item.path.replace(
+                                        "[workoutId]",
+                                        "new-workout"
+                                    )}
                                     showAnchorIcon
                                     anchorIcon={item.icon}
                                 >
@@ -134,31 +147,80 @@ export default function NavBar() {
                 </NavbarContent>
 
                 <NavbarContent justify="end">
-                    {user && (
-                        <NavbarMenuItem className="hidden lg:flex">
-                            <div className="flex items-center gap-1">
-                                <Icon icon="mdi:user" width="16" height="16" />
-                                <p className="text-sm">
-                                    {user.user_metadata.display_name ??
-                                        user.email}
-                                </p>
-                            </div>
-                        </NavbarMenuItem>
-                    )}
                     {!isSignedIn() ? (
                         <NavbarItem className="hidden sm:flex">
                             <Link href="/login">Login</Link>
                         </NavbarItem>
                     ) : (
-                        <NavbarItem className="hidden sm:flex">
-                            <Button
-                                color="danger"
-                                variant="light"
-                                onPress={logOut}
-                            >
-                                Logout
-                            </Button>
-                        </NavbarItem>
+                        <>
+                            <NavbarItem className="hidden md:flex">
+                                <Dropdown>
+                                    <DropdownTrigger>
+                                        <Button
+                                            aria-label="User Actions"
+                                            variant="light"
+                                            size="sm"
+                                            startContent={
+                                                <Icon
+                                                    icon="mdi:user"
+                                                    width="16"
+                                                    height="16"
+                                                />
+                                            }
+                                            endContent={<ChevronDownIcon />}
+                                        >
+                                            {user?.user_metadata.display_name ??
+                                                user?.email}
+                                        </Button>
+                                    </DropdownTrigger>
+                                    <DropdownMenu aria-label="Static Actions">
+                                        <DropdownItem key="account">
+                                            Account
+                                        </DropdownItem>
+                                        <DropdownItem
+                                            key="logout"
+                                            color="danger"
+                                            className="text-danger"
+                                            onPress={logOut}
+                                        >
+                                            Logout
+                                        </DropdownItem>
+                                    </DropdownMenu>
+                                </Dropdown>
+                            </NavbarItem>
+                            <NavbarItem className="hidden sm:flex md:hidden">
+                                <Dropdown>
+                                    <DropdownTrigger>
+                                        <Button
+                                            aria-label="User Actions"
+                                            variant="light"
+                                            size="sm"
+                                            isIconOnly
+                                        >
+                                            <Icon
+                                                icon="mdi:user"
+                                                width="16"
+                                                height="16"
+                                            />
+                                            <ChevronDownIcon />
+                                        </Button>
+                                    </DropdownTrigger>
+                                    <DropdownMenu aria-label="User Actions">
+                                        <DropdownItem key="account">
+                                            Account
+                                        </DropdownItem>
+                                        <DropdownItem
+                                            key="logout"
+                                            color="danger"
+                                            className="text-danger"
+                                            onPress={logOut}
+                                        >
+                                            Logout
+                                        </DropdownItem>
+                                    </DropdownMenu>
+                                </Dropdown>
+                            </NavbarItem>
+                        </>
                     )}
                     <NavbarItem>
                         <DarkModeSwitch />
@@ -178,24 +240,16 @@ export default function NavBar() {
                                 aria-current={
                                     isActive(item.path) ? "page" : undefined
                                 }
-                                href={item.path.replace("[workoutId]", "new-workout")}
+                                href={item.path.replace(
+                                    "[workoutId]",
+                                    "new-workout"
+                                )}
                                 size="sm"
                             >
                                 {item.name}
                             </Link>
                         </NavbarMenuItem>
                     ))}
-                    {user && (
-                        <NavbarMenuItem className="mt-4">
-                            <div className="flex items-center gap-1">
-                                <Icon icon="mdi:user" width="16" height="16" />
-                                <p className="text-sm">
-                                    {user.user_metadata.display_name ??
-                                        user.email}
-                                </p>
-                            </div>
-                        </NavbarMenuItem>
-                    )}
                     {!isSignedIn() ? (
                         <NavbarMenuItem>
                             <Link color="foreground" href="/login">
@@ -203,11 +257,31 @@ export default function NavBar() {
                             </Link>
                         </NavbarMenuItem>
                     ) : (
-                        <NavbarMenuItem>
-                            <Link color="danger" onPress={logOut}>
-                                Logout
-                            </Link>
-                        </NavbarMenuItem>
+                        <>
+                            <NavbarMenuItem className="mt-4">
+                                <div className="flex items-center gap-1">
+                                    <Icon
+                                        icon="mdi:user"
+                                        width="16"
+                                        height="16"
+                                    />
+                                    <p className="text-sm">
+                                        {user?.user_metadata.display_name ??
+                                            user?.email}
+                                    </p>
+                                </div>
+                            </NavbarMenuItem>
+                            <NavbarMenuItem>
+                                <Link className="hover:cursor-pointer" color="foreground" size="sm">
+                                    Account
+                                </Link>
+                            </NavbarMenuItem>
+                            <NavbarMenuItem>
+                                <Link className="hover:cursor-pointer" color="danger" size="sm" onPress={logOut}>
+                                    Logout
+                                </Link>
+                            </NavbarMenuItem>
+                        </>
                     )}
                 </NavbarMenu>
             </Navbar>
