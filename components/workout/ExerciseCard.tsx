@@ -241,7 +241,7 @@ export default function ExerciseCard({
             exerciseId,
             userExerciseId
         );
-        console.log(data);
+
         setExerciseHistory(data);
 
         exerciseHistoryModal.onOpen();
