@@ -33,11 +33,6 @@ export default function NavBar() {
     const { user, isSignedIn } = useAuth();
 
     const menuItems = [
-        // {
-        //     name: "Home",
-        //     path: "/",
-        //     icon: <Icon icon="ic:baseline-home" width="24" height="24" />,
-        // },
         {
             name: "Workout",
             path: "/workout/[workoutId]",
@@ -60,6 +55,10 @@ export default function NavBar() {
     ];
 
     const isActive = (path: string): boolean => {
+        // ensure home page is not active on every page
+        if (path === "/") {
+            return router.pathname === "/"
+        }
         return router.pathname.includes(path);
     };
 
@@ -102,10 +101,10 @@ export default function NavBar() {
                 <NavbarContent className="sm:hidden pr-3" justify="center">
                     <NavbarBrand>
                         <Link href="/" color="foreground">
-                        <p className="text-lg tracking-widest font-mono">
-                            workout.<span className="font-bold">log</span>
-                            <span className="font-bold">&#40;&#41;</span>
-                        </p>
+                            <p className="text-lg tracking-widest font-mono">
+                                workout.<span className="font-bold">log</span>
+                                <span className="font-bold">&#40;&#41;</span>
+                            </p>
                         </Link>
                     </NavbarBrand>
                 </NavbarContent>
@@ -247,6 +246,17 @@ export default function NavBar() {
                 </NavbarContent>
 
                 <NavbarMenu>
+                    <NavbarMenuItem>
+                        <Link
+                            className="w-full"
+                            color={isActive("/") ? undefined : "foreground"}
+                            aria-current={isActive("/") ? "page" : undefined}
+                            href="/"
+                            size="sm"
+                        >
+                            Home
+                        </Link>
+                    </NavbarMenuItem>
                     {menuItems.map((item, index) => (
                         <NavbarMenuItem key={`${item}-${index}`}>
                             <Link
