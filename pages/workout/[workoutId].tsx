@@ -413,7 +413,7 @@ export default function WorkoutLog() {
                                 size="md"
                                 onPress={addExerciseModal.onOpen}
                             >
-                                Add Exercise
+                               Add Exercise
                             </Button>
                         </div>
                         <div className="flex justify-center gap-4 mb-6">
@@ -440,7 +440,9 @@ export default function WorkoutLog() {
                                 variant="ghost"
                                 radius="full"
                                 size="lg"
-                                startContent={<DeleteIcon width="20" height="20" />}
+                                startContent={
+                                    <DeleteIcon width="20" height="20" />
+                                }
                                 onPress={deleteModal.onOpen}
                             >
                                 {workout.id === "" ||

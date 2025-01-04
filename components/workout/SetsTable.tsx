@@ -19,12 +19,16 @@ import { useWorkoutContext } from "@/pages/workout/[workoutId]";
 import { Set, WeightUnit } from "@/utils/models/models";
 
 interface SetsTableProps {
-    sets: Set[],
-    weightUnit: WeightUnit,
-    exerciseIndex: number
-};
+    sets: Set[];
+    weightUnit: WeightUnit;
+    exerciseIndex: number;
+}
 
-export default function SetsTable({ sets, weightUnit, exerciseIndex }: SetsTableProps) {
+export default function SetsTable({
+    sets,
+    weightUnit,
+    exerciseIndex,
+}: SetsTableProps) {
     const { workout, setWorkout } = useWorkoutContext();
 
     const [localSets, setLocalSets] = useState(sets);
@@ -186,7 +190,7 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }: SetsTable
                     <TableRow key={`exercise-${exerciseIndex}-set-${index}`}>
                         <TableCell>
                             <Input
-                                classNames={{input: 'text-center'}}
+                                classNames={{ input: "text-center" }}
                                 id={`exercise-${exerciseIndex}-set-${index}-weight`}
                                 type="number"
                                 variant="bordered"
@@ -203,7 +207,12 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }: SetsTable
                                         </span>
                                     </div>
                                 }
-                                value={`${localSets[index].weight}` || ""}
+                                value={
+                                    localSets[index]?.weight !== null &&
+                                    localSets[index]?.weight !== undefined
+                                        ? String(localSets[index]?.weight)
+                                        : ""
+                                }
                                 onValueChange={(newValue) => {
                                     handleInputChange(
                                         index,
@@ -216,7 +225,7 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }: SetsTable
                         </TableCell>
                         <TableCell>
                             <Input
-                                classNames={{input: 'text-center'}}
+                                classNames={{ input: "text-center" }}
                                 id={`exercise-${exerciseIndex}-set-${index}-reps`}
                                 type="number"
                                 variant="bordered"
@@ -226,7 +235,11 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }: SetsTable
                                 min="0"
                                 max="9999"
                                 step="1"
-                                value={`${localSets[index].reps}` || ""}
+                                value={localSets[index]?.reps !== null &&
+                                    localSets[index]?.reps !== undefined
+                                        ? String(localSets[index]?.reps)
+                                        : ""
+                                }
                                 onValueChange={(newValue) => {
                                     handleInputChange(index, "reps", newValue);
                                 }}
@@ -235,7 +248,7 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }: SetsTable
                         </TableCell>
                         <TableCell>
                             <Input
-                                classNames={{input: 'text-center'}}
+                                classNames={{ input: "text-center" }}
                                 id={`exercise-${exerciseIndex}-set-${index}-rpe`}
                                 type="number"
                                 variant="bordered"
@@ -245,7 +258,11 @@ export default function SetsTable({ sets, weightUnit, exerciseIndex }: SetsTable
                                 min="0"
                                 max="10"
                                 step="0.5"
-                                value={`${localSets[index].rpe}` || ""}
+                                value={localSets[index]?.rpe !== null &&
+                                    localSets[index]?.rpe !== undefined
+                                        ? String(localSets[index]?.rpe)
+                                        : ""
+                                }
                                 onValueChange={(newValue) => {
                                     handleInputChange(index, "rpe", newValue);
                                 }}

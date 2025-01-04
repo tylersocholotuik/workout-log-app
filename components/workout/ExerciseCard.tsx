@@ -28,7 +28,7 @@ import {
     UserExercise,
     WorkoutExercise,
     Set,
-    ExerciseHistory
+    ExerciseHistory,
 } from "@/utils/models/models";
 
 import SelectExerciseModal from "./SelectExerciseModal";
@@ -57,7 +57,9 @@ export default function ExerciseCard({
     const [weightUnit, setWeightUnit] = useState(exercise.weightUnit);
     const [oneRepMax, setOneRepMax] = useState<number | null>();
     const [showOneRepMax, setShowOneRepMax] = useState(true);
-    const [exerciseHistory, setExerciseHistory] = useState<ExerciseHistory[]>([]);
+    const [exerciseHistory, setExerciseHistory] = useState<ExerciseHistory[]>(
+        []
+    );
     const [userId, setUserId] = useState("");
 
     const changeExerciseModal = useDisclosure();
@@ -72,11 +74,13 @@ export default function ExerciseCard({
     }, [workout]);
 
     const getUserId = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
         if (user) {
             setUserId(user.id);
         }
-    }
+    };
 
     const addSet = () => {
         const newSet = new Set();
@@ -228,7 +232,11 @@ export default function ExerciseCard({
         exerciseId?: number | null | undefined,
         userExerciseId?: number | null | undefined
     ) => {
-        const data = await getExerciseHistory(userId, exerciseId, userExerciseId);
+        const data = await getExerciseHistory(
+            userId,
+            exerciseId,
+            userExerciseId
+        );
         console.log(data);
         setExerciseHistory(data);
 
@@ -276,7 +284,13 @@ export default function ExerciseCard({
                                     size="sm"
                                     variant="light"
                                     isIconOnly
-                                    onPress={() => fetchExerciseHistory(userId, exercise.exercise?.id, exercise.userExercise?.id)}
+                                    onPress={() =>
+                                        fetchExerciseHistory(
+                                            userId,
+                                            exercise.exercise?.id,
+                                            exercise.userExercise?.id
+                                        )
+                                    }
                                 >
                                     <Icon
                                         icon="material-symbols:history"
@@ -397,7 +411,11 @@ export default function ExerciseCard({
                     )}
                 </CardBody>
                 <CardFooter>
-                    <Button color="primary" variant="light" onPress={addSet}>
+                    <Button
+                        color="primary"
+                        variant="light"
+                        onPress={addSet}
+                    >
                         Add Set
                     </Button>
                 </CardFooter>
@@ -412,11 +430,13 @@ export default function ExerciseCard({
                 update={true}
             />
 
-            <ExerciseHistoryModal 
+            <ExerciseHistoryModal
                 isOpen={exerciseHistoryModal.isOpen}
                 onOpenChange={exerciseHistoryModal.onOpenChange}
                 exerciseHistory={exerciseHistory}
-                exerciseName={exercise.exercise?.name ?? exercise.userExercise?.name ?? ""}
+                exerciseName={
+                    exercise.exercise?.name ?? exercise.userExercise?.name ?? ""
+                }
             />
         </>
     );
