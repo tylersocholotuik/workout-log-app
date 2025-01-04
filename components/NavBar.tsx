@@ -33,11 +33,11 @@ export default function NavBar() {
     const { user, isSignedIn } = useAuth();
 
     const menuItems = [
-        {
-            name: "Home",
-            path: "/",
-            icon: <Icon icon="ic:baseline-home" width="24" height="24" />,
-        },
+        // {
+        //     name: "Home",
+        //     path: "/",
+        //     icon: <Icon icon="ic:baseline-home" width="24" height="24" />,
+        // },
         {
             name: "Workout",
             path: "/workout/[workoutId]",
@@ -102,14 +102,20 @@ export default function NavBar() {
                 <NavbarContent className="sm:hidden pr-3" justify="center">
                     <NavbarBrand>
                         <Link href="/" color="foreground">
-                            <p className="font-bold text-inherit">EZLog</p>
+                        <p className="text-lg tracking-widest font-mono">
+                            workout.<span className="font-bold">log</span>
+                            <span className="font-bold">&#40;&#41;</span>
+                        </p>
                         </Link>
                     </NavbarBrand>
                 </NavbarContent>
 
                 <NavbarContent className="hidden sm:flex">
                     <Link href="/" color="foreground">
-                        <p className="font-bold text-inherit">EZLog</p>
+                        <p className="text-xl tracking-widest font-mono">
+                            workout.<span className="font-bold">log</span>
+                            <span className="font-bold">&#40;&#41;</span>
+                        </p>
                     </Link>
                 </NavbarContent>
 
@@ -124,6 +130,7 @@ export default function NavBar() {
                                 isActive={isActive(item.path)}
                             >
                                 <Link
+                                    size="md"
                                     color={
                                         isActive(item.path)
                                             ? undefined
@@ -177,11 +184,11 @@ export default function NavBar() {
                                         aria-label="Static Actions"
                                         disabledKeys={["account"]}
                                     >
-                                        <DropdownItem 
+                                        <DropdownItem
                                             key="account"
                                             description="Currently unavailable"
                                         >
-                                           Manage account
+                                            Manage account
                                         </DropdownItem>
                                         <DropdownItem
                                             key="logout"
@@ -215,7 +222,7 @@ export default function NavBar() {
                                         aria-label="User Actions"
                                         disabledKeys={["account"]}
                                     >
-                                        <DropdownItem 
+                                        <DropdownItem
                                             key="account"
                                             description="Currently unavailable"
                                         >
