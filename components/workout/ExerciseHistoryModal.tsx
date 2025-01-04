@@ -22,8 +22,10 @@ export default function ExerciseHistoryModal({
     exerciseHistory,
     exerciseName
 }: ExerciseHistoryModalProps) {
+
     return (
-        <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+
+        <Modal isOpen={isOpen} onOpenChange={onOpenChange} scrollBehavior="inside" placement="center">
             <ModalContent>
                 {(onClose) => (
                     <>
@@ -42,7 +44,7 @@ export default function ExerciseHistoryModal({
                                                     dateStyle: "full",
                                                 })}
                                             </p>
-                                            <p className="mb-2">
+                                            <p className="mb-2 text-foreground-500 text-sm">
                                                 {exercise.notes}
                                             </p>
                                             <ul>
@@ -50,6 +52,7 @@ export default function ExerciseHistoryModal({
                                                     (set, sIndex) => (
                                                         <li
                                                             key={`ex-${eIndex}-set-${sIndex}`}
+                                                            className="text-sm"
                                                         >
                                                             {`${set.weight} ${exercise.weightUnit} x ${set.reps} reps @ RPE ${set.rpe}`}
                                                         </li>
