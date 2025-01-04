@@ -7,59 +7,38 @@ import {
     Button,
 } from "@nextui-org/react";
 
-import { Dispatch, SetStateAction } from "react";
-
-interface FeedbackModalProps {
+interface LoginModalProps {
     isOpen: boolean,
     onOpenChange: () => void,
-    title: string,
-    message: string,
-    color: string,
-    setFeedback: Dispatch<SetStateAction<string>> | undefined,
-    setError: Dispatch<SetStateAction<string>> | undefined
+    displayName: string
 }
 
-export default function FeedbackModal({
+export default function LoginModal({
     isOpen,
     onOpenChange,
-    title,
-    message,
-    color,
-    setFeedback,
-    setError,
-}: FeedbackModalProps) {
-
-    const resetMessage = () => {
-        if (setFeedback !== undefined) setFeedback("");
-        if (setError !== undefined) setError("");
-    }
+    displayName
+}: LoginModalProps) {
 
     return (
         <Modal
             isOpen={isOpen}
             placement="center"
             onOpenChange={onOpenChange}
-            classNames={{
-                header: `text-${color}`
-            }}
         >
             <ModalContent>
                 {(onClose) => (
                     <>
                         <ModalHeader className="flex flex-col gap-1">
-                            {title}
+                            Welcome!
                         </ModalHeader>
                         <ModalBody>
-                            <p>{message}</p>
+                            <p>Logged in as {displayName}</p>
                         </ModalBody>
                         <ModalFooter>
                             <Button
                                 color="primary"
                                 variant="solid"
-                                onPress={() => {
-                                    resetMessage();
-                                    onClose();
-                                }}
+                                onPress={onClose}
                             >
                                 Ok
                             </Button>

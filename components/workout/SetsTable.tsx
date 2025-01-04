@@ -17,6 +17,7 @@ import { DeleteIcon } from "@/icons/DeleteIcon";
 import { useWorkoutContext } from "@/pages/workout/[workoutId]";
 
 import { Set, WeightUnit } from "@/utils/models/models";
+import { parse } from "path";
 
 interface SetsTableProps {
     sets: Set[];
@@ -235,7 +236,8 @@ export default function SetsTable({
                                 min="0"
                                 max="9999"
                                 step="1"
-                                value={localSets[index]?.reps !== null &&
+                                value={
+                                    localSets[index]?.reps !== null &&
                                     localSets[index]?.reps !== undefined
                                         ? String(localSets[index]?.reps)
                                         : ""
@@ -258,7 +260,8 @@ export default function SetsTable({
                                 min="0"
                                 max="10"
                                 step="0.5"
-                                value={localSets[index]?.rpe !== null &&
+                                value={
+                                    localSets[index]?.rpe !== null &&
                                     localSets[index]?.rpe !== undefined
                                         ? String(localSets[index]?.rpe)
                                         : ""

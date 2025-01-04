@@ -69,6 +69,7 @@ export default function WorkoutDetailsModal({ isOpen, onOpenChange }: WorkoutDet
         <Modal
             isOpen={isOpen}
             onOpenChange={onOpenChange}
+            placement="center"
         >
             <ModalContent>
                 {(onClose) => (

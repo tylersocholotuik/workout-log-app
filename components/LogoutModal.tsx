@@ -7,17 +7,17 @@ import {
     Button,
 } from "@nextui-org/react";
 
-interface DeleteWorkoutModalProps {
+interface LogoutModalProps {
     isOpen: boolean;
     onOpenChange: () => void;
-    callbackFunction: () => void;
+    logOutFunction: () => void;
 }
 
-export default function DeleteWorkoutModal({
+export default function LogoutModal({
     isOpen,
     onOpenChange,
-    callbackFunction,
-}: DeleteWorkoutModalProps) {
+    logOutFunction
+}: LogoutModalProps) {
     return (
         <Modal
             isOpen={isOpen}
@@ -28,11 +28,11 @@ export default function DeleteWorkoutModal({
                 {(onClose) => (
                     <>
                         <ModalHeader className="flex flex-col gap-1">
-                            Delete Workout
+                            Logout
                         </ModalHeader>
                         <ModalBody>
                             <p className="">
-                                Are you sure you want to delete this workout?
+                                Are you sure you want to logout?
                             </p>
                         </ModalBody>
                         <ModalFooter>
@@ -47,11 +47,11 @@ export default function DeleteWorkoutModal({
                                 color="danger"
                                 variant="solid"
                                 onPress={() => {
-                                    callbackFunction();
+                                    logOutFunction();
                                     onClose();
                                 }}
                             >
-                                Delete
+                                Logout
                             </Button>
                         </ModalFooter>
                     </>

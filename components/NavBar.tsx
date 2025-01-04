@@ -16,12 +16,14 @@ import {
     DropdownMenu,
     DropdownItem,
     DropdownTrigger,
+    useDisclosure,
 } from "@nextui-org/react";
 
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { ChevronDownIcon } from "@/icons/ChevronDownIcon";
 
 import DarkModeSwitch from "./DarkModeSwitch";
+import LogoutModal from "./LogoutModal";
 
 import { useAuth } from "./auth/AuthProvider";
 
@@ -31,6 +33,8 @@ export default function NavBar() {
     const router = useRouter();
 
     const { user, isSignedIn } = useAuth();
+
+    const logoutModal = useDisclosure();
 
     const menuItems = [
         {
@@ -63,15 +67,10 @@ export default function NavBar() {
     };
 
     const logOut = async () => {
-        try {
-            // Refresh the session
-            const { error: refreshError } =
-                await supabase.auth.refreshSession();
-            if (refreshError) {
-                console.warn("Error refreshing session:", refreshError);
-            }
 
-            const { error } = await supabase.auth.signOut();
+        try {
+            // scope: "local" means only sign out on the current device
+            const { error } = await supabase.auth.signOut({ scope: "local"});
             if (error) {
                 console.error(`Error during logout: ${error.message}`);
             } else {
@@ -193,7 +192,7 @@ export default function NavBar() {
                                             key="logout"
                                             color="danger"
                                             className="text-danger"
-                                            onPress={logOut}
+                                            onPress={logoutModal.onOpen}
                                         >
                                             Logout
                                         </DropdownItem>
@@ -231,7 +230,7 @@ export default function NavBar() {
                                             key="logout"
                                             color="danger"
                                             className="text-danger"
-                                            onPress={logOut}
+                                            onPress={logoutModal.onOpen}
                                         >
                                             Logout
                                         </DropdownItem>
@@ -315,7 +314,7 @@ export default function NavBar() {
                                     className="hover:cursor-pointer"
                                     color="danger"
                                     size="sm"
-                                    onPress={logOut}
+                                    onPress={logoutModal.onOpen}
                                 >
                                     Logout
                                 </Link>
@@ -324,6 +323,12 @@ export default function NavBar() {
                     )}
                 </NavbarMenu>
             </Navbar>
+
+            <LogoutModal 
+                isOpen={logoutModal.isOpen}
+                onOpenChange={logoutModal.onOpenChange}
+                logOutFunction={logOut}
+            />
         </>
     );
 }
