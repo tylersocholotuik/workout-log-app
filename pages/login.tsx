@@ -367,7 +367,10 @@ export default function App() {
                                 </div>
                                 <p className="text-sm">
                                     Don&#39;t have an account?&nbsp;
-                                    <Link onPress={() => setSelected("signup")}>
+                                    <Link
+                                        className="hover:cursor-pointer"
+                                        onPress={() => setSelected("signup")}
+                                    >
                                         Sign up
                                     </Link>
                                 </p>
@@ -470,7 +473,10 @@ export default function App() {
                                 </div>
                                 <p className="text-sm">
                                     Already have an account?&nbsp;
-                                    <Link onPress={() => setSelected("login")}>
+                                    <Link
+                                        className="hover:cursor-pointer"
+                                        onPress={() => setSelected("login")}
+                                    >
                                         Login
                                     </Link>
                                 </p>
