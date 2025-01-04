@@ -28,6 +28,7 @@ import {
 
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { EditIcon } from "@/icons/EditIcon";
+import { DeleteIcon } from "@/icons/DeleteIcon";
 
 import {
     getWorkout,
@@ -419,9 +420,16 @@ export default function WorkoutLog() {
                             <Button
                                 isLoading={isSaving}
                                 color="success"
-                                variant="flat"
+                                variant="ghost"
                                 radius="full"
                                 size="lg"
+                                startContent={
+                                    <Icon
+                                        icon="material-symbols:save-outline"
+                                        width="24"
+                                        height="24"
+                                    />
+                                }
                                 onPress={() => saveWorkout(userId, workout)}
                             >
                                 Save Workout
@@ -429,9 +437,10 @@ export default function WorkoutLog() {
                             <Button
                                 isLoading={isDeleting}
                                 color="danger"
-                                variant="flat"
+                                variant="ghost"
                                 radius="full"
                                 size="lg"
+                                startContent={<DeleteIcon width="20" height="20" />}
                                 onPress={deleteModal.onOpen}
                             >
                                 {workout.id === "" ||
