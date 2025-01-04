@@ -413,44 +413,75 @@ export default function WorkoutLog() {
                                 size="md"
                                 onPress={addExerciseModal.onOpen}
                             >
-                               Add Exercise
+                                Add Exercise
                             </Button>
                         </div>
-                        <div className="flex justify-center gap-4 mb-6">
-                            <Button
-                                isLoading={isSaving}
-                                color="success"
-                                variant="ghost"
-                                radius="full"
-                                size="lg"
-                                startContent={
-                                    <Icon
-                                        icon="material-symbols:save-outline"
-                                        width="24"
-                                        height="24"
-                                    />
-                                }
-                                onPress={() => saveWorkout(userId, workout)}
-                            >
-                                Save Workout
-                            </Button>
-                            <Button
-                                isLoading={isDeleting}
-                                color="danger"
-                                variant="ghost"
-                                radius="full"
-                                size="lg"
-                                startContent={
-                                    <DeleteIcon width="20" height="20" />
-                                }
-                                onPress={deleteModal.onOpen}
-                            >
-                                {workout.id === "" ||
-                                workout.id === "new-workout"
-                                    ? "Cancel Workout"
-                                    : "Delete Workout"}
-                            </Button>
+                        <div className="flex justify-self-center justify-around mb-8 w-[340px]">
+                            <div>
+                                <Button
+                                    isLoading={isSaving}
+                                    color="default"
+                                    variant="flat"
+                                    radius="full"
+                                    fullWidth
+                                    startContent={
+                                        <Icon
+                                            icon="material-symbols:save-outline"
+                                            width="24"
+                                            height="24"
+                                        />
+                                    }
+                                    onPress={() => saveWorkout(userId, workout)}
+                                >
+                                    Save Workout
+                                </Button>
+                            </div>
+                            <div>
+                                <Button
+                                    isLoading={isDeleting}
+                                    color="danger"
+                                    variant="flat"
+                                    radius="full"
+                                    fullWidth
+                                    startContent={
+                                        <DeleteIcon width="20" height="20" />
+                                    }
+                                    onPress={deleteModal.onOpen}
+                                >
+                                    {workout.id === "" ||
+                                    workout.id === "new-workout"
+                                        ? "Cancel Workout"
+                                        : "Delete Workout"}
+                                </Button>
+                            </div>
                         </div>
+                        {/* 
+                        Commenting this out for now. It is a good feature, but I am
+                        not happy with the styling.
+
+                        {workoutId !== "new-workout" && (
+                            <div className="justify-self-center">
+                                <Button
+                                    color="primary"
+                                    fullWidth
+                                    variant="solid"
+                                    radius="full"
+                                    onPress={() => {
+                                        router.push("/workout/new-workout");
+                                        setWorkout(new Workout());
+                                    }}
+                                    startContent={
+                                        <Icon
+                                            icon="gridicons:create"
+                                            width="20"
+                                            height="20"
+                                        />
+                                    }
+                                >
+                                    New Workout
+                                </Button>
+                            </div>
+                        )} */}
                     </div>
                 </main>
 
