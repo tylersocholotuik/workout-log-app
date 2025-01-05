@@ -13,14 +13,14 @@ import {
     Button
 } from "@nextui-org/react";
 
-import calculator from "/public/img/calculator.png";
-import calculator_light from "/public/img/calculator_light.png";
-import history from "/public/img/history.png";
-import history_light from "/public/img/history_light.png";
-import workout_mobile from "/public/img/workout-mobile.png";
-import workout_light from "/public/img/workout-light.png";
-import select_exercise from "/public/img/select-exercise.png";
-import select_exercise_light from "/public/img/select-exercise-light.png";
+import calculator_dark from "/public/img/calculator_dark.webp";
+import calculator_light from "/public/img/calculator_light.webp";
+import history_dark from "/public/img/history_dark.webp";
+import history_light from "/public/img/history_light.webp";
+import workout_dark from "/public/img/workout_dark.webp";
+import workout_light from "/public/img/workout_light.webp";
+import select_exercise_dark from "/public/img/select_exercise_dark.webp";
+import select_exercise_light from "/public/img/select_exercise_light.webp";
 
 export default function Home() {
     const { resolvedTheme } = useTheme();
@@ -69,7 +69,7 @@ export default function Home() {
                                         <div className="md:w-3/6">
                                             {isDarkMode ? (
                                                 <Image
-                                                    src={select_exercise.src}
+                                                    src={select_exercise_dark.src}
                                                     alt="Image of workout exercise selection"
                                                     radius="lg"
                                                 />
@@ -101,7 +101,7 @@ export default function Home() {
                                         <div className="md:w-3/6">
                                             {isDarkMode ? (
                                                 <Image
-                                                    src={workout_mobile.src}
+                                                    src={workout_dark.src}
                                                     alt="Image of the workout creation page"
                                                     radius="lg"
                                                 />
@@ -138,7 +138,7 @@ export default function Home() {
                                         <div className="md:w-3/6">
                                             {isDarkMode ? (
                                                 <Image
-                                                    src={history.src}
+                                                    src={history_dark.src}
                                                     alt="Image of the workout history page"
                                                     radius="lg"
                                                 />
@@ -173,7 +173,7 @@ export default function Home() {
                                         <div className="md:w-3/6">
                                             {isDarkMode ?
                                                 <Image
-                                                src={calculator.src}
+                                                src={calculator_dark.src}
                                                 alt="Image of the calculator page"
                                                 radius="lg"
                                             />
