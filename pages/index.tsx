@@ -3,13 +3,12 @@ import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 
 import Head from "next/head";
+import Footer from "@/components/Footer";
 
 import {
     Image,
     Card,
-    CardHeader,
     CardBody,
-    CardFooter,
     Link,
     Button
 } from "@nextui-org/react";
@@ -220,6 +219,7 @@ export default function Home() {
                     </div>
                 </div>
             </main>
+            <Footer />
         </>
     );
 }
