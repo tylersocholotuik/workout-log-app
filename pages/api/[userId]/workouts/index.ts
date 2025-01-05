@@ -129,7 +129,7 @@ const addWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
     return res.status(200).json(newWorkout);
   } catch (error) {
     console.error("Error fetching workouts:", error);
-    res.status(500).json({ error: "Failed to fetch workouts" });
+    res.status(500).json({ error: "Failed to add workouts" });
   } finally {
     await prisma.$disconnect();
   }
