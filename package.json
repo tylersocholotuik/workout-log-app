@@ -11,7 +11,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test-query": "tsx prisma/query-test.ts"
+    "test-query": "tsx prisma/query-test.ts",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@internationalized/date": "^3.6.0",
