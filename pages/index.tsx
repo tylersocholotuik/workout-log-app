@@ -45,8 +45,8 @@ export default function Home() {
                         <h2 className="text-center text-2xl sm:text-3xl md:text-4xl mb-8">
                             Welcome to{" "}
                             <span className="tracking-widest font-mono">
-                                <span className="text-[#9CDCFE]">workout</span>.
-                                <span className="text-[#DCDCAA]">
+                                <span className="text-[#569CD6] dark:text-[#9CDCFE]">workout</span>.
+                                <span className="text-amber-500 dark:text-[#DCDCAA]">
                                     log
                                 </span>
                                 <span className="font-bold text-[#da70d6]">

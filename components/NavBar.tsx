@@ -100,8 +100,15 @@ export default function NavBar() {
                     <NavbarBrand>
                         <Link href="/" color="foreground">
                             <p className="text-lg tracking-widest font-mono">
-                                workout.<span className="font-bold">log</span>
-                                <span className="font-bold">&#40;&#41;</span>
+                            <span className="tracking-widest font-mono">
+                                <span className="text-[#569CD6] dark:text-[#9CDCFE]">workout</span>.
+                                <span className="text-amber-500 dark:text-[#DCDCAA]">
+                                    log
+                                </span>
+                                <span className="font-bold text-[#da70d6]">
+                                    &#40;&#41;
+                                </span>
+                            </span>
                             </p>
                         </Link>
                     </NavbarBrand>
@@ -110,8 +117,15 @@ export default function NavBar() {
                 <NavbarContent className="hidden sm:flex">
                     <Link href="/" color="foreground">
                         <p className="text-xl tracking-widest font-mono">
-                            workout.<span className="font-bold">log</span>
-                            <span className="font-bold">&#40;&#41;</span>
+                        <span className="tracking-widest font-mono">
+                                <span className="text-[#569CD6] dark:text-[#9CDCFE]">workout</span>.
+                                <span className="text-amber-500 dark:text-[#DCDCAA]">
+                                    log
+                                </span>
+                                <span className="font-bold text-[#da70d6]">
+                                    &#40;&#41;
+                                </span>
+                            </span>
                         </p>
                     </Link>
                 </NavbarContent>
