@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 import { Dispatch, SetStateAction } from "react";
 
-import { Button, Input, Select, SelectItem, Tooltip } from "@nextui-org/react";
+import { Button, Input, Tooltip } from "@nextui-org/react";
 
 import { calculateOneRepMax } from "@/utils/calculator/calc-functions";
 
@@ -36,18 +36,27 @@ export default function CalculatorForm({
     };
 
     const handleWeightChange = (value: string) => {
-        const parsedValue = parseFloat(value);
-
-        let isValid = false;
+        // let isValid = false;
         // rules for weight:
         // min: 0
         // max: 9999
         // must be in steps of 0.5
-        isValid =
-            (parsedValue >= 0 &&
-                parsedValue <= 9999 &&
-                parsedValue % 0.5 === 0) ||
-            value === "";
+        // can be empty string
+        // only 1 digital after decimal, must be 0 or 5
+        // only 1 decimal
+        const regex = /^(\d{0,4})(\.([05]?)?)?$/;
+
+        const isValidFormat = regex.test(value);
+
+        const parsedValue = parseFloat(value);
+
+        const isValidValue =
+            !isNaN(parsedValue) &&
+            parsedValue >= 0 &&
+            parsedValue <= 9999 &&
+            parsedValue % 0.5 === 0;
+
+        const isValid = isValidFormat && (value === "" || isValidValue);
 
         // allow input if isValid, otherwise, input is prevented
         if (isValid) {
@@ -56,18 +65,23 @@ export default function CalculatorForm({
     };
 
     const handleRepsChange = (value: string) => {
-        const parsedValue = parseFloat(value);
-
-        let isValid = false;
         // rules for reps:
         // min: 1
         // max: 10
         // must be whole number
-        isValid =
-            (parsedValue >= 1 &&
-                parsedValue <= 10 &&
-                Number.isInteger(parsedValue)) ||
-            value === "";
+        // can be empty string
+        const regex = /^(10|[1-9])?$/;
+
+        const isValidFormat = regex.test(value);
+
+        const parsedValue = parseInt(value);
+
+        const isValidValue =
+            !isNaN(parsedValue) &&
+            parsedValue >= 1 &&
+            parsedValue <= 10;
+
+        const isValid = isValidFormat && (value === "" || isValidValue);
 
         if (isValid) {
             setReps(value);
@@ -75,31 +89,63 @@ export default function CalculatorForm({
     };
 
     const handleRPEChange = (value: string) => {
-        const parsedValue = parseFloat(value);
-
-        let isValid = false;
         // rules for RPE:
         // min: 6
         // max: 10
         // steps of 0.5
+        // can be empty string
+        // only 1 digital after decimal, must be 0 or 5
+        // only 1 decimal
+        const regex = /^(1$|10|[6-9](\.\d{0,1})?)?$/;
+
+        const isValidFormat = regex.test(value);
+
+        const parsedValue = parseFloat(value);
+
+
+        let isValidValue = false;
+
         if (value.length === 1) {
-            isValid =
+            isValidValue =
                 // allows input value of 1 if length is 1 so you can enter 10
                 ((parsedValue >= 6 || parsedValue === 1) &&
                     parsedValue % 0.5 === 0) ||
                 value === "";
         } else {
-            isValid =
+            isValidValue =
                 (parsedValue >= 6 &&
                     parsedValue <= 10 &&
                     parsedValue % 0.5 === 0) ||
                 value === "";
         }
 
+        const isValid = isValidFormat && (value === "" || isValidValue);
+
+        console.log(isValidFormat)
+
         if (isValid) {
             setRPE(value);
         }
     };
+
+
+    // called on focus blur to remove trailing decimals
+    const removeTrailingDecimal = (weight: string, rpe: string) => {
+        if (weight.endsWith(".")) {
+            weight = weight.slice(0, -1);
+            setWeight(weight);
+        }
+        if (rpe.endsWith(".")) {
+            rpe = rpe.slice(0, -1);
+            setRPE(rpe);
+        }
+        if (rpe === "1") {
+            // since 1 must be allowed to be entered in order 
+            // to enter 10, clear the input if user leaves RPE
+            // input on 1
+            setRPE("");
+        }
+    }
 
     const updateOneRepMax = (weight: string, reps: string, rpe: string) => {
         if (
@@ -126,6 +172,8 @@ export default function CalculatorForm({
 
             setOneRepMax(oneRepMax);
             setSetData(setData);
+        } else {
+            setOneRepMax(0);
         }
     };
 
@@ -154,10 +202,7 @@ export default function CalculatorForm({
                             variant="bordered"
                             size="sm"
                             color="primary"
-                            type="number"
-                            min={0}
-                            max={9999}
-                            step={0.5}
+                            inputMode="numeric"
                             endContent={
                                 <div className="pointer-events-none flex items-center">
                                     <span className="text-default-400 text-small">
@@ -167,6 +212,7 @@ export default function CalculatorForm({
                             }
                             value={weight}
                             onValueChange={handleWeightChange}
+                            onBlur={() => removeTrailingDecimal(weight, rpe)}
                         />
                     </Tooltip>
                 </div>
@@ -214,12 +260,10 @@ export default function CalculatorForm({
                             variant="bordered"
                             size="sm"
                             color="primary"
-                            type="number"
-                            min={1}
-                            max={10}
-                            step={1}
+                            inputMode="numeric"
                             value={reps}
                             onValueChange={handleRepsChange}
+                            onBlur={() => removeTrailingDecimal(weight, rpe)}
                         />
                     </Tooltip>
                 </div>
@@ -247,12 +291,10 @@ export default function CalculatorForm({
                             variant="bordered"
                             size="sm"
                             color="primary"
-                            type="number"
-                            min={6}
-                            max={10}
-                            step={0.5}
+                            inputMode="numeric"
                             value={rpe}
                             onValueChange={handleRPEChange}
+                            onBlur={() => removeTrailingDecimal(weight, rpe)}
                         />
                     </Tooltip>
                 </div>
