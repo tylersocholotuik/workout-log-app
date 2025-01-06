@@ -69,15 +69,6 @@ export default function Calculator() {
                     property="description"
                     content="Enter the weight, reps, and RPE for a set you have performed, and calculate your estimated one-rep max. View a chart of the estimated weight you can lift in different rep and RPE ranges."
                 />
-                <meta
-                    property="og:image"
-                    content="/public/img/calculator_og.webp"
-                />
-                <meta property="og:title" content="workout.log() | One-Rep Max Calculator" />
-                <meta
-                    property="og:description"
-                    content="Enter the weight, reps, and RPE for a set you have performed, and calculate your estimated one-rep max. View a chart of the estimated weight you can lift in different rep and RPE ranges."
-                />
             </Head>
             <main>
                 <div className="container mx-auto px-2 md:px-4 py-6">

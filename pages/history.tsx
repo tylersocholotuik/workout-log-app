@@ -57,15 +57,6 @@ export default function History() {
                     property="description"
                     content="View your past workouts filtered by date range, and grouped by month or week."
                 />
-                <meta
-                    property="og:image"
-                    content="/public/img/history_og.webp"
-                />
-                <meta property="og:title" content="workout.log() | Workout History" />
-                <meta
-                    property="og:description"
-                    content="View your past workouts filtered by date range, and grouped by month or week."
-                />
                 </Head>
                 <main>
                     <div className="absolute top-1/2 left-2/4 -translate-x-1/2 -translate-y-1/2">

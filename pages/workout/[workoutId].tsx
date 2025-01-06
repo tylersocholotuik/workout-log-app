@@ -350,15 +350,6 @@ export default function WorkoutLog() {
                     property="description"
                     content="Log your workout by selecting from a list of pre-loaded exercises or creating your own, and enter the weight, reps, and RPE for each set you performed."
                 />
-                <meta
-                    property="og:image"
-                    content="/public/img/workout_og.webp"
-                />
-                <meta property="og:title" content="workout.log() | Workout" />
-                <meta
-                    property="og:description"
-                    content="Log your workout by selecting from a list of pre-loaded exercises or creating your own, and enter the weight, reps, and RPE for each set you performed."
-                />
             </Head>
             <WorkoutContext.Provider value={{ workout, setWorkout }}>
                 <main>

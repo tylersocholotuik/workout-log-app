@@ -35,15 +35,6 @@ export default function Home() {
                     property="description"
                     content="workout.log() is a simple training log application that allows you to save your workout data to view at a later time."
                 />
-                <meta
-                    property="og:image"
-                    content="/public/img/workout_og.webp"
-                />
-                <meta property="og:title" content="workout.log()" />
-                <meta
-                    property="og:description"
-                    content="workout.log() is a simple training log application that allows you to save your workout data to view at a later time."
-                />
             </Head>
             <main>
                 <div className="container mx-auto px-2 md:px-4 py-6">
