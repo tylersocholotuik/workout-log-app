@@ -299,7 +299,7 @@ export default function CalculatorForm({
                     </Tooltip>
                 </div>
             </div>
-            <div className="justify-self-center">
+            <div className="flex justify-center">
                 <Button
                     color="primary"
                     variant="light"
