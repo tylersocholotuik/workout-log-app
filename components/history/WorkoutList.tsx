@@ -130,7 +130,7 @@ export default function WorkoutList({ workouts }: WorkoutListProps) {
     return (
         <section>
             <div className="flex justify-center items-center gap-2"></div>
-            <div className="justify-self-center mb-6">
+            <div className="flex justify-center mb-6">
                 <Popover placement="bottom">
                     <PopoverTrigger>
                         <Button
@@ -156,7 +156,6 @@ export default function WorkoutList({ workouts }: WorkoutListProps) {
                                     <DateRangePicker
                                         label="Select date range"
                                         showMonthAndYearPickers
-                                        visibleMonths={3}
                                         pageBehavior="single"
                                         variant="bordered"
                                         size="md"
