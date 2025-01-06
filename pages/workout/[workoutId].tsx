@@ -379,7 +379,7 @@ export default function WorkoutLog() {
                             </div>
                         </div>
                         <Divider />
-                        <div className="justify-self-center my-8">
+                        <div className="flex justify-center my-8">
                             <Button
                                 aria-label="one-rep max calculator"
                                 color="primary"
@@ -420,7 +420,7 @@ export default function WorkoutLog() {
                                 Add Exercise
                             </Button>
                         </div>
-                        <div className="flex justify-self-center justify-around mb-8 w-[340px]">
+                        <div className="flex justify-center gap-4 mb-8">
                             <div>
                                 <Button
                                     isLoading={isSaving}
@@ -459,33 +459,6 @@ export default function WorkoutLog() {
                                 </Button>
                             </div>
                         </div>
-                        {/* 
-                        Commenting this out for now. It is a good feature, but I am
-                        not happy with the styling.
-
-                        {workoutId !== "new-workout" && (
-                            <div className="justify-self-center">
-                                <Button
-                                    color="primary"
-                                    fullWidth
-                                    variant="solid"
-                                    radius="full"
-                                    onPress={() => {
-                                        router.push("/workout/new-workout");
-                                        setWorkout(new Workout());
-                                    }}
-                                    startContent={
-                                        <Icon
-                                            icon="gridicons:create"
-                                            width="20"
-                                            height="20"
-                                        />
-                                    }
-                                >
-                                    New Workout
-                                </Button>
-                            </div>
-                        )} */}
                     </div>
                 </main>
 
