@@ -5,13 +5,7 @@ import { useTheme } from "next-themes";
 import Head from "next/head";
 import Footer from "@/components/Footer";
 
-import {
-    Image,
-    Card,
-    CardBody,
-    Link,
-    Button
-} from "@nextui-org/react";
+import { Image, Card, CardBody, Link, Button } from "@nextui-org/react";
 
 import calculator_dark from "/public/img/calculator_dark.webp";
 import calculator_light from "/public/img/calculator_light.webp";
@@ -29,7 +23,7 @@ export default function Home() {
     useEffect(() => {
         // checks the current theme. Using this to change the card
         // images based on the theme.
-        console.log()
+        console.log();
         setIsDarkMode(resolvedTheme === "dark");
     }, [resolvedTheme]);
 
@@ -37,6 +31,19 @@ export default function Home() {
         <>
             <Head>
                 <title>workout.log&#40;&#41; | Home</title>
+                <meta
+                    property="description"
+                    content="workout.log() is a simple training log application that allows you to save your workout data to view at a later time."
+                />
+                <meta
+                    property="og:image"
+                    content="/public/img/workout_og.webp"
+                />
+                <meta property="og:title" content="workout.log()" />
+                <meta
+                    property="og:description"
+                    content="workout.log() is a simple training log application that allows you to save your workout data to view at a later time."
+                />
             </Head>
             <main>
                 <div className="container mx-auto px-2 md:px-4 py-6">
@@ -44,7 +51,10 @@ export default function Home() {
                         <h2 className="text-center text-2xl sm:text-3xl md:text-4xl mb-8">
                             Welcome to{" "}
                             <span className="tracking-widest font-mono">
-                                <span className="text-[#569CD6] dark:text-[#9CDCFE]">workout</span>.
+                                <span className="text-[#569CD6] dark:text-[#9CDCFE]">
+                                    workout
+                                </span>
+                                .
                                 <span className="text-amber-500 dark:text-[#DCDCAA]">
                                     log
                                 </span>
@@ -69,7 +79,9 @@ export default function Home() {
                                         <div className="md:w-3/6">
                                             {isDarkMode ? (
                                                 <Image
-                                                    src={select_exercise_dark.src}
+                                                    src={
+                                                        select_exercise_dark.src
+                                                    }
                                                     alt="Image of workout exercise selection"
                                                     radius="lg"
                                                 />
@@ -171,19 +183,19 @@ export default function Home() {
                                 <CardBody>
                                     <div className="flex flex-col-reverse items-center md:flex-row gap-8">
                                         <div className="md:w-3/6">
-                                            {isDarkMode ?
+                                            {isDarkMode ? (
                                                 <Image
-                                                src={calculator_dark.src}
-                                                alt="Image of the calculator page"
-                                                radius="lg"
-                                            />
-                                            :
-                                            <Image
-                                                src={calculator_light.src}
-                                                alt="Image of the calculator page"
-                                                radius="lg"
-                                            />
-                                        }
+                                                    src={calculator_dark.src}
+                                                    alt="Image of the calculator page"
+                                                    radius="lg"
+                                                />
+                                            ) : (
+                                                <Image
+                                                    src={calculator_light.src}
+                                                    alt="Image of the calculator page"
+                                                    radius="lg"
+                                                />
+                                            )}
                                         </div>
                                         <section className="text-center md:text-start md:w-3/6">
                                             <h4 className="text-xl sm:text-2xl md:text-3xl font-semibold mb-4">
@@ -198,13 +210,13 @@ export default function Home() {
                                                 different rep and RPE ranges.
                                             </p>
                                             <div className="justify-self-center">
-                                                <Button 
-                                                    as={Link} 
+                                                <Button
+                                                    as={Link}
                                                     href="/calculator"
                                                     variant="solid"
                                                     size="lg"
                                                     color="primary"
-                                                 >
+                                                >
                                                     Try it out!
                                                 </Button>
                                             </div>
@@ -214,7 +226,13 @@ export default function Home() {
                             </Card>
                         </section>
                         <p className="text-xl sm:text-2xl md:text-3xl text-center py-8">
-                            Interested? <Link className="text-xl sm:text-2xl md:text-3xl" href="/login">Sign up now!</Link>
+                            Interested?{" "}
+                            <Link
+                                className="text-xl sm:text-2xl md:text-3xl"
+                                href="/login"
+                            >
+                                Sign up now!
+                            </Link>
                         </p>
                     </div>
                 </div>
