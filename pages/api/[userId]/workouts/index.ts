@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { PrismaClient } from "@prisma/client";
-import { Workout, WorkoutExercise, Set } from "@/utils/models/models";
+import { WorkoutExercise, Set } from "@/utils/models/models";
 
 const prisma = new PrismaClient();
 
@@ -69,8 +69,6 @@ const getUserWorkouts = async (req: NextApiRequest, res: NextApiResponse) => {
   } catch (error) {
     console.error("Error fetching workouts:", error);
     res.status(500).json({ error: "Failed to fetch workouts" });
-  } finally {
-    await prisma.$disconnect();
   }
 };
 
@@ -129,9 +127,7 @@ const addWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
     return res.status(200).json(newWorkout);
   } catch (error) {
     console.error("Error fetching workouts:", error);
-    res.status(500).json({ error: "Failed to add workouts" });
-  } finally {
-    await prisma.$disconnect();
+    res.status(500).json({ error: "Failed to add workout" });
   }
 };
 
@@ -265,8 +261,6 @@ const updateWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
   } catch (error) {
     console.error("Error updating workout:", error);
     res.status(500).json({ error: "Failed to update workout" });
-  } finally {
-    await prisma.$disconnect();
   }
 };
 
@@ -286,8 +280,6 @@ const deleteWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
   } catch (error) {
     console.error("Error deleting workout:", error);
     res.status(500).json({ error: "Failed to delete workout" });
-  } finally {
-    await prisma.$disconnect();
   }
 };
 

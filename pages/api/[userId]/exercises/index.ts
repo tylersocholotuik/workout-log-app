@@ -46,8 +46,6 @@ const getUserExercises = async (req: NextApiRequest, res: NextApiResponse) => {
   } catch (error) {
     console.error("Error fetching exercises:", error);
     res.status(500).json({ error: "Failed to fetch exercises" });
-  } finally {
-    await prisma.$disconnect();
   }
 };
 
@@ -88,8 +86,6 @@ const addUserExercise = async (req: NextApiRequest, res: NextApiResponse) => {
   } catch (error) {
     console.error("Error adding exercise:", error);
     res.status(500).json({ error: "Failed to add exercise" });
-  } finally {
-    await prisma.$disconnect();
   }
 };
 
@@ -129,8 +125,6 @@ const updateUserExercise = async (
   } catch (error) {
     console.error("Error updating exercise name:", error);
     res.status(500).json({ error: "Failed to update exercise name" });
-  } finally {
-    await prisma.$disconnect();
   }
 };
 
@@ -151,7 +145,5 @@ const deleteUserExercise = async (
   } catch (error) {
     console.error("Error deleting exercise: ", error);
     res.status(500).json({ error: "Failed to delete exercise" });
-  } finally {
-    await prisma.$disconnect();
   }
 };

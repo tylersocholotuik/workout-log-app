@@ -60,6 +60,6 @@ export const getWorkout = async (req: NextApiRequest, res: NextApiResponse) => {
     return res.status(200).json(workout);
   } catch (error) {
     console.error("Error fetching workouts:", error);
-    res.status(500).json({ error: "Failed to fetch workouts" });
+    res.status(500).json({ error: "Failed to fetch workout" });
   }
 };

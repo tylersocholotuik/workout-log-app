@@ -94,7 +94,5 @@ export default async function handler(
     } catch (error) {
         console.error("Error fetching exercises:", error);
         res.status(500).json({ error: "Failed to fetch exercises" });
-    } finally {
-        await prisma.$disconnect();
     }
 }
