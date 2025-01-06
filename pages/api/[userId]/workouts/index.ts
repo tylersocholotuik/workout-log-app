@@ -1,8 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { PrismaClient } from "@prisma/client";
 import { WorkoutExercise, Set } from "@/utils/models/models";
 
-const prisma = new PrismaClient();
+import { prisma } from "@/prisma/globalPrismaClient";
 
 export default async function handler(
   req: NextApiRequest,
