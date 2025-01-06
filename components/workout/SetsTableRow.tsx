@@ -199,7 +199,7 @@ export default function SetsTableRow({
                 <Input
                     classNames={{ input: "text-center" }}
                     id={`exercise-${exerciseIndex}-set-${setIndex}-weight`}
-                    inputMode="numeric"
+                    inputMode="decimal"
                     variant="bordered"
                     size="sm"
                     aria-label="weight"
@@ -223,7 +223,7 @@ export default function SetsTableRow({
                 <Input
                     classNames={{ input: "text-center" }}
                     id={`exercise-${exerciseIndex}-set-${setIndex}-reps`}
-                    inputMode="numeric"
+                    inputMode="decimal"
                     variant="bordered"
                     size="sm"
                     aria-label="reps"
@@ -240,7 +240,7 @@ export default function SetsTableRow({
                 <Input
                     classNames={{ input: "text-center" }}
                     id={`exercise-${exerciseIndex}-set-${setIndex}-rpe`}
-                    inputMode="numeric"
+                    inputMode="decimal"
                     variant="bordered"
                     size="sm"
                     aria-label="rpe"
