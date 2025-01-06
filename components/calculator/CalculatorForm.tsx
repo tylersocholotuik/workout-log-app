@@ -202,7 +202,7 @@ export default function CalculatorForm({
                             variant="bordered"
                             size="sm"
                             color="primary"
-                            inputMode="numeric"
+                            inputMode="decimal"
                             endContent={
                                 <div className="pointer-events-none flex items-center">
                                     <span className="text-default-400 text-small">
@@ -260,7 +260,7 @@ export default function CalculatorForm({
                             variant="bordered"
                             size="sm"
                             color="primary"
-                            inputMode="numeric"
+                            inputMode="decimal"
                             value={reps}
                             onValueChange={handleRepsChange}
                             onBlur={() => removeTrailingDecimal(weight, rpe)}
@@ -291,7 +291,7 @@ export default function CalculatorForm({
                             variant="bordered"
                             size="sm"
                             color="primary"
-                            inputMode="numeric"
+                            inputMode="decimal"
                             value={rpe}
                             onValueChange={handleRPEChange}
                             onBlur={() => removeTrailingDecimal(weight, rpe)}
