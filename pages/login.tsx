@@ -252,7 +252,7 @@ export default function App() {
                 <title>Login</title>
             </Head>
             <div className="container mx-auto px-2 md:px-4 py-6">
-                <Card className="max-w-full w-[340px] sm:w-[500px] justify-self-center">
+                <Card className="max-w-full w-[340px] sm:w-[500px] mx-auto">
                     <CardHeader className="justify-center">
                         <h2 className="text-lg">Login / Sign up</h2>
                     </CardHeader>
