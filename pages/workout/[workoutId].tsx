@@ -180,8 +180,12 @@ export default function WorkoutLog() {
 
     const discardWorkout = async (
         userId: string | string[] | undefined,
-        workoutId: string
+        workoutId: string | string[] | undefined
     ) => {
+        if (typeof workoutId !== "string") {
+            throw new Error("Invalid workoutId.");
+        }
+
         let success = false;
 
         setFeedback("");
@@ -519,7 +523,7 @@ export default function WorkoutLog() {
                 <DeleteWorkoutModal
                     isOpen={deleteModal.isOpen}
                     onOpenChange={deleteModal.onOpenChange}
-                    callbackFunction={() => discardWorkout(userId, workout.id)}
+                    callbackFunction={() => discardWorkout(userId, workoutId)}
                 />
 
                 <CalculatorModal
