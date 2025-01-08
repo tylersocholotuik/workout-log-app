@@ -76,7 +76,7 @@ export default function CalculatorModal({
     };
 
     return (
-        <Modal isOpen={isOpen} onOpenChange={onOpenChange} scrollBehavior="inside" size="3xl">
+        <Modal isOpen={isOpen} onOpenChange={onOpenChange} scrollBehavior="inside" size="full">
             <ModalContent>
                 {(onClose) => (
                     <>
