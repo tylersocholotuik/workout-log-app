@@ -416,7 +416,7 @@ export default function ExerciseCard({
                             >
                                 <p className="text-default-500 text-sm">
                                     e1RM:{" "}
-                                    <span className="text-white">
+                                    <span className="text-default-800 dark:text-white">
                                         {oneRepMax} {exercise.weightUnit}
                                     </span>
                                 </p>
