@@ -1,40 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# Workout Log Web Application
 
-## Getting Started
+This application allows a user to enter their workout data and save it to view or update at a later date. It also includes a one-rep max calculator page that calculates your one-rep max based on the weight, reps, and RPE (Rate of Perceived Exertion) of a set you performed in the past. A table is displayed showing the estimated weight you can lift between 1-10 reps at RPE 6-10. View the deployed website at [https://workoutlogapp.vercel.app](https://workoutlogapp.vercel.app).
 
-First, run the development server:
+### Workout Page
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+![Image of workout page](/public/img/workout_dark.webp)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+When a new workout is started, the title is defaulted to \[Today's Date YYYY-MM-dd\] Workout, the date is defaulted to today, and there is an optional section for overal workout notes.
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+The 'Add Exercise' button opens a modal that shows a list of pre-loaded exercises, and has tabs for user-created exercises and new exercise creation. Once an exercise is selected or a new exercise is created, it can be added to the workout.
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+The exercise card has an options button that allows you to change the weight unit from lbs to kg, and a switch to show or hide the estimated one-rep max. An actions button beside the exercise title allows you to change the exercise, view your history of performing that exercise, or delete the exercise. The inputs include a notes section \(useful for set and rep targets\), and weight, reps, and RPE. All of these inputs have rules enforced by regex patterns, and on mobile devices, the numeric keyboard with a decimal is opened \(**Weight:** 0-9999, only 0 or 5 after the decimal. **Reps:** 0-9999, whole numbers. **RPE:** 0-10, 0 or 5 after the decimal.\). Each set has a delete button, and sets can be added with the 'Add set' button. If there are any sets present between 1-10 reps at RPE 6-10, the estimated one-rep max will be calculated based on your best set is and displayed below the sets grid.
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+Once you are finished inputting your workout data, it can be saved by pressing the 'Save Workout' button, and this same button will update existing workouts. If it is a new, unsaved workout, there is a cancel button, and existing workouts have a delete button that will soft-delete the workout and remove it from the workout history view.
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### History Page
 
-## Learn More
+![Image of history page](/public/img/history_dark.webp)
 
-To learn more about Next.js, take a look at the following resources:
+The history page displays all of the logged in user's saved workouts in a card including the title, date, notes, and a list of exercises performed. The 'View/Edit' link will open the workout on the workout page.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
+The workouts can be filtered by date range, and grouped by month or week. 
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Calculator Page
 
-## Deploy on Vercel
+![Image of calculator page](/public/img/calculator_dark.webp)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The calculator page allows you to enter the weight, reps, and RPE values for a set you have performed, and it will calculate your estimated one-rep max, along with a table of estimated weights you can lift between 1-10 reps at RPE 6-10. The input rules are slightly different on this page. Reps must be between 1-10, and RPE must be between 6-10. If you are interested in how this calculation is done and are curious about RPE, you can read [this article](https://fiftyonestrong.com/rpe/). If you are interested in how I did these calculations programatically, see [/utils/calculator/calc-functions.ts](/utils/calculator/calc-functions.ts).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+### Login/Sign up Page
+
+![Image of login page](/public/img/login.webp)
+
+Users have the option to login with an email magic link, or with email and password. The sign up page requires an email address, password, and a display name. The authentication is handled by Supabase Auth. If there is no logged in user, navigating to the workout or history pages will redirect the user to this page. The home page and calculator pages do not require authentication because they do not display or save any user data.
+
+## Tech Stack
+
+### Frontend
+
+- Next.js
+- React
+- Typescript
+- Next UI
+- Tailwind CSS
+
+### Backend
+
+- Supabase \(Postgres database with built-in Auth\)
+- Prisma ORM
+
+## Challenges
+
+- This was my first time creating a full-stack application from scratch with Next.js. In school, I have built full-stack applications with .NET Blazor (with pre-built SQL databases stored locally), but my React course was focused on frontend. Having to use API calls to access a remote database was a new learning experience for me.
+- Since my backend experience is in C#, I decided to use Typescript so I could have strongly-typed view models of my database entities to mimic my workflow in .NET. This resulted in unforseen challenges related to Typescript requiring definitions for absolutely everything including component props, and needing to use union types if a value may be null or undefined. Having to think about the possible values for all of my variables was a great learning experience.
+- My database schema has multiple layers of one-to-many relationships that made CRUD operations for Workouts more difficult than what I am used to. My school projects typically involved tables like Orders > OrderDetails, but this project has Workouts > WorkoutExercises > Sets. This also made state updates to my workout object on the frontend challenging if there were changes to exercises or sets. 
+- This was my first time creating a multi-user application with authentication, so I had to spend a lot of time learning about the basic concepts of sessions and tokens. This influenced my decision to use Supabase because their built-in auth library is very easy to use.
