@@ -271,7 +271,7 @@ export default function SelectExerciseModal({
                                 variant="solid"
                                 color="primary"
                                 radius="sm"
-                                className="justify-center z-10 sticky top-0"
+                                className="justify-center"
                                 selectedKey={selectedTab}
                                 onSelectionChange={setSelectedTab}
                             >
@@ -279,9 +279,8 @@ export default function SelectExerciseModal({
                                     key="stock-exercises"
                                     title="Stock Exercises"
                                 >
-                                    <div className="z-10 sticky top-[50px]">
+                                    <div>
                                         <Input
-                                            isClearable
                                             className="w-full"
                                             placeholder="Search stock exercises..."
                                             startContent={<SearchIcon />}
@@ -329,9 +328,8 @@ export default function SelectExerciseModal({
                                     </Table>
                                 </Tab>
                                 <Tab key="user-exercises" title="My Exercises">
-                                    <div className="z-10 sticky top-0">
+                                    <div>
                                         <Input
-                                            isClearable
                                             className="w-full"
                                             placeholder="Search my exercises..."
                                             startContent={<SearchIcon />}
