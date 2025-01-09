@@ -10,8 +10,8 @@ import {
 import { Workout } from "@/utils/models/models";
 
 interface WorkoutCardProps {
-    workout: Workout
-};
+    workout: Workout;
+}
 
 export default function WorkoutCard({ workout }: WorkoutCardProps) {
     const workoutDate = new Date(workout.date);
@@ -27,10 +27,12 @@ export default function WorkoutCard({ workout }: WorkoutCardProps) {
                             dateStyle: "full",
                         })}
                     </p>
-                    <p className="text-small text-default-500">
-                        <span className="font-bold">Notes: </span>
-                        {workout.notes}
-                    </p>
+                    {workout.notes && (
+                        <p className="text-small text-default-500">
+                            <span className="font-bold">Notes: </span>
+                            {workout.notes}
+                        </p>
+                    )}
                 </div>
                 <div className=""></div>
             </CardHeader>
@@ -55,11 +57,7 @@ export default function WorkoutCard({ workout }: WorkoutCardProps) {
             </CardBody>
             <Divider />
             <CardFooter>
-                <Link
-                    showAnchorIcon
-                    isBlock
-                    href={`/workout/${workout.id}`}
-                >
+                <Link showAnchorIcon isBlock href={`/workout/${workout.id}`}>
                     View/Edit
                 </Link>
             </CardFooter>
