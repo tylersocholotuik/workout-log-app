@@ -76,5 +76,5 @@ Please be respectful and do not save anything inappropriate in the notes section
 
 ## Known Bugs/Issues
 
-- Some components do not have a great user experience on mobile. The virtual keyboard pushes up the exercise selection modal making it difficult to see your search results while typing. The inputs on the one-rep max calculator modal are pushed completely off the screen when the keyboard is open, so you can not see what you are typing. The calculator modal on the workout page is a nice-to-have feature and is not required to log a workout.
+- Some components do not have a great user experience on mobile. The virtual keyboard pushes up the exercise selection modal making it difficult to see your search results while typing.
 - The one-rep max calculation sometimes differs by 1 lbs/kg due to floating point precision. This is not a huge issue since this is an estimate, and 1 lbs/kg is almost negligible since most weights in commercial gyms are not precise. 
