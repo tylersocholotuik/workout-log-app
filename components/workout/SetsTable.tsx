@@ -14,7 +14,7 @@ export default function SetsTable({
     exerciseIndex,
 }: SetsTableProps) {
     return (
-        <div className="grid grid-cols-7 gap-x-2 gap-y-1 justify-items-center">
+        <div className="grid grid-cols-7 gap-x-2 gap-y-1 justify-items-center items-center">
             <p className="col-span-2 text-sm dark:text-foreground-500 font-semibold mb-1">
                 Weight
             </p>
