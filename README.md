@@ -34,6 +34,16 @@ The calculator page allows you to enter the weight, reps, and RPE values for a s
 
 Users have the option to login with an email magic link, or with email and password. The sign up page requires an email address, password, and a display name. The authentication is handled by Supabase Auth. If there is no logged in user, navigating to the workout or history pages will redirect the user to this page. The home page and calculator pages do not require authentication because they do not display or save any user data.
 
+## Testing
+
+If you would like to test this application without creating an account, you may use the Test User account. Please do not send magic links to this email, only sign in with credentials.
+
+Email: workoutlogtestuser@gmail.com
+<br>
+Password: testuserpassword
+
+Please be respectful and do not save anything inappropriate in the notes sections on this account.
+
 ## Tech Stack
 
 ### Frontend
@@ -51,7 +61,20 @@ Users have the option to login with an email magic link, or with email and passw
 
 ## Challenges
 
+- I only had a little under three weeks to complete this project during my break between semesters. This was a good exercise in working with tight deadlines. It was also a good exercise in building something that is ready to deliver, but not yet perfect. I can continue to improve this over time.
 - This was my first time creating a full-stack application from scratch with Next.js. In school, I have built full-stack applications with .NET Blazor (with pre-built SQL databases stored locally), but my React course was focused on frontend. Having to use API calls to access a remote database was a new learning experience for me.
 - Since my backend experience is in C#, I decided to use Typescript so I could have strongly-typed view models of my database entities to mimic my workflow in .NET. This resulted in unforseen challenges related to Typescript requiring definitions for absolutely everything including component props, and needing to use union types if a value may be null or undefined. Having to think about the possible values for all of my variables was a great learning experience.
 - My database schema has multiple layers of one-to-many relationships that made CRUD operations for Workouts more difficult than what I am used to. My school projects typically involved tables like Orders > OrderDetails, but this project has Workouts > WorkoutExercises > Sets. This also made state updates to my workout object on the frontend challenging if there were changes to exercises or sets. 
 - This was my first time creating a multi-user application with authentication, so I had to spend a lot of time learning about the basic concepts of sessions and tokens. This influenced my decision to use Supabase because their built-in auth library is very easy to use.
+
+## Future Improvements
+
+- Add an account management page to change email, display name, and reset password. 
+- Add an analytics page with charts to monitor exercise progress over time (one-rep max, tonnage, total reps, volume, etc.)
+- Add a user dashboard showing recent workouts and options to show progress charts for selected exercises.
+- Rebuild as a mobile application
+
+## Known Bugs/Issues
+
+- Some components do not have a great user experience on mobile. The virtual keyboard pushes up the exercise selection modal making it difficult to see your search results while typing. The inputs on the one-rep max calculator modal are pushed completely off the screen when the keyboard is open, so you can not see what you are typing. The calculator modal on the workout page is a nice-to-have feature and is not required to log a workout.
+- The one-rep max calculation sometimes differs by 1 lbs/kg due to floating point precision. This is not a huge issue since this is an estimate, and 1 lbs/kg is almost negligible since most weights in commercial gyms are not precise. 
