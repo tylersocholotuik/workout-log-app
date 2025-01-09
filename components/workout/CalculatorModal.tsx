@@ -144,7 +144,7 @@ export default function CalculatorModal({
                                             </>
                                         ) : (
                                             <p className="text-foreground-500">
-                                                Enter values above to calculate
+                                                Enter values below to calculate
                                             </p>
                                         )}
                                     </div>
