@@ -355,7 +355,9 @@ export default function WorkoutLog() {
                 <main>
                     <div className="container mx-auto px-2 md:px-4 py-6">
                         <div className="flex flex-col gap-2 items-center mb-4">
-                            <h2 className="text-lg">{workout.title}</h2>
+                            <h2 className="text-lg font-semibold">
+                                {workout.title}
+                            </h2>
                             <p className="text-md">
                                 {new Date(workout.date).toLocaleString(
                                     "en-CA",
@@ -365,10 +367,14 @@ export default function WorkoutLog() {
                                 )}
                             </p>
                             <div className="max-w-[400px] text-center">
-                                <p className="text-md text-default-500">
-                                    <span className="font-bold">Notes: </span>
-                                    {workout.notes}
-                                </p>
+                                {workout.notes && (
+                                    <p className="text-md text-default-500">
+                                        <span className="font-bold">
+                                            Notes:{" "}
+                                        </span>
+                                        {workout.notes}
+                                    </p>
+                                )}
                             </div>
                             <div>
                                 <Button
