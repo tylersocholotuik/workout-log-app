@@ -76,7 +76,12 @@ export default function CalculatorModal({
     };
 
     return (
-        <Modal isOpen={isOpen} onOpenChange={onOpenChange} scrollBehavior="inside" size="full">
+        <Modal
+            isOpen={isOpen}
+            onOpenChange={onOpenChange}
+            scrollBehavior="inside"
+            size="full"
+        >
             <ModalContent>
                 {(onClose) => (
                     <>
@@ -84,19 +89,19 @@ export default function CalculatorModal({
                             One-Rep Max Calculator
                         </ModalHeader>
                         <ModalBody>
-                            <div className="container mx-auto px-2 md:px-4 py-6">
+                            <div className="container mx-auto px-2 md:px-4">
+                                <RPEDataTable
+                                    oneRepMax={oneRepMax}
+                                    weightUnit={conversionWeightUnit}
+                                />
                                 <div>
-                                    <CalculatorForm
-                                        setSetData={setSetData}
-                                        setOneRepMax={setOneRepMax}
-                                    />
                                     <div className="text-center mb-6">
-                                        <p className="text-lg mb-2">
+                                        <p className="text-md md:text-lg mt-6 mb-2">
                                             Estimated One-Rep Max:
                                         </p>
                                         {oneRepMax > 0 ? (
                                             <>
-                                                <p className="font-bold text-xl text-primary mb-4">
+                                                <p className="font-bold text-lg md:text-xl text-primary mb-4">
                                                     {oneRepMax}{" "}
                                                     {conversionWeightUnit}
                                                 </p>
@@ -143,9 +148,9 @@ export default function CalculatorModal({
                                             </p>
                                         )}
                                     </div>
-                                    <RPEDataTable
-                                        oneRepMax={oneRepMax}
-                                        weightUnit={conversionWeightUnit}
+                                    <CalculatorForm
+                                        setSetData={setSetData}
+                                        setOneRepMax={setOneRepMax}
                                     />
                                 </div>
                             </div>
