@@ -12,9 +12,9 @@ Please be respectful and do not save anything inappropriate in the notes section
 
 ## Running Locally
 
-If you would like to run this project locally, you will need to [create a new Supabase project](https://supabase.com/). 
+If you would like to run this project locally, you will need to [create a new Supabase project](https://supabase.com/).
 
-Once the project is created: 
+Once the project is created:
 
 1. Navigate to your dashboard and click the "connect" button near the top of the window. In the "App Frameworks" tab, select Next.js and copy the environment variables in the ".env.local" tab.
 2. In the "ORMs" tab, select Prisma and copy the environment variables in the ".env.local" tab.
@@ -30,6 +30,10 @@ POSTGRES_URL_NON_POOLING="your-connection-string"
 # Direct connection to the database. Used for migrations.
 DIRECT_URL="your-direct-url"
 ```
+
+5. Install project dependencies by running the command ```npm install``` in the root directory of the project.
+6. To apply the inital migration to your database, run the command ```npx prisma migrate dev --name init --skip-seed```. It is important that you skip seeding because my seed script contains a userId that will not exist in your supabase auth.users table.
+7. To run the project, run the command ```npm run dev```. Open a web browser and enter ```localhost:3000``` in the address bar.
 
 ## Pages
 
