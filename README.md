@@ -2,6 +2,37 @@
 
 This application allows a user to enter their workout data and save it to view or update at a later date. It also includes a one-rep max calculator page that calculates your one-rep max based on the weight, reps, and RPE (Rate of Perceived Exertion) of a set you performed in the past. A table is displayed showing the estimated weight you can lift between 1-10 reps at RPE 6-10. View the deployed website at [https://workoutlogapp.vercel.app](https://workoutlogapp.vercel.app).
 
+If you would like to test this application without creating an account, you may use the Test User account. Please do not send magic links to this email, only sign in with credentials.
+
+Email: workoutlogtestuser@gmail.com
+<br>
+Password: testuserpassword
+
+Please be respectful and do not save anything inappropriate in the notes sections on this account.
+
+## Running Locally
+
+If you would like to run this project locally, you will need to [create a new Supabase project](https://supabase.com/). 
+
+Once the project is created: 
+
+1. Navigate to your dashboard and click the "connect" button near the top of the window. In the "App Frameworks" tab, select Next.js and copy the environment variables in the ".env.local" tab.
+2. In the "ORMs" tab, select Prisma and copy the environment variables in the ".env.local" tab.
+3. Create a ```.env.local``` file in the root directory of this project, and paste the environment variables from your Supabase dashboard.
+4. Change the ```DATABASE_URL``` variable name to ```POSTGRES_URL_NON_POOLING```.
+
+The file should look like this:
+```
+NEXT_PUBLIC_SUPABASE_URL="your-database-url"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-anon-key"
+# Connect to Supabase via connection pooling with Supavisor.
+POSTGRES_URL_NON_POOLING="your-connection-string"
+# Direct connection to the database. Used for migrations.
+DIRECT_URL="your-direct-url"
+```
+
+## Pages
+
 ### Workout Page
 
 ![Image of workout page](/public/img/workout_dark.webp)
@@ -33,16 +64,6 @@ The calculator page allows you to enter the weight, reps, and RPE values for a s
 ![Image of login page](/public/img/login.webp)
 
 Users have the option to login with an email magic link, or with email and password. The sign up page requires an email address, password, and a display name. The authentication is handled by Supabase Auth. If there is no logged in user, navigating to the workout or history pages will redirect the user to this page. The home page and calculator pages do not require authentication because they do not display or save any user data.
-
-## Testing
-
-If you would like to test this application without creating an account, you may use the Test User account. Please do not send magic links to this email, only sign in with credentials.
-
-Email: workoutlogtestuser@gmail.com
-<br>
-Password: testuserpassword
-
-Please be respectful and do not save anything inappropriate in the notes sections on this account.
 
 ## Tech Stack
 
