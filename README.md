@@ -18,10 +18,11 @@ Once the project is created:
 
 1. Navigate to your dashboard and click the "connect" button near the top of the window. In the "App Frameworks" tab, select Next.js and copy the environment variables in the ".env.local" tab.
 2. In the "ORMs" tab, select Prisma and copy the environment variables in the ".env.local" tab.
-3. Create a ```.env.local``` file in the root directory of this project, and paste the environment variables from your Supabase dashboard.
-4. Change the ```DATABASE_URL``` variable name to ```POSTGRES_URL_NON_POOLING```.
+3. Create a `.env.local` file in the root directory of this project, and paste the environment variables from your Supabase dashboard.
+4. Change the `DATABASE_URL` variable name to `POSTGRES_URL_NON_POOLING`.
 
 The file should look like this:
+
 ```
 NEXT_PUBLIC_SUPABASE_URL="your-database-url"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-anon-key"
@@ -31,9 +32,9 @@ POSTGRES_URL_NON_POOLING="your-connection-string"
 DIRECT_URL="your-direct-url"
 ```
 
-5. Install project dependencies by running the command ```npm install``` in the root directory of the project.
-6. To apply the inital migration to your database, run the command ```npx prisma migrate dev --name init --skip-seed```. It is important that you skip seeding because my seed script contains a userId that will not exist in your supabase auth.users table.
-7. To run the project, run the command ```npm run dev```. Open a web browser and enter ```localhost:3000``` in the address bar.
+5. Install project dependencies by running the command `npm install` in the root directory of the project.
+6. To apply the inital migration to your database, run the command `npx prisma migrate dev --name init`. This should automatically seed the database with stock exercises. If it does not, you can run the `npx prisma db seed` command.
+7. To run the project, run the command `npm run dev`. Open a web browser and enter `localhost:3000` in the address bar.
 
 ## Pages
 
@@ -55,7 +56,7 @@ Once you are finished inputting your workout data, it can be saved by pressing t
 
 The history page displays all of the logged in user's saved workouts in a card including the title, date, notes, and a list of exercises performed. The 'View/Edit' link will open the workout on the workout page.
 
-The workouts can be filtered by date range, and grouped by month or week. 
+The workouts can be filtered by date range, and grouped by month or week.
 
 ### Calculator Page
 
@@ -73,33 +74,33 @@ Users have the option to login with an email magic link, or with email and passw
 
 ### Frontend
 
-- Next.js
-- React
-- Typescript
-- Next UI
-- Tailwind CSS
+-   Next.js
+-   React
+-   Typescript
+-   Next UI
+-   Tailwind CSS
 
 ### Backend
 
-- Supabase \(Postgres database with built-in Auth\)
-- Prisma ORM
+-   Supabase \(Postgres database with built-in Auth\)
+-   Prisma ORM
 
 ## Challenges
 
-- I only had a little under three weeks to complete this project during my break between semesters. This was a good exercise in working with tight deadlines. It was also a good exercise in building something that is ready to deliver, but not yet perfect. I can continue to improve this over time.
-- This was my first time creating a full-stack application from scratch with Next.js. In school, I have built full-stack applications with .NET Blazor (with pre-built SQL databases stored locally), but my React course was focused on frontend. Having to use API calls to access a remote database was a new learning experience for me.
-- Since my backend experience is in C#, I decided to use Typescript so I could have strongly-typed view models of my database entities to mimic my workflow in .NET. This resulted in unforseen challenges related to Typescript requiring definitions for absolutely everything including component props, and needing to use union types if a value may be null or undefined. Having to think about the possible values for all of my variables was a great learning experience.
-- My database schema has multiple layers of one-to-many relationships that made CRUD operations for Workouts more difficult than what I am used to. My school projects typically involved tables like Orders > OrderDetails, but this project has Workouts > WorkoutExercises > Sets. This also made state updates to my workout object on the frontend challenging if there were changes to exercises or sets. 
-- This was my first time creating a multi-user application with authentication, so I had to spend a lot of time learning about the basic concepts of sessions and tokens. This influenced my decision to use Supabase because their built-in auth library is very easy to use.
+-   I only had a little under three weeks to complete this project during my break between semesters. This was a good exercise in working with tight deadlines. It was also a good exercise in building something that is ready to deliver, but not yet perfect. I can continue to improve this over time.
+-   This was my first time creating a full-stack application from scratch with Next.js. In school, I have built full-stack applications with .NET Blazor (with pre-built SQL databases stored locally), but my React course was focused on frontend. Having to use API calls to access a remote database was a new learning experience for me.
+-   Since my backend experience is in C#, I decided to use Typescript so I could have strongly-typed view models of my database entities to mimic my workflow in .NET. This resulted in unforseen challenges related to Typescript requiring definitions for absolutely everything including component props, and needing to use union types if a value may be null or undefined. Having to think about the possible values for all of my variables was a great learning experience.
+-   My database schema has multiple layers of one-to-many relationships that made CRUD operations for Workouts more difficult than what I am used to. My school projects typically involved tables like Orders > OrderDetails, but this project has Workouts > WorkoutExercises > Sets. This also made state updates to my workout object on the frontend challenging if there were changes to exercises or sets.
+-   This was my first time creating a multi-user application with authentication, so I had to spend a lot of time learning about the basic concepts of sessions and tokens. This influenced my decision to use Supabase because their built-in auth library is very easy to use.
 
 ## Future Improvements
 
-- Add an account management page to change email, display name, and reset password. 
-- Add an analytics page with charts to monitor exercise progress over time (one-rep max, tonnage, total reps, volume, etc.)
-- Add a user dashboard showing recent workouts and options to show progress charts for selected exercises.
-- Rebuild as a mobile application
+-   Add an account management page to change email, display name, and reset password.
+-   Add an analytics page with charts to monitor exercise progress over time (one-rep max, tonnage, total reps, volume, etc.)
+-   Add a user dashboard showing recent workouts and options to show progress charts for selected exercises.
+-   Rebuild as a mobile application
 
 ## Known Bugs/Issues
 
-- Some components do not have a great user experience on mobile. The virtual keyboard pushes up the exercise selection modal making it difficult to see your search results while typing.
-- The one-rep max calculation sometimes differs by 1 lbs/kg due to floating point precision. This is not a huge issue since this is an estimate, and 1 lbs/kg is almost negligible since most weights in commercial gyms are not precise. 
+-   Some components do not have a great user experience on mobile. The virtual keyboard pushes up the exercise selection modal making it difficult to see your search results while typing.
+-   The one-rep max calculation sometimes differs by 1 lbs/kg due to floating point precision. This is not a huge issue since this is an estimate, and 1 lbs/kg is almost negligible since most weights in commercial gyms are not precise.
