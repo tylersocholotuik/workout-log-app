@@ -15,11 +15,9 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 
 import {
   parseDate,
-  CalendarDate,
   DateValue,
   toZoned,
   getLocalTimeZone,
-  ZonedDateTime,
 } from "@internationalized/date";
 
 import WorkoutCard from "./WorkoutCard";
@@ -68,8 +66,10 @@ export default function WorkoutList({ workouts }: WorkoutListProps) {
     setFilteredWorkouts(workoutsInRange);
   };
 
+  type GroupedWorkouts = Workout[] | Partial<Record<string, Workout[]>>;
+
   // groups the workouts by month or week depending on the provided option
-  const groupWorkoutsBy = (workouts: Workout[], option: string) => {
+  const groupWorkoutsBy = (workouts: Workout[], option: string): GroupedWorkouts => {
     if (option === "none") {
       return workouts;
     }
@@ -119,6 +119,8 @@ export default function WorkoutList({ workouts }: WorkoutListProps) {
         })}`;
       });
     }
+
+    return workouts;
   };
 
   // sets date range back to the range of the first workout to last workout
@@ -211,19 +213,19 @@ export default function WorkoutList({ workouts }: WorkoutListProps) {
         </div>
       ) : (
         <div>
-          {groupedWorkouts &&
-            Object.keys(groupedWorkouts).map((key) => {
-              return (
-                <section key={key} className="mb-6">
-                  <h3 className="text-center mb-6">{key}</h3>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {groupedWorkouts[key].map((workout) => {
-                      return <WorkoutCard key={workout.id} workout={workout} />;
-                    })}
-                  </div>
-                </section>
-              );
-            })}
+          {groupedWorkouts && typeof groupedWorkouts === "object" && !Array.isArray(groupedWorkouts) &&
+      Object.keys(groupedWorkouts).map((key) => {
+        return (
+          <section key={key} className="mb-6">
+            <h3 className="text-center mb-6">{key}</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {(groupedWorkouts[key] ?? []).map((workout: Workout) => {
+                return <WorkoutCard key={workout.id} workout={workout} />;
+              })}
+            </div>
+          </section>
+        );
+      })}
         </div>
       )}
     </section>
