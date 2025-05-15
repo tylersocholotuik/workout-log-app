@@ -4,7 +4,7 @@ import { useWorkoutContext } from "@/pages/workout/[workoutId]";
 
 import { Set } from "@/utils/models/models";
 
-import { Input, Tooltip, Button } from "@nextui-org/react";
+import { Input, Tooltip, Button } from "@heroui/react";
 import { DeleteIcon } from "@/icons/DeleteIcon";
 
 interface SetTableRowProps {

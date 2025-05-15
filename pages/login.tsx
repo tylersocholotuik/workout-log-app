@@ -16,7 +16,7 @@ import {
     Tab,
     Link,
     Alert,
-} from "@nextui-org/react";
+} from "@heroui/react";
 
 import Head from "next/head";
 

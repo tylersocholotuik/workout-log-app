@@ -8,7 +8,7 @@ import {
     Popover,
     PopoverTrigger,
     PopoverContent,
-} from "@nextui-org/react";
+} from "@heroui/react";
 
 import { Icon } from "@iconify/react/dist/iconify.js";
 

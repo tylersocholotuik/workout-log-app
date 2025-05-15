@@ -5,7 +5,7 @@ import { useTheme } from "next-themes";
 import Head from "next/head";
 import Footer from "@/components/Footer";
 
-import { Image, Card, CardBody, Link, Button } from "@nextui-org/react";
+import { Image, Card, CardBody, Link, Button } from "@heroui/react";
 
 import calculator_dark from "/public/img/calculator_dark.webp";
 import calculator_light from "/public/img/calculator_light.webp";

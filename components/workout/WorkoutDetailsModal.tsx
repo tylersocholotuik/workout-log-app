@@ -10,7 +10,7 @@ import {
     DatePicker,
     Input,
     Textarea,
-} from "@nextui-org/react";
+} from "@heroui/react";
 
 import { getLocalTimeZone, parseDate } from "@internationalized/date";
 

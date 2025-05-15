@@ -20,7 +20,7 @@ import {
     DropdownTrigger,
     DropdownMenu,
     DropdownItem,
-} from "@nextui-org/react";
+} from "@heroui/react";
 
 import { Icon } from "@iconify/react";
 import { DeleteIcon } from "@/icons/DeleteIcon";

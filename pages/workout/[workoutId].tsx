@@ -24,7 +24,7 @@ import {
     useDisclosure,
     Divider,
     Link,
-} from "@nextui-org/react";
+} from "@heroui/react";
 
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { EditIcon } from "@/icons/EditIcon";

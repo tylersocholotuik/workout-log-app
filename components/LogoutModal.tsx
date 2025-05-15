@@ -5,7 +5,7 @@ import {
     ModalBody,
     ModalFooter,
     Button,
-} from "@nextui-org/react";
+} from "@heroui/react";
 
 interface LogoutModalProps {
     isOpen: boolean;

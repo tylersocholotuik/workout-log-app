@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 import { Dispatch, SetStateAction } from "react";
 
-import { Button, Input, Tooltip } from "@nextui-org/react";
+import { Button, Input, Tooltip } from "@heroui/react";
 
 import { calculateOneRepMax } from "@/utils/calculator/calc-functions";
 

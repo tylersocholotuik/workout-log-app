@@ -8,7 +8,7 @@ import {
     ModalFooter,
     Button,
     Tooltip,
-} from "@nextui-org/react";
+} from "@heroui/react";
 
 import CalculatorForm from "@/components/calculator/CalculatorForm";
 import RPEDataTable from "@/components/calculator/RPEDataTable";

@@ -17,7 +17,7 @@ import {
     DropdownItem,
     DropdownTrigger,
     useDisclosure,
-} from "@nextui-org/react";
+} from "@heroui/react";
 
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { ChevronDownIcon } from "@/icons/ChevronDownIcon";

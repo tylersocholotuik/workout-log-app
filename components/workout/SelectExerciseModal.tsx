@@ -18,7 +18,7 @@ import {
     Tabs,
     Tab,
     Alert,
-} from "@nextui-org/react";
+} from "@heroui/react";
 
 import { SearchIcon } from "@/icons/SearchIcon";
 

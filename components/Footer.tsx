@@ -1,4 +1,4 @@
-import { Button, Link } from "@nextui-org/react";
+import { Button, Link } from "@heroui/react";
 
 import { Icon } from "@iconify/react/dist/iconify.js";
 

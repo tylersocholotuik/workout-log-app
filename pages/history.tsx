@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import Head from "next/head";
 
-import { Spinner, useDisclosure } from "@nextui-org/react";
+import { Spinner, useDisclosure } from "@heroui/react";
 import WorkoutList from "@/components/history/WorkoutList";
 import FeedbackModal from "@/components/workout/FeedbackModal";
 

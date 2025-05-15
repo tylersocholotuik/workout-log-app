@@ -1,4 +1,4 @@
-import { Switch, Tooltip } from "@nextui-org/react";
+import { Switch, Tooltip } from "@heroui/react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 

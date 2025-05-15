@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 import Head from "next/head";
 
-import { Button, Tooltip } from "@nextui-org/react";
+import { Button, Tooltip } from "@heroui/react";
 
 import CalculatorForm from "@/components/calculator/CalculatorForm";
 import RPEDataTable from "@/components/calculator/RPEDataTable";
