@@ -42,7 +42,6 @@ import {
     WorkoutExercise,
     Set,
     Exercise,
-    UserExercise,
 } from "@/utils/models/models";
 import FeedbackModal from "@/components/workout/FeedbackModal";
 
@@ -128,17 +127,11 @@ export default function WorkoutLog() {
         setIsLoading(false);
     };
 
-    const addExercise = (exercise: Exercise | UserExercise) => {
+    const addExercise = (exercise: Exercise) => {
         const updatedWorkout = { ...workout };
         const newWorkoutExercise = new WorkoutExercise();
-        // if userId is present, that means it is a user exercise
-        if ("userId" in exercise) {
-            newWorkoutExercise.userExerciseId = exercise.id;
-            newWorkoutExercise.userExercise = exercise;
-        } else {
-            newWorkoutExercise.exerciseId = exercise.id;
-            newWorkoutExercise.exercise = exercise;
-        }
+        newWorkoutExercise.exerciseId = exercise.id;
+        newWorkoutExercise.exercise = exercise;
         newWorkoutExercise.workoutId = workout.id;
         // automatically add an empty set when adding a new exercise
         const newSet = new Set();
