@@ -1,472 +1,352 @@
 import { useEffect, useState } from "react";
 
 import {
-    Modal,
-    ModalContent,
-    ModalHeader,
-    ModalBody,
-    ModalFooter,
-    Button,
-    Table,
-    TableHeader,
-    TableColumn,
-    TableBody,
-    TableRow,
-    TableCell,
-    Selection,
-    Input,
-    Tabs,
-    Tab,
-    Alert,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
+  Selection,
+  Input,
+  Alert,
 } from "@heroui/react";
 
 import { SearchIcon } from "@/icons/SearchIcon";
 
 import { Exercise, UserExercise } from "@/utils/models/models";
 import {
-    getUserExercises,
-    getStockExercises,
-    addUserExercise,
+  getUserExercises,
+  getStockExercises,
+  addUserExercise,
 } from "@/utils/api/exercises";
 
 interface SelectExerciseModalProps {
-    userId: string | string[] | undefined;
-    isOpen: boolean;
-    onOpenChange: () => void;
-    callbackFunction: (
-        newExercise: Exercise | UserExercise,
-        exerciseIndex?: number
-    ) => void;
-    exerciseIndex?: number;
-    update: boolean;
+  userId: string | string[] | undefined;
+  isOpen: boolean;
+  onOpenChange: () => void;
+  callbackFunction: (
+    newExercise: Exercise | UserExercise,
+    exerciseIndex?: number
+  ) => void;
+  exerciseIndex?: number;
+  update: boolean;
 }
 
 export default function SelectExerciseModal({
-    userId,
-    isOpen,
-    onOpenChange,
-    callbackFunction,
-    exerciseIndex,
-    update,
+  userId,
+  isOpen,
+  onOpenChange,
+  callbackFunction,
+  exerciseIndex,
+  update,
 }: SelectExerciseModalProps) {
-    const [exercises, setExercises] = useState<Exercise[]>([]);
-    const [userExercises, setUserExercises] = useState<UserExercise[]>([]);
-    const [selectedKey, setSelectedKey] = useState<Selection>(new Set());
-    const [selectedTab, setSelectedTab] = useState("stock-exercises");
-    const [filterValue, setFilterValue] = useState("");
-    const [userFilterValue, setUserFilterValue] = useState("");
-    const [filteredExercises, setFilteredExercises] = useState(exercises);
-    const [filteredUserExercises, setFilteredUserExercises] =
-        useState(userExercises);
-    const [exerciseName, setExerciseName] = useState("");
-    const [newExercise, setNewExercise] = useState<UserExercise>(
-        new UserExercise()
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [selectedKey, setSelectedKey] = useState<Selection>(new Set());
+  const [filterValue, setFilterValue] = useState("");
+  const [filteredExercises, setFilteredExercises] = useState<Exercise[]>([]);
+  const [exerciseName, setExerciseName] = useState("");
+  const [newExercise, setNewExercise] = useState<Exercise>(new Exercise());
+  const [isSaving, setIsSaving] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState("");
+  const [feedback, setFeedback] = useState("");
+
+  useEffect(() => {
+    loadExercises(userId);
+  }, []);
+
+  useEffect(() => {
+    setFilteredExercises(
+      filterValue
+        ? exercises.filter((exercise) =>
+            exercise.name.toLowerCase().includes(filterValue.toLowerCase())
+          )
+        : exercises
     );
-    const [isCreating, setisCreating] = useState(false);
-    const [error, setError] = useState("");
-    const [feedback, setFeedback] = useState("");
+  }, [exercises, filterValue]);
 
-    useEffect(() => {
-        loadExercises(userId);
-    }, []);
+  const loadExercises = async (userId: string | string[] | undefined) => {
+    try {
+      const data = await getStockExercises();
+      const userData = await getUserExercises(userId);
+      setExercises([...data, ...userData]);
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(error.message);
+      }
+    }
+  };
 
-    useEffect(() => {
-        // update the filtered exercises when the tab changes
-        if (selectedTab === "stock-exercises") {
-            setFilteredExercises(
-                filterValue
-                    ? exercises.filter((exercise) =>
-                          exercise.name
-                              .toLowerCase()
-                              .includes(filterValue.toLowerCase())
-                      )
-                    : exercises
-            );
-        }
-        if (selectedTab === "user-exercises") {
-            setFilteredUserExercises(
-                userFilterValue
-                    ? userExercises.filter((exercise) =>
-                          exercise.name
-                              .toLowerCase()
-                              .includes(userFilterValue.toLowerCase())
-                      )
-                    : userExercises
-            );
-        }
-    }, [selectedTab, exercises, userExercises, filterValue, userFilterValue]);
+  // gets the selected exercise id, and returns the exercise that matches the id
+  const getSelectedExercise = () => {
+    const selectedId = Array.from(selectedKey).pop();
 
-    const loadExercises = async (userId: string | string[] | undefined) => {
-        try {
-            const data = await getStockExercises();
-            setExercises(data);
-            const userData = await getUserExercises(userId);
-            setUserExercises(userData);
-        } catch (error) {
-            if (error instanceof Error) {
-                console.error(error.message);
-            }
-        }
-    };
+    return selectedId
+      ? exercises.find((exercise) => exercise.id === Number(selectedId))
+      : null;
+  };
 
-    // gets the selected exercise id, and returns the exercise that matches the id
-    const getSelectedExercise = () => {
-        const selectedId = Array.from(selectedKey).pop();
+  const createNewExercise = async (
+    userId: string | string[] | undefined,
+    name: string
+  ) => {
+    setError("");
+    setFeedback("");
+    setIsSaving(true);
 
-        if (selectedTab === "stock-exercises") {
-            return selectedId
-                ? exercises.find(
-                      (exercise) => exercise.id === Number(selectedId)
-                  )
-                : null;
-        }
-        if (selectedTab === "user-exercises") {
-            return selectedId
-                ? userExercises.find(
-                      (exercise) => exercise.id === Number(selectedId)
-                  )
-                : null;
-        }
-    };
+    try {
+      if (name.trim() === "") {
+        throw new Error(`Please enter an exercise name.`);
+      }
 
-    const onSearch = (value: string, type: string) => {
-        if (type === "stock") {
-            setFilterValue(value);
-            setFilteredExercises(
-                value
-                    ? exercises.filter((exercise) =>
-                          exercise.name
-                              .toLowerCase()
-                              .includes(value.toLowerCase())
-                      )
-                    : exercises
-            );
-        } else if (type === "user") {
-            setUserFilterValue(value);
-            setFilteredUserExercises(
-                value
-                    ? userExercises.filter((exercise) =>
-                          exercise.name
-                              .toLowerCase()
-                              .includes(value.toLowerCase())
-                      )
-                    : userExercises
-            );
-        }
-    };
+      const nameIsTaken =
+        exercises.some(
+          (exercise) =>
+            name.trim().toLowerCase() === exercise.name.toLowerCase()
+        ) ||
+        exercises.some(
+          (exercise) =>
+            name.trim().toLowerCase() === exercise.name.toLowerCase()
+        );
 
-    const createNewExercise = async (userId: string | string[] | undefined, name: string) => {
-        setError("");
-        setFeedback("");
-        setisCreating(true);
+      if (nameIsTaken) {
+        throw new Error(`Exercise name '${name}' already exists.`);
+      }
 
-        try {
-            if (name.trim() === "") {
-                throw new Error(`Please enter an exercise name.`);
-            }
+      const newExerciseData = await addUserExercise(
+        userId,
+        exerciseName.trim()
+      );
+      setNewExercise(newExerciseData);
+      // reload exercises to have access to new exercise
+      await loadExercises(userId);
 
-            const nameIsTaken =
-                exercises.some(
-                    (exercise) =>
-                        name.trim().toLowerCase() ===
-                        exercise.name.toLowerCase()
-                ) ||
-                userExercises.some(
-                    (exercise) =>
-                        name.trim().toLowerCase() ===
-                        exercise.name.toLowerCase()
-                );
+      setFeedback(`'${exerciseName}' was created!`);
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      }
+    } finally {
+      setExerciseName("");
+      setIsSaving(false);
+    }
+  };
 
-            if (nameIsTaken) {
-                throw new Error(`Exercise name '${name}' already exists.`);
-            }
+  const clearState = () => {
+    setSelectedKey(new Set());
+    setFilterValue("");
+    setError("");
+    setFeedback("");
+    setExerciseName("");
+    setNewExercise(new Exercise());
+    setIsCreating(false);
+  };
 
-            const newExerciseData = await addUserExercise(
-                userId,
-                exerciseName.trim()
-            );
-            setNewExercise(newExerciseData);
-            // reload userExercises to have access to new exercise
-            const userData = await getUserExercises(userId);
-            setUserExercises(userData);
+  const onAdd = () => {
+    const selectedExercise = getSelectedExercise();
+    if (selectedExercise) {
+      if (!update) {
+        // callbackFunction = addExercise
+        callbackFunction(selectedExercise);
+      } else {
+        // callbackFunction = changeExercise
+        callbackFunction(selectedExercise, exerciseIndex);
+      }
+      clearState();
+    }
+  };
 
-            setFeedback(`'${exerciseName}' was created!`);
-        } catch (error) {
-            if (error instanceof Error) {
-                setError(error.message);
-            }
-        } finally {
-            setExerciseName("");
-            setisCreating(false);
-        }
-    };
+  const addCreatedExerciseToWorkout = () => {
+    // return early if there is no new exercise loaded
+    // (default id value for new UserExercise is 0)
+    if (newExercise.id === 0) {
+      return;
+    }
 
-    const clearState = () => {
-        setSelectedKey(new Set());
-        setFilterValue("");
-        setUserFilterValue("");
-        setError("");
-        setFeedback("");
-        setExerciseName("");
-        setSelectedTab("");
-        setNewExercise(new UserExercise());
-    };
+    // add new exercise to workout
+    if (!update) {
+      callbackFunction(newExercise);
+    } else {
+      callbackFunction(newExercise, exerciseIndex);
+    }
+    clearState();
+  };
 
-    const onAdd = () => {
-        const selectedExercise = getSelectedExercise();
-        if (selectedExercise) {
-            if (!update) {
-                // callbackFunction = addExercise
-                callbackFunction(selectedExercise);
-            } else {
-                // callbackFunction = changeExercise
-                callbackFunction(selectedExercise, exerciseIndex);
-            }
-            clearState();
-        }
-    };
+  const columns = [
+    {
+      key: "exercise",
+      label: "Exercise",
+    },
+  ];
 
-    const addCreatedExerciseToWorkout = () => {
-        // return early if there is no new exercise loaded
-        // (default id value for new UserExercise is 0)
-        if (newExercise.id === 0) {
-            return;
-        }
-
-        // add new exercise to workout
-        if (!update) {
-            callbackFunction(newExercise);
-        } else {
-            callbackFunction(newExercise, exerciseIndex);
-        }
-        clearState();
-    };
-
-    const columns = [
-        {
-            key: "exercise",
-            label: "Exercise",
-        },
-    ];
-
-    return (
-        <Modal
-            isOpen={isOpen}
-            isDismissable={false}
-            isKeyboardDismissDisabled
-            scrollBehavior="inside"
-            placement="top"
-            size="md"
-            onOpenChange={onOpenChange}
-        >
-            <ModalContent>
-                {(onClose) => (
-                    <>
-                        <ModalHeader className="flex flex-col items-center gap-1">
-                            Select Exercise
-                        </ModalHeader>
-                        <ModalBody>
-                            <Tabs
-                                aria-label="Stock or User Exercise Selection"
-                                variant="solid"
-                                color="primary"
-                                radius="sm"
-                                className="justify-center"
-                                selectedKey={selectedTab}
-                                onSelectionChange={setSelectedTab}
-                            >
-                                <Tab
-                                    key="stock-exercises"
-                                    title="Stock Exercises"
-                                >
-                                    <div>
-                                        <Input
-                                            className="w-full"
-                                            placeholder="Search stock exercises..."
-                                            startContent={<SearchIcon />}
-                                            value={filterValue}
-                                            onClear={() => setFilterValue("")}
-                                            onValueChange={(newValue) => {
-                                                setFilterValue(newValue);
-                                                onSearch(newValue, "stock");
-                                            }}
-                                        />
-                                    </div>
-                                    <Table
-                                        aria-label="Sets table"
-                                        removeWrapper
-                                        hideHeader
-                                        selectionMode="single"
-                                        selectionBehavior="toggle"
-                                        selectedKeys={selectedKey}
-                                        onSelectionChange={setSelectedKey}
-                                        color="default"
-                                        classNames={{
-                                            base: "",
-                                        }}
-                                    >
-                                        <TableHeader columns={columns}>
-                                            {(column) => (
-                                                <TableColumn key={column.key}>
-                                                    {column.label}
-                                                </TableColumn>
-                                            )}
-                                        </TableHeader>
-                                        <TableBody
-                                            emptyContent={"No exercises found."}
-                                        >
-                                            {filteredExercises.map(
-                                                (exercise) => (
-                                                    <TableRow key={exercise.id}>
-                                                        <TableCell>
-                                                            {exercise.name}
-                                                        </TableCell>
-                                                    </TableRow>
-                                                )
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </Tab>
-                                <Tab key="user-exercises" title="My Exercises">
-                                    <div>
-                                        <Input
-                                            className="w-full"
-                                            placeholder="Search my exercises..."
-                                            startContent={<SearchIcon />}
-                                            value={userFilterValue}
-                                            onClear={() =>
-                                                setUserFilterValue("")
-                                            }
-                                            onValueChange={(newValue) => {
-                                                setUserFilterValue(newValue);
-                                                onSearch(newValue, "user");
-                                            }}
-                                        />
-                                    </div>
-                                    <Table
-                                        aria-label="Sets table"
-                                        removeWrapper
-                                        hideHeader
-                                        selectionMode="single"
-                                        selectionBehavior="toggle"
-                                        selectedKeys={selectedKey}
-                                        onSelectionChange={setSelectedKey}
-                                        color="default"
-                                        classNames={{
-                                            base: "",
-                                        }}
-                                    >
-                                        <TableHeader columns={columns}>
-                                            {(column) => (
-                                                <TableColumn key={column.key}>
-                                                    {column.label}
-                                                </TableColumn>
-                                            )}
-                                        </TableHeader>
-                                        <TableBody
-                                            emptyContent={"No exercises found."}
-                                        >
-                                            {filteredUserExercises.map(
-                                                (exercise) => (
-                                                    <TableRow key={exercise.id}>
-                                                        <TableCell>
-                                                            {exercise.name}
-                                                        </TableCell>
-                                                    </TableRow>
-                                                )
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </Tab>
-                                <Tab key="create-exercise" title="Create New">
-                                    <div className="">
-                                        <h3 className="text-md text-center mb-4">
-                                            Create new exercise
-                                        </h3>
-                                        <div className="mb-4">
-                                            <Input
-                                                id="exercise-name"
-                                                label="Exercise Name"
-                                                variant="bordered"
-                                                description="Can not have the same name as a stock exercise."
-                                                isInvalid={error !== ""}
-                                                errorMessage={error}
-                                                value={exerciseName}
-                                                onValueChange={setExerciseName}
-                                                onChange={() => setError("")}
-                                            />
-                                        </div>
-                                        {feedback !== "" && (
-                                            <div className="mb-4">
-                                                <Alert
-                                                    color="success"
-                                                    description={feedback}
-                                                    isVisible={feedback !== ""}
-                                                    title="Success"
-                                                    variant="faded"
-                                                    onClose={() =>
-                                                        setFeedback("")
-                                                    }
-                                                    endContent={
-                                                        <Button
-                                                            color="success"
-                                                            size="sm"
-                                                            variant="flat"
-                                                            onPress={() => {
-                                                                addCreatedExerciseToWorkout();
-                                                                onClose();
-                                                            }}
-                                                        >
-                                                            Add
-                                                        </Button>
-                                                    }
-                                                />
-                                            </div>
-                                        )}
-                                        <div className="flex justify-center">
-                                            <Button
-                                                color="primary"
-                                                isLoading={isCreating}
-                                                onPress={() =>
-                                                    createNewExercise(
-                                                        userId,
-                                                        exerciseName
-                                                    )
-                                                }
-                                            >
-                                                Create
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </Tab>
-                            </Tabs>
-                        </ModalBody>
-                        <ModalFooter>
-                            <Button
-                                color="default"
-                                variant="flat"
-                                onPress={() => {
-                                    clearState();
-                                    onClose();
-                                }}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                color="primary"
-                                variant="solid"
-                                isDisabled={selectedKey.size === 0}
-                                onPress={() => {
-                                    onAdd();
-                                    onClose();
-                                }}
-                            >
-                                {!update ? "Add" : "Update"}
-                            </Button>
-                        </ModalFooter>
-                    </>
-                )}
-            </ModalContent>
-        </Modal>
-    );
+  return (
+    <Modal
+      isOpen={isOpen}
+      isDismissable={true}
+      isKeyboardDismissDisabled
+      scrollBehavior="inside"
+      placement="top"
+      size="md"
+      onOpenChange={onOpenChange}
+    >
+      <ModalContent>
+        {(onClose) => (
+          <>
+            <ModalHeader className="flex flex-col items-center gap-1">
+              Select Exercise
+            </ModalHeader>
+            <ModalBody>
+              {isCreating ? (
+                <div className="">
+                  <h3 className="text-md text-center mb-4">
+                    Create new exercise
+                  </h3>
+                  <div className="mb-4">
+                    <Input
+                      id="exercise-name"
+                      label="Exercise Name"
+                      variant="bordered"
+                      size="sm"
+                      description="Can not have the same name as a stock exercise."
+                      isInvalid={error !== ""}
+                      errorMessage={error}
+                      value={exerciseName}
+                      onValueChange={setExerciseName}
+                      onChange={() => setError("")}
+                    />
+                  </div>
+                  {feedback !== "" && (
+                    <div className="mb-4">
+                      <Alert
+                        color="success"
+                        description={feedback}
+                        isVisible={feedback !== ""}
+                        variant="bordered"
+                        onClose={() => setFeedback("")}
+                        endContent={
+                          <Button
+                            color="success"
+                            size="sm"
+                            variant="flat"
+                            onPress={() => {
+                              addCreatedExerciseToWorkout();
+                              setIsCreating(false);
+                              onClose();
+                            }}
+                          >
+                            Add
+                          </Button>
+                        }
+                      />
+                    </div>
+                  )}
+                  <div className="flex justify-center gap-2">
+                    <Button
+                      variant="flat"
+                      size="sm"
+                      onPress={() => setIsCreating(false)}
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      color="primary"
+                      size="sm"
+                      isLoading={isSaving}
+                      onPress={() => createNewExercise(userId, exerciseName)}
+                    >
+                      Create
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="mb-4">
+                    <Input
+                      className="w-full"
+                      placeholder="Search exercises..."
+                      startContent={<SearchIcon />}
+                      value={filterValue}
+                      onClear={() => setFilterValue("")}
+                      onValueChange={setFilterValue}
+                    />
+                  </div>
+                  <Table
+                    aria-label="Exercise list"
+                    removeWrapper
+                    hideHeader
+                    selectionMode="single"
+                    selectionBehavior="toggle"
+                    selectedKeys={selectedKey}
+                    onSelectionChange={setSelectedKey}
+                    color="default"
+                    classNames={{
+                      base: "",
+                    }}
+                  >
+                    <TableHeader columns={columns}>
+                      {(column) => (
+                        <TableColumn key={column.key}>
+                          {column.label}
+                        </TableColumn>
+                      )}
+                    </TableHeader>
+                    <TableBody emptyContent={"No exercises found."}>
+                      {filteredExercises.map((exercise) => (
+                        <TableRow key={exercise.name}>
+                          <TableCell>{exercise.name}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </>
+              )}
+            </ModalBody>
+            <ModalFooter className="flex justify-between">
+              <div>
+                <Button
+                  color="primary"
+                  variant="light"
+                  onPress={() => {
+                    setIsCreating(true);
+                  }}
+                >
+                  Create New
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  color="default"
+                  variant="flat"
+                  onPress={() => {
+                    onOpenChange();
+                    clearState();
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  color="primary"
+                  variant="solid"
+                  isDisabled={!(selectedKey instanceof Set) || selectedKey.size === 0}
+                  onPress={() => {
+                    onAdd();
+                    onClose();
+                  }}
+                >
+                  {!update ? "Add" : "Update"}
+                </Button>
+              </div>
+            </ModalFooter>
+          </>
+        )}
+      </ModalContent>
+    </Modal>
+  );
 }
