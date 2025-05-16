@@ -20,7 +20,7 @@ import {
 
 import { SearchIcon } from "@/icons/SearchIcon";
 
-import { Exercise, UserExercise } from "@/utils/models/models";
+import { Exercise } from "@/utils/models/models";
 import {
   getUserExercises,
   getStockExercises,
@@ -32,7 +32,7 @@ interface SelectExerciseModalProps {
   isOpen: boolean;
   onOpenChange: () => void;
   callbackFunction: (
-    newExercise: Exercise | UserExercise,
+    newExercise: Exercise,
     exerciseIndex?: number
   ) => void;
   exerciseIndex?: number;
