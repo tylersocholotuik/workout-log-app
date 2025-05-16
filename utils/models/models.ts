@@ -1,6 +1,8 @@
 export class Exercise {
     id: number;
     name: string;
+    userId?: string | null;
+    deleted?: boolean;
     workoutExercises?: WorkoutExercise[] | null;
 
     constructor(
@@ -11,28 +13,6 @@ export class Exercise {
         this.id = id;
         this.name = name;
         this.workoutExercises = workoutExercises;
-    }
-}
-
-export class UserExercise {
-    id: number;
-    name: string;
-    userId: string;
-    workoutExercises?: WorkoutExercise[] | null;
-    deleted: boolean;
-
-    constructor(
-        id: number = 0,
-        name: string = "",
-        userId: string = "",
-        workoutExercises: WorkoutExercise[] | null = null,
-        deleted: boolean = false
-    ) {
-        this.id = id;
-        this.name = name;
-        this.userId = userId;
-        this.workoutExercises = workoutExercises;
-        this.deleted = deleted;
     }
 }
 
@@ -73,7 +53,6 @@ export class WorkoutExercise {
     exerciseId: number | null;
     userExerciseId: number | null;
     exercise: Exercise | null;
-    userExercise: UserExercise | null;
     workoutId: string;
     sets: Set[];
     deleted: boolean;
@@ -85,7 +64,6 @@ export class WorkoutExercise {
         exerciseId: number | null = null,
         userExerciseId: number | null = null,
         exercise: Exercise | null = null,
-        userExercise: UserExercise | null = null,
         workoutId: string = "",
         sets: Set[] = [],
         deleted: boolean = false
@@ -96,7 +74,6 @@ export class WorkoutExercise {
         this.exerciseId = exerciseId;
         this.userExerciseId = userExerciseId;
         this.exercise = exercise;
-        this.userExercise = userExercise;
         this.workoutId = workoutId;
         this.sets = sets;
         this.deleted = deleted;
