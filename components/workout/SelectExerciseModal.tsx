@@ -54,7 +54,6 @@ export default function SelectExerciseModal({
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
-  const [feedback, setFeedback] = useState("");
 
   useEffect(() => {
     loadExercises(userId);
@@ -103,7 +102,6 @@ export default function SelectExerciseModal({
     name: string
   ) => {
     setError("");
-    setFeedback("");
     setIsSaving(true);
 
     try {
@@ -133,7 +131,6 @@ export default function SelectExerciseModal({
       // reload exercises to have access to new exercise
       await loadExercises(userId);
 
-      setFeedback(`'${exerciseName}' was created!`);
 
       addToast({
         description: `Exercise '${exerciseName}' was created!`,
@@ -168,7 +165,6 @@ export default function SelectExerciseModal({
     setSelectedKey(new Set());
     setFilterValue("");
     setError("");
-    setFeedback("");
     setExerciseName("");
     setIsCreating(false);
   };
