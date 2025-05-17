@@ -130,6 +130,10 @@ export default function WorkoutLog() {
     const addExercise = (exercise: Exercise) => {
         const updatedWorkout = { ...workout };
         const newWorkoutExercise = new WorkoutExercise();
+        // if userId is present, that means it is a user exercise
+        if ("userId" in exercise) {
+            newWorkoutExercise.userExerciseId = exercise.id;
+        }
         newWorkoutExercise.exerciseId = exercise.id;
         newWorkoutExercise.exercise = exercise;
         newWorkoutExercise.workoutId = workout.id;
@@ -408,6 +412,7 @@ export default function WorkoutLog() {
                                             key={`exercise-${index}`}
                                             exercise={exercise}
                                             exerciseIndex={index}
+                                            userId={userId}
                                         />
                                     );
                                 })}
@@ -488,13 +493,13 @@ export default function WorkoutLog() {
                     setError={setError}
                 />
 
-                <SelectExerciseModal
+                {userId && <SelectExerciseModal
                     userId={userId}
                     isOpen={addExerciseModal.isOpen}
                     onOpenChange={addExerciseModal.onOpenChange}
                     callbackFunction={addExercise}
                     update={false}
-                />
+                />}
 
                 <DeleteWorkoutModal
                     isOpen={deleteModal.isOpen}
