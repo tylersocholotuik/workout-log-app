@@ -11,16 +11,14 @@ import {
     CardHeader,
     CardBody,
     Divider,
-    useDisclosure,
     Tabs,
     Tab,
     Link,
     Alert,
+    addToast,
 } from "@heroui/react";
 
 import Head from "next/head";
-
-import FeedbackModal from "@/components/workout/FeedbackModal";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 
@@ -35,7 +33,6 @@ export default function App() {
     const [signupPassword, setSignupPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [displayName, setDisplayName] = useState("");
-    const [feedback, setFeedback] = useState("");
     // for general errors thrown by supabase
     const [linkError, setLinkError] = useState("");
     const [loginError, setLoginError] = useState("");
@@ -48,13 +45,11 @@ export default function App() {
     const [signupPasswordError, setSignupPasswordError] = useState("");
     const [confirmPasswordError, setConfirmPasswordError] = useState("");
     const [displayNameError, setDisplayNameError] = useState("");
-    const [selected, setSelected] = useState("login");
+    const [selected, setSelected] = useState<number | string>("login");
 
     const { user, isSignedIn } = useAuth();
 
     const router = useRouter();
-
-    const feedbackModal = useDisclosure();
 
     interface ErrorDictionary {
         field: string;
@@ -67,12 +62,6 @@ export default function App() {
             router.push("/");
         }
     }, [user]);
-
-    useEffect(() => {
-        if (feedback !== "") {
-            feedbackModal.onOpen();
-        }
-    }, [feedback]);
 
     const signInWithEmail = async () => {
         clearErrors();
@@ -96,8 +85,16 @@ export default function App() {
 
             if (error) {
                 setLinkError(error.message);
+                addToast({
+                    title: "Error",
+                    description: error.message,
+                    color: "danger",
+                });
             } else {
-                setFeedback(`A login link has be sent to ${linkEmail}`);
+                addToast({
+                    description: `A login link has be sent to ${linkEmail}`,
+                    color: "success",
+                });
                 resetForms();
             }
         }
@@ -128,7 +125,7 @@ export default function App() {
                 }
             });
         } else {
-            const { error } = await supabase.auth.signInWithPassword({
+            const { data, error } = await supabase.auth.signInWithPassword({
                 email: loginEmail,
                 password: loginPassword,
             });
@@ -136,6 +133,10 @@ export default function App() {
             if (error) {
                 setLoginError(error.message);
             } else {
+                addToast({
+                    description: `Welcome ${data.user?.user_metadata.display_name ?? data.user?.user_metadata.email}!`,
+                    color: "success",
+                });
                 resetForms();
             }
         }
@@ -214,9 +215,10 @@ export default function App() {
             if (error) {
                 setSignupError(error.message);
             } else {
-                setFeedback(
-                    `A confirmation email has been sent to ${signupEmail}`
-                );
+                addToast({
+                    description: `A confirmation email has been sent to ${signupEmail}`,
+                    color: "success",
+                });
                 resetForms();
             }
         }
@@ -490,15 +492,6 @@ export default function App() {
                         </Tabs>
                     </CardBody>
                 </Card>
-                <FeedbackModal
-                    isOpen={feedbackModal.isOpen}
-                    onOpenChange={feedbackModal.onOpenChange}
-                    title="Success"
-                    message={feedback}
-                    color="inherit"
-                    setFeedback={setFeedback}
-                    setError={setLinkError}
-                />
             </div>
         </>
     );
