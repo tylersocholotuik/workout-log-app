@@ -16,6 +16,8 @@ import {
   Selection,
   Input,
   Alert,
+  addToast,
+  Spinner,
 } from "@heroui/react";
 
 import { SearchIcon } from "@/icons/SearchIcon";
@@ -31,10 +33,7 @@ interface SelectExerciseModalProps {
   userId: string | string[] | undefined;
   isOpen: boolean;
   onOpenChange: () => void;
-  callbackFunction: (
-    newExercise: Exercise,
-    exerciseIndex?: number
-  ) => void;
+  callbackFunction: (newExercise: Exercise, exerciseIndex?: number) => void;
   exerciseIndex?: number;
   update: boolean;
 }
@@ -54,6 +53,7 @@ export default function SelectExerciseModal({
   const [exerciseName, setExerciseName] = useState("");
   const [newExercise, setNewExercise] = useState<Exercise>(new Exercise());
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
   const [feedback, setFeedback] = useState("");
@@ -81,9 +81,13 @@ export default function SelectExerciseModal({
       const userData = await getUserExercises(userId);
       setExercises([...data, ...userData]);
     } catch (error) {
-      if (error instanceof Error) {
-        console.error(error.message);
-      }
+      addToast({
+        title: "Error loading exercises",
+        description: error instanceof Error ? error.message : "Unknown error",
+        color: "danger",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -281,34 +285,38 @@ export default function SelectExerciseModal({
                       onValueChange={setFilterValue}
                     />
                   </div>
-                  <Table
-                    aria-label="Exercise list"
-                    removeWrapper
-                    hideHeader
-                    selectionMode="single"
-                    selectionBehavior="toggle"
-                    selectedKeys={selectedKey}
-                    onSelectionChange={setSelectedKey}
-                    color="default"
-                    classNames={{
-                      base: "",
-                    }}
-                  >
-                    <TableHeader columns={columns}>
-                      {(column) => (
-                        <TableColumn key={column.key}>
-                          {column.label}
-                        </TableColumn>
-                      )}
-                    </TableHeader>
-                    <TableBody emptyContent={"No exercises found."}>
-                      {filteredExercises.map((exercise) => (
-                        <TableRow key={exercise.name}>
-                          <TableCell>{exercise.name}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  {isLoading ? (
+                    <Spinner />
+                  ) : (
+                    <Table
+                      aria-label="Exercise list"
+                      removeWrapper
+                      hideHeader
+                      selectionMode="single"
+                      selectionBehavior="toggle"
+                      selectedKeys={selectedKey}
+                      onSelectionChange={setSelectedKey}
+                      color="default"
+                      classNames={{
+                        base: "",
+                      }}
+                    >
+                      <TableHeader columns={columns}>
+                        {(column) => (
+                          <TableColumn key={column.key}>
+                            {column.label}
+                          </TableColumn>
+                        )}
+                      </TableHeader>
+                      <TableBody emptyContent={"No exercises found."}>
+                        {filteredExercises.map((exercise) => (
+                          <TableRow key={exercise.name}>
+                            <TableCell>{exercise.name}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
                 </>
               )}
             </ModalBody>
@@ -338,7 +346,9 @@ export default function SelectExerciseModal({
                 <Button
                   color="primary"
                   variant="solid"
-                  isDisabled={!(selectedKey instanceof Set) || selectedKey.size === 0}
+                  isDisabled={
+                    !(selectedKey instanceof Set) || selectedKey.size === 0
+                  }
                   onPress={() => {
                     onAdd();
                     onClose();
