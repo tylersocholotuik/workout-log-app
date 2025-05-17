@@ -15,7 +15,6 @@ import {
   TableCell,
   Selection,
   Input,
-  Alert,
   addToast,
   Spinner,
 } from "@heroui/react";
@@ -51,7 +50,6 @@ export default function SelectExerciseModal({
   const [filterValue, setFilterValue] = useState("");
   const [filteredExercises, setFilteredExercises] = useState<Exercise[]>([]);
   const [exerciseName, setExerciseName] = useState("");
-  const [newExercise, setNewExercise] = useState<Exercise>(new Exercise());
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -131,11 +129,31 @@ export default function SelectExerciseModal({
         userId,
         exerciseName.trim()
       );
-      setNewExercise(newExerciseData);
+
       // reload exercises to have access to new exercise
       await loadExercises(userId);
 
       setFeedback(`'${exerciseName}' was created!`);
+
+      addToast({
+        description: `Exercise '${exerciseName}' was created!`,
+        color: "success",
+        timeout: 5000,
+        endContent: (
+          <Button
+            color="success"
+            size="sm"
+            variant="flat"
+            onPress={() => {
+              addCreatedExerciseToWorkout(newExerciseData);
+              setIsCreating(false);
+              onOpenChange();
+            }}
+          >
+            Add
+          </Button>
+        ),
+      });
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message);
@@ -152,7 +170,6 @@ export default function SelectExerciseModal({
     setError("");
     setFeedback("");
     setExerciseName("");
-    setNewExercise(new Exercise());
     setIsCreating(false);
   };
 
@@ -171,18 +188,18 @@ export default function SelectExerciseModal({
     }
   };
 
-  const addCreatedExerciseToWorkout = () => {
+  const addCreatedExerciseToWorkout = (exercise: Exercise) => {
     // return early if there is no new exercise loaded
-    // (default id value for new UserExercise is 0)
-    if (newExercise.id === 0) {
+    // (default id value for new Exercise is 0)
+    if (!exercise || exercise.id === 0) {
       return;
     }
 
     // add new exercise to workout
     if (!update) {
-      callbackFunction(newExercise);
+      callbackFunction(exercise);
     } else {
-      callbackFunction(newExercise, exerciseIndex);
+      callbackFunction(exercise, exerciseIndex);
     }
     clearState();
   };
@@ -230,31 +247,6 @@ export default function SelectExerciseModal({
                       onChange={() => setError("")}
                     />
                   </div>
-                  {feedback !== "" && (
-                    <div className="mb-4">
-                      <Alert
-                        color="success"
-                        description={feedback}
-                        isVisible={feedback !== ""}
-                        variant="bordered"
-                        onClose={() => setFeedback("")}
-                        endContent={
-                          <Button
-                            color="success"
-                            size="sm"
-                            variant="flat"
-                            onPress={() => {
-                              addCreatedExerciseToWorkout();
-                              setIsCreating(false);
-                              onClose();
-                            }}
-                          >
-                            Add
-                          </Button>
-                        }
-                      />
-                    </div>
-                  )}
                   <div className="flex justify-center gap-2">
                     <Button
                       variant="flat"
