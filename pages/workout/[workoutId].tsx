@@ -18,12 +18,12 @@ import SelectExerciseModal from "@/components/workout/SelectExerciseModal";
 import WorkoutDetailsModal from "@/components/workout/WorkoutDetailsModal";
 
 import {
-    Alert,
     Button,
     Spinner,
     useDisclosure,
     Divider,
     Link,
+    addToast,
 } from "@heroui/react";
 
 import { Icon } from "@iconify/react/dist/iconify.js";
@@ -43,7 +43,6 @@ import {
     Set,
     Exercise,
 } from "@/utils/models/models";
-import FeedbackModal from "@/components/workout/FeedbackModal";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 
@@ -71,8 +70,6 @@ export default function WorkoutLog() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [feedback, setFeedback] = useState("");
-    const [error, setError] = useState("");
     const [startNewWorkout, setStartNewWorkout] = useState(false);
     const [userId, setUserId] = useState("");
     const [isUnauthorized, setIsUnauthorized] = useState(false);
@@ -82,7 +79,6 @@ export default function WorkoutLog() {
     const detailsModal = useDisclosure();
     const deleteModal = useDisclosure();
     const addExerciseModal = useDisclosure();
-    const feedbackModal = useDisclosure();
     const calculatorModal = useDisclosure();
 
     const router = useRouter();
@@ -95,12 +91,6 @@ export default function WorkoutLog() {
             loadWorkout(user.id, workoutId);
         }
     }, [router.isReady, workoutId, user]);
-
-    useEffect(() => {
-        if (feedback !== "" || error !== "") {
-            feedbackModal.onOpen();
-        }
-    }, [feedback, error]);
 
     const loadWorkout = async (
         userId: string | string[] | undefined,
@@ -118,9 +108,11 @@ export default function WorkoutLog() {
                 }
                 setWorkout(data);
             } catch (error) {
-                if (error instanceof Error) {
-                    setError(error.message);
-                }
+                addToast({
+                    title: "Error",
+                    description: error instanceof Error ? error.message : "An unknown error occurred",
+                    color: "danger",
+                });
             }
         }
 
@@ -150,26 +142,29 @@ export default function WorkoutLog() {
         workoutData: Workout
     ) => {
         try {
-            setFeedback("");
-            setError("");
             setIsSaving(true);
 
             let newWorkout: Workout;
 
             if (workoutId === "new-workout") {
                 newWorkout = await addWorkout(userId, workoutData);
-                setFeedback("Workout Saved");
                 // reload the page with the new workoutId
                 await router.push(`/workout/${newWorkout.id}`);
             } else {
                 newWorkout = await updateWorkout(userId, workoutData);
                 setWorkout(newWorkout);
-                setFeedback("Workout Updated!");
             }
+
+            addToast({
+                description: "Workout saved!",
+                color: "success",
+            });
         } catch (error) {
-            if (error instanceof Error) {
-                setError(error.message);
-            }
+            addToast({
+                    title: "Error",
+                    description: error instanceof Error ? error.message : "An unknown error occurred",
+                    color: "danger",
+                });
         } finally {
             setIsSaving(false);
         }
@@ -185,9 +180,6 @@ export default function WorkoutLog() {
 
         let success = false;
 
-        setFeedback("");
-        setError("");
-
         if (workoutId === "new-workout") {
             // if it is a new unsaved workout, simply initialize a
             // new workout
@@ -199,13 +191,18 @@ export default function WorkoutLog() {
 
                 await deleteWorkout(userId, workoutId);
 
-                setFeedback(`'${workout.title}' was deleted`);
+                addToast({
+                    description: `'${workout.title}' was deleted`,
+                    color: "success",
+                });
 
                 success = true;
             } catch (error) {
-                if (error instanceof Error) {
-                    setError(error.message);
-                }
+                addToast({
+                    title: "Error",
+                    description: error instanceof Error ? error.message : "An unknown error occurred",
+                    color: "danger",
+                });
             } finally {
                 setIsDeleting(false);
                 if (success) {
@@ -304,34 +301,6 @@ export default function WorkoutLog() {
                                     Load Existing Workout
                                 </Button>
                             </div>
-                        </div>
-                        <div className="flex justify-center mb-6">
-                            {/* Need this because feedback modal won't open when workout is deleted
-                            and page is re-directed */}
-                            {feedback !== "" && (
-                                <div>
-                                    <Alert
-                                        color="success"
-                                        isVisible={feedback !== ""}
-                                        title="Success"
-                                        description={feedback}
-                                        variant="bordered"
-                                        onClose={() => setFeedback("")}
-                                    />
-                                </div>
-                            )}
-                            {error !== "" && (
-                                <div>
-                                    <Alert
-                                        color="danger"
-                                        description={error}
-                                        isVisible={error !== ""}
-                                        title="Error"
-                                        variant="bordered"
-                                        onClose={() => setError("")}
-                                    />
-                                </div>
-                            )}
                         </div>
                     </div>
                 </main>
@@ -473,24 +442,6 @@ export default function WorkoutLog() {
                 <WorkoutDetailsModal
                     isOpen={detailsModal.isOpen}
                     onOpenChange={detailsModal.onOpenChange}
-                />
-
-                <FeedbackModal
-                    isOpen={feedbackModal.isOpen}
-                    onOpenChange={feedbackModal.onOpenChange}
-                    title={
-                        feedback !== ""
-                            ? "Success"
-                            : error !== ""
-                            ? "Error"
-                            : ""
-                    }
-                    message={
-                        feedback !== "" ? feedback : error !== "" ? error : ""
-                    }
-                    color={error !== "" ? "red-600" : "inherit"}
-                    setFeedback={setFeedback}
-                    setError={setError}
                 />
 
                 {userId && <SelectExerciseModal
