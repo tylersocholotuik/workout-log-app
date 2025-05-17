@@ -283,22 +283,24 @@ export default function App() {
                     id="magic-link-form"
                     onSubmit={signInWithEmail}
                     className="w-full"
+                    validationBehavior="aria"
                   >
                     <div className=" w-full">
                       <Input
                         isRequired
                         label="Email"
+                        name="email"
                         placeholder="Enter your email"
                         type="email"
                         variant="bordered"
-                        isInvalid={linkEmailError !== "" || linkError !== ""}
-                        errorMessage={
-                          linkEmailError !== ""
-                            ? linkEmailError
-                            : linkError !== ""
-                            ? linkError
-                            : undefined
-                        }
+                        validate={(_) => {
+                          if (linkEmailError !== "") {
+                            return linkEmailError;
+                          }
+                          if (linkError !== "") {
+                            return linkError;
+                          }
+                        }}
                         value={linkEmail}
                         onValueChange={setLinkEmail}
                         onChange={() => {
@@ -328,6 +330,7 @@ export default function App() {
                     id="password-login-form"
                     onSubmit={loginWithPassword}
                     className="w-full"
+                    validationBehavior="aria"
                   >
                     <div className="flex flex-col gap-4 w-full">
                       <Input
@@ -336,14 +339,15 @@ export default function App() {
                         placeholder="Enter your email"
                         type="email"
                         variant="bordered"
-                        isInvalid={loginEmailError !== "" || loginError !== ""}
-                        errorMessage={
-                          loginEmailError !== ""
-                            ? loginEmailError
-                            : loginError !== ""
-                            ? loginError
-                            : undefined
-                        }
+                        validate={(_) => {
+                          if (loginEmailError !== "") {
+                            return loginEmailError;
+                          }
+                          if (loginError !== "") {
+                            return loginError;
+                          }
+                        }}
+                        name="email"
                         value={loginEmail}
                         onValueChange={setLoginEmail}
                         onChange={() => {
@@ -354,19 +358,18 @@ export default function App() {
                       <Input
                         isRequired
                         label="Password"
+                        name="password"
                         placeholder="Enter your password"
                         type="password"
                         variant="bordered"
-                        isInvalid={
-                          loginPasswordError !== "" || loginError !== ""
-                        }
-                        errorMessage={
-                          loginPasswordError !== ""
-                            ? loginPasswordError
-                            : loginError !== ""
-                            ? loginError
-                            : undefined
-                        }
+                        validate={(_) => {
+                          if (loginPasswordError !== "") {
+                            return loginPasswordError;
+                          }
+                          if (loginError !== "") {
+                            return loginError;
+                          }
+                        }}
                         value={loginPassword}
                         onValueChange={setLoginPassword}
                         onChange={() => {
@@ -403,81 +406,89 @@ export default function App() {
               <Tab key="signup" title="Sign up">
                 <div className="flex flex-col items-center gap-6">
                   <h3 className="mt-4">Sign up</h3>
-                  <Form id="signup-form" onSubmit={registerUser} className="w-full">
+                  <Form
+                    id="signup-form"
+                    onSubmit={registerUser}
+                    className="w-full"
+                    validationBehavior="aria"
+                  >
                     <div className="flex flex-col gap-4 w-full">
-                        <Input
-                          isRequired
-                          label="Email"
-                          placeholder="Enter your email"
-                          type="email"
-                          variant="bordered"
-                          isInvalid={signupEmailError !== "" || signupError !== ""}
-                          errorMessage={
-                            signupEmailError !== ""
-                              ? signupEmailError
-                              : signupError !== ""
-                              ? signupError
-                              : undefined
+                      <Input
+                        isRequired
+                        label="Email"
+                        placeholder="Enter your email"
+                        type="email"
+                        name="email"
+                        variant="bordered"
+                        validate={(_) => {
+                          if (signupEmailError !== "") {
+                            return signupEmailError;
                           }
-                          value={signupEmail}
-                          onValueChange={setSignupEmail}
-                          onChange={() => {
-                            setSignupEmailError("");
-                            setSignupError("");
-                          }}
-                        />
-                        <Input
-                          isRequired
-                          label="Password"
-                          placeholder="Enter your password"
-                          description="Minimum 6 characters"
-                          type="password"
-                          minLength={6}
-                          variant="bordered"
-                          isInvalid={signupPasswordError !== ""}
-                          errorMessage={
-                            signupPasswordError !== ""
-                              ? signupPasswordError
-                              : undefined
+                          if (signupError !== "") {
+                            return signupError;
                           }
-                          value={signupPassword}
-                          onValueChange={setSignupPassword}
-                          onChange={() => setSignupPasswordError("")}
-                        />
-                        <Input
-                          isRequired
-                          label="Confirm Password"
-                          placeholder="Enter your password"
-                          description="Minimum 6 characters"
-                          type="password"
-                          minLength={6}
-                          variant="bordered"
-                          isInvalid={confirmPasswordError !== ""}
-                          errorMessage={
-                            confirmPasswordError !== ""
-                              ? confirmPasswordError
-                              : undefined
+                        }}
+                        value={signupEmail}
+                        onValueChange={setSignupEmail}
+                        onChange={() => {
+                          setSignupEmailError("");
+                          setSignupError("");
+                        }}
+                      />
+                      <Input
+                        isRequired
+                        label="Password"
+                        name="password"
+                        placeholder="Enter your password"
+                        description="Minimum 6 characters"
+                        type="password"
+                        minLength={6}
+                        variant="bordered"
+                        validate={(_) => {
+                          if (signupPasswordError !== "") {
+                            return signupPasswordError;
                           }
-                          value={confirmPassword}
-                          onValueChange={setConfirmPassword}
-                          onChange={() => setConfirmPasswordError("")}
-                        />
-                        <Input
-                          isRequired
-                          label="Display Name"
-                          placeholder="Enter your display name"
-                          description="Maximum 25 characters"
-                          maxLength={25}
-                          type="text"
-                          variant="bordered"
-                          isInvalid={displayNameError !== ""}
-                          errorMessage={
-                            displayNameError !== "" ? displayNameError : undefined
+                        }}
+                        value={signupPassword}
+                        onValueChange={setSignupPassword}
+                        onChange={() => setSignupPasswordError("")}
+                      />
+                      <Input
+                        isRequired
+                        label="Confirm Password"
+                        name="confirm_password"
+                        placeholder="Enter your password"
+                        description="Minimum 6 characters"
+                        type="password"
+                        minLength={6}
+                        variant="bordered"
+                        validate={(_) => {
+                          if (confirmPasswordError !== "") {
+                            return confirmPasswordError;
                           }
-                          value={displayName}
-                          onValueChange={setDisplayName}
-                          onChange={() => setDisplayNameError("")}
-                        />
+                        }}
+                        value={confirmPassword}
+                        onValueChange={setConfirmPassword}
+                        onChange={() => setConfirmPasswordError("")}
+                      />
+                      <Input
+                        isRequired
+                        label="Display Name"
+                        name="display_name"
+                        placeholder="Enter your display name"
+                        description="Maximum 25 characters"
+                        maxLength={25}
+                        type="text"
+                        variant="bordered"
+                        validate={(_) => {
+                          if (displayNameError !== "") {
+                            return displayNameError;
+                          }
+                        }}
+                        value={displayName}
+                        onValueChange={setDisplayName}
+                        onChange={() => setDisplayNameError("")}
+                      />
                     </div>
                   </Form>
                   <Alert
