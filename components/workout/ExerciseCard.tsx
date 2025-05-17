@@ -29,7 +29,6 @@ import SetsTable from "./SetsTable";
 
 import {
     Exercise,
-    UserExercise,
     WorkoutExercise,
     Set,
     ExerciseHistory,
@@ -47,6 +46,7 @@ import { getExerciseHistory } from "@/utils/api/exercises";
 interface ExerciseCardProps {
     exercise: WorkoutExercise;
     exerciseIndex: number;
+    userId: string;
 }
 
 import { supabase } from "@/utils/supabase/supabaseClient";
@@ -58,7 +58,7 @@ export default function ExerciseCard({
     const { workout, setWorkout } = useWorkoutContext();
 
     const [notes, setNotes] = useState(exercise.notes);
-    const [weightUnit, setWeightUnit] = useState(exercise.weightUnit);
+    const [weightUnit, setWeightUnit] = useState(exercise.weightUnit.toString());
     const [oneRepMax, setOneRepMax] = useState<number | null>();
     const [showOneRepMax, setShowOneRepMax] = useState(true);
     const [exerciseHistory, setExerciseHistory] = useState<ExerciseHistory[]>(
@@ -114,8 +114,8 @@ export default function ExerciseCard({
     };
 
     const changeExercise = (
-        newExercise: Exercise | UserExercise,
-        exerciseIndex: number
+        newExercise: Exercise,
+        exerciseIndex?: number
     ) => {
         // create deep copy of workout
         let updatedWorkout = {
@@ -133,7 +133,7 @@ export default function ExerciseCard({
         // properties to exercise
         if (
             !("userId" in newExercise) &&
-            "userExerciseId" in updatedWorkout.exercises[exerciseIndex]
+            "userExerciseId" in updatedWorkout.exercises[exerciseIndex!]
         ) {
             updatedWorkout = {
                 ...workout,
@@ -156,21 +156,18 @@ export default function ExerciseCard({
                 ),
             };
         } else {
-            // if it is a user exercise, set exercise to null and map
-            // newExercise properties to userExercise
             updatedWorkout = {
                 ...workout,
                 exercises: workout.exercises.map((exercise, index) =>
                     index === exerciseIndex
                         ? {
                               ...exercise,
-                              userExercise: {
+                              exercise: {
                                   id: newExercise.id,
                                   name: newExercise.name,
                                   userId: workout.userId,
                                   deleted: false,
                               },
-                              exercise: null,
                               exerciseId: null,
                               userExerciseId: newExercise.id,
                               sets: exercise.sets.map((set) => ({
@@ -218,7 +215,7 @@ export default function ExerciseCard({
         if (eligibleSets.length > 0) {
             // calculate e1RM for each set and use the highest value
             const maxList = eligibleSets.map((set) => {
-                return calculateOneRepMax(set.weight, set.reps, set.rpe);
+                return calculateOneRepMax(set.weight!, set.reps!, set.rpe!);
             });
 
             const highestOneRepMax = Math.max(...maxList);
@@ -252,16 +249,9 @@ export default function ExerciseCard({
             <Card classNames={{ footer: "justify-center py-2" }}>
                 <CardHeader className="flex justify-between items-center">
                     <div className="flex items-center gap-1">
-                        {exercise.exercise && (
-                            <h3 className="text-md text-primary">
-                                {exercise.exercise.name}
-                            </h3>
-                        )}
-                        {exercise.userExercise && (
-                            <h3 className="text-md text-primary">
-                                {exercise.userExercise.name}
-                            </h3>
-                        )}
+                        <h3 className="text-md text-primary">
+                            {exercise.exercise?.name}
+                        </h3>
                         <div>
                             <Dropdown>
                                 <DropdownTrigger>
@@ -300,7 +290,7 @@ export default function ExerciseCard({
                                             fetchExerciseHistory(
                                                 userId,
                                                 exercise.exercise?.id,
-                                                exercise.userExercise?.id
+                                                exercise.userExerciseId
                                             )
                                         }
                                         startContent={
@@ -432,7 +422,7 @@ export default function ExerciseCard({
             </Card>
 
             <SelectExerciseModal
-                userId={workout.userId}
+                userId={userId}
                 isOpen={changeExerciseModal.isOpen}
                 onOpenChange={changeExerciseModal.onOpenChange}
                 callbackFunction={changeExercise}
@@ -445,7 +435,7 @@ export default function ExerciseCard({
                 onOpenChange={exerciseHistoryModal.onOpenChange}
                 exerciseHistory={exerciseHistory}
                 exerciseName={
-                    exercise.exercise?.name ?? exercise.userExercise?.name ?? ""
+                    exercise.exercise?.name ?? ""
                 }
             />
         </>
