@@ -60,7 +60,7 @@ export default function SelectExerciseModal({
 
   useEffect(() => {
     loadExercises(userId);
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     setFilteredExercises(
@@ -74,6 +74,9 @@ export default function SelectExerciseModal({
 
   const loadExercises = async (userId: string | string[] | undefined) => {
     try {
+      if (!userId) {
+        return;
+      }
       const data = await getStockExercises();
       const userData = await getUserExercises(userId);
       setExercises([...data, ...userData]);
@@ -86,10 +89,10 @@ export default function SelectExerciseModal({
 
   // gets the selected exercise id, and returns the exercise that matches the id
   const getSelectedExercise = () => {
-    const selectedId = Array.from(selectedKey).pop();
+    const selectedExercise = Array.from(selectedKey).pop();
 
-    return selectedId
-      ? exercises.find((exercise) => exercise.id === Number(selectedId))
+    return selectedExercise
+      ? exercises.find((exercise) => exercise.name === selectedExercise)
       : null;
   };
 
@@ -151,6 +154,7 @@ export default function SelectExerciseModal({
 
   const onAdd = () => {
     const selectedExercise = getSelectedExercise();
+
     if (selectedExercise) {
       if (!update) {
         // callbackFunction = addExercise
