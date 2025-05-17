@@ -11,7 +11,7 @@ export default function App({ Component, pageProps }: AppProps) {
 
   return (
     <HeroUIProvider>
-      <ToastProvider />
+      <ToastProvider placement="bottom-center" />
       <NextThemesProvider attribute="class" defaultTheme="dark">
         <AuthProvider>
           <NavBar />
