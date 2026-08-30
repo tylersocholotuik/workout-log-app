@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 import { useRouter } from "next/router";
 
-import { register, login } from "@/utils/api/auth";
+import { register, login } from "@/lib/api/auth";
 
 import {
   Form,

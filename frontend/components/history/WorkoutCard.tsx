@@ -7,7 +7,7 @@ import {
     Link,
 } from "@heroui/react";
 
-import { Workout } from "@/utils/models/models";
+import { Workout } from "@/types";
 
 interface WorkoutCardProps {
     workout: Workout;

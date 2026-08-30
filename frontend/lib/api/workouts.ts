@@ -1,4 +1,4 @@
-import { Workout } from "../models/models";
+import { Workout } from '@/types';
 import { getAuthHeaders } from "./auth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5258';

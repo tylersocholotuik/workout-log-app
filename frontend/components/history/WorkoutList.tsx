@@ -22,7 +22,7 @@ import {
 
 import WorkoutCard from "./WorkoutCard";
 
-import { Workout } from "@/utils/models/models";
+import { Workout } from "@/types";
 
 interface WorkoutListProps {
   workouts: Workout[];

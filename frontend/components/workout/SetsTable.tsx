@@ -1,6 +1,6 @@
 import SetsTableRow from "./SetsTableRow";
 
-import { Set, WeightUnit } from "@/utils/models/models";
+import { Set, WeightUnit } from "@/types";
 
 interface SetsTableProps {
     sets: Set[];

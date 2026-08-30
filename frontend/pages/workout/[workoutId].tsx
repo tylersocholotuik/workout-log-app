@@ -35,14 +35,20 @@ import {
     addWorkout,
     updateWorkout,
     deleteWorkout,
-} from "@/utils/api/workouts";
+} from "@/lib/api/workouts";
 
 import {
     Workout,
     WorkoutExercise,
     Set,
     Exercise,
-} from "@/utils/models/models";
+} from "@/types";
+
+import {
+    createEmptyWorkout,
+    createEmptyWorkoutExercise,
+    createEmptySet,
+} from "@/lib/factories";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 
@@ -66,7 +72,7 @@ export const useWorkoutContext = () => {
 };
 
 export default function WorkoutLog() {
-    const [workout, setWorkout] = useState<Workout>(new Workout());
+    const [workout, setWorkout] = useState<Workout>(createEmptyWorkout());
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -121,7 +127,7 @@ export default function WorkoutLog() {
 
     const addExercise = (exercise: Exercise) => {
         const updatedWorkout = { ...workout };
-        const newWorkoutExercise = new WorkoutExercise();
+        const newWorkoutExercise = createEmptyWorkoutExercise();
         // if userId is present, that means it is a user exercise
         if ("userId" in exercise) {
             newWorkoutExercise.userExerciseId = exercise.id;
@@ -130,7 +136,7 @@ export default function WorkoutLog() {
         newWorkoutExercise.exercise = exercise;
         newWorkoutExercise.workoutId = workout.id;
         // automatically add an empty set when adding a new exercise
-        const newSet = new Set();
+        const newSet = createEmptySet();
         newWorkoutExercise.sets.push(newSet);
         updatedWorkout.exercises.push(newWorkoutExercise);
 
@@ -183,7 +189,7 @@ export default function WorkoutLog() {
         if (workoutId === "new-workout") {
             // if it is a new unsaved workout, simply initialize a
             // new workout
-            setWorkout(new Workout());
+            setWorkout(createEmptyWorkout());
             setStartNewWorkout(false);
         } else {
             try {
@@ -206,7 +212,7 @@ export default function WorkoutLog() {
             } finally {
                 setIsDeleting(false);
                 if (success) {
-                    setWorkout(new Workout());
+                    setWorkout(createEmptyWorkout());
                     setStartNewWorkout(false);
                     router.push(`/workout/new-workout`);
                 }

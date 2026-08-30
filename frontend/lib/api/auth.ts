@@ -1,40 +1,7 @@
 // Auth API calls for the new backend
+import { User, RegisterData, LoginData, AuthResponse } from '@/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5258';
-
-export interface RegisterData {
-    email: string;
-    firstName: string;
-    lastName: string;
-    displayName?: string;
-    password: string;
-}
-
-export interface LoginData {
-    email: string;
-    password: string;
-}
-
-export interface AuthResponse {
-    token: string;
-    user: {
-        id: string;
-        email: string;
-        firstName: string;
-        lastName: string;
-        displayName: string | null;
-        isAdmin: boolean;
-    };
-}
-
-export interface User {
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    displayName: string | null;
-    isAdmin: boolean;
-}
 
 // Token management
 const TOKEN_KEY = 'workout_auth_token';

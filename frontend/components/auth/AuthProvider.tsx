@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext } from "react";
 import { useRouter } from "next/router";
-import { User, getUserFromToken, logout as logoutAuth } from "@/utils/api/auth";
+import { User } from "@/types";
+import { getUserFromToken, logout as logoutAuth } from "@/lib/api/auth";
 
 interface AuthContextType {
     authorizeUser: () => void,

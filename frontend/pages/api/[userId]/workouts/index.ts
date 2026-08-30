@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { WorkoutExercise, Set } from "@/utils/models/models";
+import { WorkoutExercise, Set } from "@/types";
 
 import { prisma } from "@/prisma/globalPrismaClient";
 

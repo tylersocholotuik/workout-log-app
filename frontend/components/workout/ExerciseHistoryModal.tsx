@@ -7,7 +7,7 @@ import {
     Button,
 } from "@heroui/react";
 
-import { ExerciseHistory } from "@/utils/models/models";
+import { ExerciseHistory } from "@/types";
 
 interface ExerciseHistoryModalProps {
     isOpen: boolean;

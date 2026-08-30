@@ -21,12 +21,12 @@ import {
 
 import { SearchIcon } from "@/icons/SearchIcon";
 
-import { Exercise } from "@/utils/models/models";
+import { Exercise } from "@/types";
 import {
   getUserExercises,
   getStockExercises,
   addUserExercise,
-} from "@/utils/api/exercises";
+} from "@/lib/api/exercises";
 
 interface SelectExerciseModalProps {
   userId: string | string[] | undefined;

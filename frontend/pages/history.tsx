@@ -5,9 +5,9 @@ import Head from "next/head";
 import { Spinner, useDisclosure, addToast } from "@heroui/react";
 import WorkoutList from "@/components/history/WorkoutList";
 
-import { getWorkouts } from "@/utils/api/workouts";
+import { Workout } from "@/types";
 
-import { Workout } from "@/utils/models/models";
+import { getWorkouts } from "@/lib/api/workouts";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 

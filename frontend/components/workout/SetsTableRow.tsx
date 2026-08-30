@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { useWorkoutContext } from "@/pages/workout/[workoutId]";
 
-import { Set } from "@/utils/models/models";
+import { Set } from "@/types";
 
 import { Input, Tooltip, Button } from "@heroui/react";
 import { DeleteIcon } from "@/icons/DeleteIcon";

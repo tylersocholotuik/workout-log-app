@@ -32,7 +32,9 @@ import {
     WorkoutExercise,
     Set,
     ExerciseHistory,
-} from "@/utils/models/models";
+} from "@/types";
+
+import { createEmptySet } from "@/lib/factories";
 
 import SelectExerciseModal from "./SelectExerciseModal";
 import ExerciseHistoryModal from "./ExerciseHistoryModal";
@@ -41,7 +43,7 @@ import { useWorkoutContext } from "@/pages/workout/[workoutId]";
 
 import { calculateOneRepMax } from "@/utils/calculator/calc-functions";
 
-import { getExerciseHistory } from "@/utils/api/exercises";
+import { getExerciseHistory } from "@/lib/api/exercises";
 
 interface ExerciseCardProps {
     exercise: WorkoutExercise;
@@ -49,11 +51,10 @@ interface ExerciseCardProps {
     userId: string;
 }
 
-import { supabase } from "@/utils/supabase/supabaseClient";
-
 export default function ExerciseCard({
     exercise,
     exerciseIndex,
+    userId,
 }: ExerciseCardProps) {
     const { workout, setWorkout } = useWorkoutContext();
 
@@ -64,30 +65,16 @@ export default function ExerciseCard({
     const [exerciseHistory, setExerciseHistory] = useState<ExerciseHistory[]>(
         []
     );
-    const [userId, setUserId] = useState("");
 
     const changeExerciseModal = useDisclosure();
     const exerciseHistoryModal = useDisclosure();
 
     useEffect(() => {
-        getUserId();
-    }, []);
-
-    useEffect(() => {
         updateOneRepMax(exercise.sets);
     }, [workout]);
 
-    const getUserId = async () => {
-        const {
-            data: { user },
-        } = await supabase.auth.getUser();
-        if (user) {
-            setUserId(user.id);
-        }
-    };
-
     const addSet = () => {
-        const newSet = new Set();
+        const newSet = createEmptySet();
 
         // creating a deep copy of workout, then adding a new set
         // to the exercise at the current exercise index
