@@ -1,11 +1,10 @@
-// Auth API calls for the new backend
 import { User, RegisterData, LoginData, AuthResponse } from '@/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5258';
 
-// Token management
 const TOKEN_KEY = 'workout_auth_token';
 
+// Auth Helpers
 export const saveToken = (token: string): void => {
     localStorage.setItem(TOKEN_KEY, token);
 };
@@ -18,7 +17,6 @@ export const removeToken = (): void => {
     localStorage.removeItem(TOKEN_KEY);
 };
 
-// Helper to get auth headers
 export const getAuthHeaders = (): HeadersInit => {
     const token = getToken();
     const headers: HeadersInit = {
@@ -32,7 +30,6 @@ export const getAuthHeaders = (): HeadersInit => {
     return headers;
 };
 
-// Parse JWT to get user info
 export const getUserFromToken = (): User | null => {
     const token = getToken();
     if (!token) return null;
@@ -40,7 +37,6 @@ export const getUserFromToken = (): User | null => {
     try {
         const payload = JSON.parse(atob(token.split('.')[1]));
         
-        // Check if token is expired
         if (payload.exp && payload.exp * 1000 < Date.now()) {
             removeToken();
             return null;

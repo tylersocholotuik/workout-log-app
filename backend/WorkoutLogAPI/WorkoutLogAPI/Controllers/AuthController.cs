@@ -29,17 +29,13 @@ public class AuthController : ControllerBase
     {
         try
         {
-            // Check if user already exists
             var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
             if (existingUser != null)
             {
                 return BadRequest(new { error = "A user with this email already exists" });
             }
-
-            // Hash the password
             var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
-            // Create new user
             var user = new User
             {
                 Id = Guid.NewGuid().ToString(),
@@ -58,8 +54,7 @@ public class AuthController : ControllerBase
             await _context.SaveChangesAsync();
 
             _logger.LogInformation("User registered successfully: {Email}", user.Email);
-
-            // Generate JWT token
+            
             var token = _jwtService.GenerateToken(user);
 
             return Ok(new AuthResponse
@@ -88,24 +83,20 @@ public class AuthController : ControllerBase
     {
         try
         {
-            // Find user by email
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
             if (user == null)
             {
                 return Unauthorized(new { error = "Invalid email or password" });
             }
-
-            // Check if account is locked
+            
             if (user.IsLocked)
             {
                 return Unauthorized(new { error = "Account is locked. Please contact support." });
             }
-
-            // Verify password
+            
             var isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
             if (!isPasswordValid)
             {
-                // Increment failed login attempts
                 user.FailedLoginAttempts++;
                 if (user.FailedLoginAttempts >= 5)
                 {
@@ -116,15 +107,13 @@ public class AuthController : ControllerBase
 
                 return Unauthorized(new { error = "Invalid email or password" });
             }
-
-            // Reset failed login attempts and update last login
+            
             user.FailedLoginAttempts = 0;
             user.LastLoginAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
             _logger.LogInformation("User logged in successfully: {Email}", user.Email);
-
-            // Generate JWT token
+            
             var token = _jwtService.GenerateToken(user);
 
             return Ok(new AuthResponse
