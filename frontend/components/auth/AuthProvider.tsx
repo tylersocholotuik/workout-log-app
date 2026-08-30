@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext } from "react";
+import { useState, useEffect, createContext, useContext, ReactNode } from "react";
 import { useRouter } from "next/router";
 import { User } from "@/types";
 import { getUserFromToken, logout as logoutAuth } from "@/lib/api/auth";
@@ -9,6 +9,10 @@ interface AuthContextType {
     isSignedIn: () => boolean,
     logout: () => void,
     refreshUser: () => void
+}
+
+interface AuthProviderProps {
+    children: ReactNode;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,7 +27,7 @@ export const useAuth = () => {
     return context;
 }
 
-export default function AuthProvider({ children }) {
+export default function AuthProvider({ children }: AuthProviderProps) {
     const [user, setUser] = useState<User | null>(null);
     const router = useRouter();
 
