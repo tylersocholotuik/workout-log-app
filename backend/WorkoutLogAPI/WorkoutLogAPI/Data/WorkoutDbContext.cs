@@ -16,6 +16,32 @@ public class WorkoutDbContext : DbContext
     public DbSet<WorkoutExercise> WorkoutExercises { get; set; }
     public DbSet<Set> Sets { get; set; }
 
+    public override int SaveChanges()
+    {
+        UpdateTimestamps();
+        return base.SaveChanges();
+    }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        UpdateTimestamps();
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    private void UpdateTimestamps()
+    {
+        var entries = ChangeTracker.Entries()
+            .Where(e => e.Entity is IHasTimestamps && e.State == EntityState.Modified);
+
+        foreach (var entry in entries)
+        {
+            if (entry.Entity is IHasTimestamps entity)
+            {
+                entity.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -26,8 +52,12 @@ public class WorkoutDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Email).IsUnique();
             entity.Property(e => e.Email).IsRequired();
-            entity.Property(e => e.DisplayName).IsRequired().HasMaxLength(25);
+            entity.Property(e => e.FirstName).IsRequired();
+            entity.Property(e => e.LastName).IsRequired();
             entity.Property(e => e.PasswordHash).IsRequired();
+            entity.Property(e => e.FailedLoginAttempts).HasDefaultValue(0);
+            entity.Property(e => e.IsLocked).HasDefaultValue(false);
+            entity.Property(e => e.IsAdmin).HasDefaultValue(false);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
@@ -37,6 +67,7 @@ public class WorkoutDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Name).IsUnique();
             entity.Property(e => e.Name).IsRequired();
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
         // UserExercise configuration
@@ -46,6 +77,7 @@ public class WorkoutDbContext : DbContext
             entity.HasIndex(e => new { e.UserId, e.Name }).IsUnique();
             entity.Property(e => e.Name).IsRequired();
             entity.Property(e => e.Deleted).HasDefaultValue(false);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             
             entity.HasOne(e => e.User)
                 .WithMany(u => u.UserExercises)
@@ -60,6 +92,7 @@ public class WorkoutDbContext : DbContext
             entity.Property(e => e.Title).IsRequired();
             entity.Property(e => e.Date).HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.Deleted).HasDefaultValue(false);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             
             entity.HasOne(w => w.User)
                 .WithMany(u => u.Workouts)
@@ -73,6 +106,7 @@ public class WorkoutDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.WeightUnit).IsRequired();
             entity.Property(e => e.Deleted).HasDefaultValue(false);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             
             entity.HasOne(we => we.Exercise)
                 .WithMany(e => e.WorkoutExercises)
@@ -95,6 +129,7 @@ public class WorkoutDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Deleted).HasDefaultValue(false);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             
             entity.HasOne(s => s.Exercise)
                 .WithMany(we => we.Sets)

@@ -1,6 +1,6 @@
 namespace WorkoutLogAPI.Models;
 
-public class WorkoutExercise
+public class WorkoutExercise : IHasTimestamps
 {
     public int Id { get; set; }
     public string? Notes { get; set; }
@@ -9,6 +9,8 @@ public class WorkoutExercise
     public int? UserExerciseId { get; set; }
     public string WorkoutId { get; set; } = null!;
     public bool Deleted { get; set; } = false;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
     
     // Navigation properties
     public Exercise? Exercise { get; set; }
