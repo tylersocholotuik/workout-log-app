@@ -1,7 +1,12 @@
 import { Workout } from "../models/models";
+import { getAuthHeaders } from "./auth";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5258';
 
 export const getWorkouts = async (userId: string | string[] | undefined) => {
-    const res = await fetch(`/api/${userId}/workouts`);
+    const res = await fetch(`${API_URL}/api/${userId}/workouts`, {
+        headers: getAuthHeaders()
+    });
 
     if (!res.ok) {
         const errorData = await res.json();
@@ -13,7 +18,9 @@ export const getWorkouts = async (userId: string | string[] | undefined) => {
 };
 
 export const getWorkout = async (userId: string | string[] | undefined, id: string | string[]) => {
-    const res = await fetch(`/api/${userId}/workouts/${id}`);
+    const res = await fetch(`${API_URL}/api/${userId}/workouts/${id}`, {
+        headers: getAuthHeaders()
+    });
 
     if (!res.ok) {
         const errorData = await res.json();
@@ -25,11 +32,9 @@ export const getWorkout = async (userId: string | string[] | undefined, id: stri
 };
 
 export const addWorkout = async (userId: string | string[] | undefined, workoutData: Workout) => {
-    const res = await fetch(`/api/${userId}/workouts`, {
+    const res = await fetch(`${API_URL}/api/${userId}/workouts`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ userId, workoutData }),
     });
 
@@ -43,11 +48,9 @@ export const addWorkout = async (userId: string | string[] | undefined, workoutD
 };
 
 export const updateWorkout = async (userId: string | string[] | undefined, workoutData: Workout) => {
-    const res = await fetch(`/api/${userId}/workouts`, {
+    const res = await fetch(`${API_URL}/api/${userId}/workouts`, {
         method: "PATCH",
-        headers: {
-            "Content-Type": "application/json",
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
             workoutData,
         }),
@@ -63,11 +66,9 @@ export const updateWorkout = async (userId: string | string[] | undefined, worko
 };
 
 export const deleteWorkout = async (userId: string | string[] | undefined, id: string | string[]) => {
-    const res = await fetch(`/api/${userId}/workouts`, {
+    const res = await fetch(`${API_URL}/api/${userId}/workouts`, {
         method: "DELETE",
-        headers: {
-            "Content-Type": "application/json",
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
             id,
         }),

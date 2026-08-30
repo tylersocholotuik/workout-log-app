@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 import { useRouter } from "next/router";
 
-import { supabase } from "@/utils/supabase/supabaseClient";
+import { register, login } from "@/utils/api/auth";
 
 import {
   Form,
@@ -11,11 +11,9 @@ import {
   Card,
   CardHeader,
   CardBody,
-  Divider,
   Tabs,
   Tab,
   Link,
-  Alert,
   addToast,
 } from "@heroui/react";
 
@@ -24,8 +22,6 @@ import Head from "next/head";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 export default function App() {
-  // bound to email input for magic link
-  const [linkEmail, setLinkEmail] = useState("");
   // bound to inputs for email and password login
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -33,22 +29,24 @@ export default function App() {
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [displayName, setDisplayName] = useState("");
-  // for general errors thrown by supabase
-  const [linkError, setLinkError] = useState("");
+  // for general errors
   const [loginError, setLoginError] = useState("");
   const [signupError, setSignupError] = useState("");
   // for input specific errors
-  const [linkEmailError, setLinkEmailError] = useState("");
   const [loginEmailError, setLoginEmailError] = useState("");
   const [signupEmailError, setSignupEmailError] = useState("");
   const [loginPasswordError, setLoginPasswordError] = useState("");
   const [signupPasswordError, setSignupPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
+  const [firstNameError, setFirstNameError] = useState("");
+  const [lastNameError, setLastNameError] = useState("");
   const [displayNameError, setDisplayNameError] = useState("");
   const [selected, setSelected] = useState<number | string>("login");
 
-  const { user, isSignedIn } = useAuth();
+  const { user, isSignedIn, refreshUser } = useAuth();
 
   const router = useRouter();
 
@@ -63,45 +61,6 @@ export default function App() {
       router.push("/");
     }
   }, [user]);
-
-  const signInWithEmail = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    clearErrors();
-    let emailError = "";
-
-    if (linkEmail === "") {
-      emailError = "Email is required.";
-    }
-
-    if (emailError !== "") {
-      setLinkEmailError(emailError);
-    } else {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: linkEmail,
-        // do not want to automatically create user with link
-        // user must sign up
-        options: {
-          shouldCreateUser: false,
-        },
-      });
-
-      if (error) {
-        setLinkError(error.message);
-        addToast({
-          title: "Error",
-          description: error.message,
-          color: "danger",
-        });
-      } else {
-        addToast({
-          description: `A login link has be sent to ${linkEmail}`,
-          color: "success",
-        });
-        resetForms();
-      }
-    }
-  };
 
   const loginWithPassword = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -130,22 +89,30 @@ export default function App() {
         }
       });
     } else {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
-        password: loginPassword,
-      });
+      try {
+        const response = await login({
+          email: loginEmail,
+          password: loginPassword,
+        });
 
-      if (error) {
-        setLoginError(error.message);
-      } else {
+        refreshUser(); // Update user state immediately
+        
         addToast({
           description: `Welcome ${
-            data.user?.user_metadata.display_name ??
-            data.user?.user_metadata.email
+            response.user.displayName ||
+            response.user.firstName
           }!`,
           color: "success",
         });
         resetForms();
+        router.push("/");
+      } catch (error: any) {
+        setLoginError(error.message);
+        addToast({
+          title: "Error",
+          description: error.message,
+          color: "danger",
+        });
       }
     }
   };
@@ -158,6 +125,14 @@ export default function App() {
 
     if (signupEmail === "") {
       errors.push({ field: "email", message: "Email is required." });
+    }
+
+    if (firstName === "") {
+      errors.push({ field: "firstName", message: "First name is required." });
+    }
+
+    if (lastName === "") {
+      errors.push({ field: "lastName", message: "Last name is required." });
     }
 
     if (signupPassword === "") {
@@ -181,16 +156,9 @@ export default function App() {
       });
     }
 
-    if (displayName === "") {
-      errors.push({
-        field: "name",
-        message: "Display name is required.",
-      });
-    }
-
     if (displayName.length > 25) {
       errors.push({
-        field: "name",
+        field: "displayName",
         message: "Display name must be less than 25 characters.",
       });
     }
@@ -207,53 +175,69 @@ export default function App() {
           setSignupPasswordError(error.message);
           setConfirmPasswordError(error.message);
         }
-        if (error.field === "name") {
+        if (error.field === "firstName") {
+          setFirstNameError(error.message);
+        }
+        if (error.field === "lastName") {
+          setLastNameError(error.message);
+        }
+        if (error.field === "displayName") {
           setDisplayNameError(error.message);
         }
       });
     } else {
-      const { error } = await supabase.auth.signUp({
-        email: signupEmail,
-        password: signupPassword,
-        options: {
-          data: {
-            display_name: displayName,
-          },
-        },
-      });
+      try {
+        const response = await register({
+          email: signupEmail,
+          firstName,
+          lastName,
+          displayName: displayName || undefined,
+          password: signupPassword,
+        });
 
-      if (error) {
-        setSignupError(error.message);
-      } else {
+        refreshUser(); // Update user state immediately
+
         addToast({
-          description: `A confirmation email has been sent to ${signupEmail}`,
+          description: `Welcome ${
+            response.user.displayName ||
+            response.user.firstName
+          }!`,
           color: "success",
         });
         resetForms();
+        router.push("/");
+      } catch (error: any) {
+        setSignupError(error.message);
+        addToast({
+          title: "Error",
+          description: error.message,
+          color: "danger",
+        });
       }
     }
   };
 
   const clearErrors = () => {
-    setLinkError("");
     setLoginError("");
     setSignupError("");
-    setLinkEmailError("");
     setLoginEmailError("");
     setSignupEmailError("");
     setLoginPasswordError("");
     setSignupPasswordError("");
     setConfirmPasswordError("");
+    setFirstNameError("");
+    setLastNameError("");
     setDisplayNameError("");
   };
 
   const resetForms = () => {
-    setLinkEmail("");
     setLoginEmail("");
     setSignupEmail("");
     setLoginPassword("");
     setSignupPassword("");
     setConfirmPassword("");
+    setFirstName("");
+    setLastName("");
     setDisplayName("");
     clearErrors();
   };
@@ -278,54 +262,7 @@ export default function App() {
             >
               <Tab key="login" title="Login">
                 <div className="flex flex-col items-center gap-6">
-                  <h3 className="mt-2">Login with Magic Link</h3>
-                  <Form
-                    id="magic-link-form"
-                    onSubmit={signInWithEmail}
-                    className="w-full"
-                    validationBehavior="aria"
-                  >
-                    <div className=" w-full">
-                      <Input
-                        isRequired
-                        label="Email"
-                        name="email"
-                        placeholder="Enter your email"
-                        type="email"
-                        variant="bordered"
-                        validate={(_) => {
-                          if (linkEmailError !== "") {
-                            return linkEmailError;
-                          }
-                          if (linkError !== "") {
-                            return linkError;
-                          }
-                        }}
-                        value={linkEmail}
-                        onValueChange={setLinkEmail}
-                        onChange={() => {
-                          setLinkEmailError("");
-                          setLinkError("");
-                        }}
-                      />
-                    </div>
-                  </Form>
-                  <div className="w-full">
-                    <Button
-                      fullWidth
-                      color="primary"
-                      type="submit"
-                      form="magic-link-form"
-                    >
-                      Send Link
-                    </Button>
-                  </div>
-                  <p className="text-sm">
-                    Check your email inbox for a link from{" "}
-                    <span className="font-semibold">Supabase Auth</span>.
-                  </p>
-                  <Divider className="mt-3" />
-                  <h3>Login with Credentials</h3>
+                  <h3 className="mt-4">Login with Email & Password</h3>
                   <Form
                     id="password-login-form"
                     onSubmit={loginWithPassword}
@@ -379,9 +316,6 @@ export default function App() {
                       />
                     </div>
                   </Form>
-                  <p className="text-sm">
-                    Forgot your password? Login with Magic Link above.
-                  </p>
                   <div className="w-full">
                     <Button
                       fullWidth
@@ -437,6 +371,55 @@ export default function App() {
                       />
                       <Input
                         isRequired
+                        label="First Name"
+                        name="firstName"
+                        placeholder="Enter your first name"
+                        type="text"
+                        variant="bordered"
+                        validate={(_) => {
+                          if (firstNameError !== "") {
+                            return firstNameError;
+                          }
+                        }}
+                        value={firstName}
+                        onValueChange={setFirstName}
+                        onChange={() => setFirstNameError("")}
+                      />
+                      <Input
+                        isRequired
+                        label="Last Name"
+                        name="lastName"
+                        placeholder="Enter your last name"
+                        type="text"
+                        variant="bordered"
+                        validate={(_) => {
+                          if (lastNameError !== "") {
+                            return lastNameError;
+                          }
+                        }}
+                        value={lastName}
+                        onValueChange={setLastName}
+                        onChange={() => setLastNameError("")}
+                      />
+                      <Input
+                        label="Display Name (Optional)"
+                        name="displayName"
+                        placeholder="Enter your display name"
+                        description="Maximum 25 characters"
+                        maxLength={25}
+                        type="text"
+                        variant="bordered"
+                        validate={(_) => {
+                          if (displayNameError !== "") {
+                            return displayNameError;
+                          }
+                        }}
+                        value={displayName}
+                        onValueChange={setDisplayName}
+                        onChange={() => setDisplayNameError("")}
+                      />
+                      <Input
+                        isRequired
                         label="Password"
                         name="password"
                         placeholder="Enter your password"
@@ -471,31 +454,8 @@ export default function App() {
                         onValueChange={setConfirmPassword}
                         onChange={() => setConfirmPasswordError("")}
                       />
-                      <Input
-                        isRequired
-                        label="Display Name"
-                        name="display_name"
-                        placeholder="Enter your display name"
-                        description="Maximum 25 characters"
-                        maxLength={25}
-                        type="text"
-                        variant="bordered"
-                        validate={(_) => {
-                          if (displayNameError !== "") {
-                            return displayNameError;
-                          }
-                        }}
-                        value={displayName}
-                        onValueChange={setDisplayName}
-                        onChange={() => setDisplayNameError("")}
-                      />
                     </div>
                   </Form>
-                  <Alert
-                    color="warning"
-                    variant="bordered"
-                    title="Passwords currently can not be reset. Make sure you choose a password you can remember."
-                  />
                   <div className="w-full mt-4">
                     <Button
                       fullWidth

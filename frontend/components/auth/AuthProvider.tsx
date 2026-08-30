@@ -1,14 +1,13 @@
 import { useState, useEffect, createContext, useContext } from "react";
-
 import { useRouter } from "next/router";
-
-import { supabase } from "@/utils/supabase/supabaseClient";
-import { User } from "@supabase/supabase-js";
+import { User, getUserFromToken, logout as logoutAuth } from "@/utils/api/auth";
 
 interface AuthContextType {
     authorizeUser: () => void,
     user: User | null,
-    isSignedIn: () => boolean
+    isSignedIn: () => boolean,
+    logout: () => void,
+    refreshUser: () => void
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,7 +24,6 @@ export const useAuth = () => {
 
 export default function AuthProvider({ children }) {
     const [user, setUser] = useState<User | null>(null);
-
     const router = useRouter();
 
     const protectedPages = [
@@ -33,51 +31,46 @@ export default function AuthProvider({ children }) {
         "/history"
     ];
 
-    // listen for changes to the auth state to set user
-    // dynamically. 
+    // Check for user on mount and route changes
     useEffect(() => {
-        const { data } = supabase.auth.onAuthStateChange(
-            (event, session) => {
-                if (event === "INITIAL_SESSION") {
-                    setUser(session?.user ?? null);
-                } else if (event === "SIGNED_IN") {
-                    setUser(session?.user ?? null);
-                } else if (event === "SIGNED_OUT") {
-                    setUser(null);
-                }
+        const checkAuth = () => {
+            const currentUser = getUserFromToken();
+            setUser(currentUser);
+
+            // If not logged in and on a protected page, redirect to login
+            if (!currentUser && protectedPages.includes(router.pathname)) {
+                router.push("/login");
             }
-        );
+        };
 
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            if (!session) {
-                // if the user is not logged in and they try to access a protected page
-                // redirect to login page
-                if (protectedPages.includes(router.pathname)) {
-                    router.push("/login");
-                }
-            }
+        checkAuth();
+    }, [router.pathname]);
 
-            setUser(session?.user ?? null);
-        });
-
-        return () => data.subscription.unsubscribe();
-    }, []);
+    const refreshUser = () => {
+        const currentUser = getUserFromToken();
+        setUser(currentUser);
+    };
 
     const authorizeUser = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
+        const currentUser = getUserFromToken();
 
-        if (!session) {
-            // redirect to login page if not logged in
+        if (!currentUser) {
             router.push("/login");
         } else {
-            setUser(session.user);
+            setUser(currentUser);
         }
+    };
+
+    const logout = () => {
+        logoutAuth();
+        setUser(null);
+        router.push("/login");
     };
 
     const isSignedIn = () => user !== null;
     
     return (
-        <AuthContext.Provider value={{authorizeUser, user, isSignedIn}}>
+        <AuthContext.Provider value={{authorizeUser, user, isSignedIn, logout, refreshUser}}>
             {children}
         </AuthContext.Provider>
     );

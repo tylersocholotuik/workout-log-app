@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
-import { supabase } from "@/utils/supabase/supabaseClient";
 
 import {
     Navbar,
@@ -32,7 +31,7 @@ export default function NavBar() {
 
     const router = useRouter();
 
-    const { user, isSignedIn } = useAuth();
+    const { user, isSignedIn, logout } = useAuth();
 
     const logoutModal = useDisclosure();
 
@@ -64,22 +63,6 @@ export default function NavBar() {
             return router.pathname === "/"
         }
         return router.pathname.includes(path);
-    };
-
-    const logOut = async () => {
-
-        try {
-            // scope: "local" means only sign out on the current device
-            const { error } = await supabase.auth.signOut({ scope: "local"});
-            if (error) {
-                console.error(`Error during logout: ${error.message}`);
-            } else {
-                localStorage.clear();
-                router.push("/");
-            }
-        } catch (err) {
-            console.error(`Unexpected error during logout: ${err}`);
-        }
     };
 
     return (
@@ -187,8 +170,8 @@ export default function NavBar() {
                                             }
                                             endContent={<ChevronDownIcon />}
                                         >
-                                            {user?.user_metadata.display_name ??
-                                                user?.email}
+                                        {user?.displayName ??
+                                            `${user?.firstName} ${user?.lastName}`}
                                         </Button>
                                     </DropdownTrigger>
                                     <DropdownMenu
@@ -307,8 +290,8 @@ export default function NavBar() {
                                         height="16"
                                     />
                                     <p className="text-sm">
-                                        {user?.user_metadata.display_name ??
-                                            user?.email}
+                                        {user?.displayName ??
+                                            `${user?.firstName} ${user?.lastName}`}
                                     </p>
                                 </div>
                             </NavbarMenuItem>
@@ -340,7 +323,7 @@ export default function NavBar() {
             <LogoutModal 
                 isOpen={logoutModal.isOpen}
                 onOpenChange={logoutModal.onOpenChange}
-                logOutFunction={logOut}
+                logOutFunction={logout}
             />
         </>
     );

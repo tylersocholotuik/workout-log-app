@@ -1,5 +1,11 @@
+import { getAuthHeaders } from "./auth";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5258';
+
 export const getStockExercises = async () => {
-    const res = await fetch(`/api/exercises`);
+    const res = await fetch(`${API_URL}/api/exercises`, {
+        headers: getAuthHeaders()
+    });
 
     if (!res.ok) {
         const errorData = await res.json();
@@ -13,7 +19,9 @@ export const getStockExercises = async () => {
 export const getUserExercises = async (
     userId: string | string[] | undefined
 ) => {
-    const res = await fetch(`/api/${userId}/exercises`);
+    const res = await fetch(`${API_URL}/api/${userId}/exercises`, {
+        headers: getAuthHeaders()
+    });
 
     if (!res.ok) {
         const errorData = await res.json();
@@ -28,11 +36,9 @@ export const addUserExercise = async (
     userId: string | string[] | undefined,
     name: string
 ) => {
-    const res = await fetch(`/api/${userId}/exercises`, {
+    const res = await fetch(`${API_URL}/api/${userId}/exercises`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ userId, name }),
     });
 
@@ -50,11 +56,9 @@ export const updateUserExercise = async (
     exerciseId: number,
     newName: string
 ) => {
-    const res = await fetch(`/api/${userId}/exercises`, {
+    const res = await fetch(`${API_URL}/api/${userId}/exercises`, {
         method: "PATCH",
-        headers: {
-            "Content-Type": "application/json",
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
             userId: userId,
             exerciseId: exerciseId,
@@ -75,11 +79,9 @@ export const deleteUserExercise = async (
     userId: string | string[] | undefined,
     exerciseId: number
 ) => {
-    const res = await fetch(`/api/${userId}/exercises`, {
+    const res = await fetch(`${API_URL}/api/${userId}/exercises`, {
         method: "DELETE",
-        headers: {
-            "Content-Type": "application/json",
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
             exerciseId: exerciseId,
         }),
@@ -104,7 +106,9 @@ export const getExerciseHistory = async (
         ...(userExerciseId && { userExerciseId: userExerciseId.toString() }),
     }).toString();
 
-    const res = await fetch(`/api/${userId}/exercises/exercise-history?${queryParams}`);
+    const res = await fetch(`${API_URL}/api/${userId}/exercises/exercise-history?${queryParams}`, {
+        headers: getAuthHeaders()
+    });
 
     if (!res.ok) {
         const errorData = await res.json();
