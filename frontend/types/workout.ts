@@ -8,7 +8,6 @@ export interface Workout {
     date: Date;
     userId: string;
     exercises: WorkoutExercise[];
-    deleted: boolean;
 }
 
 export interface WorkoutExercise {
@@ -21,7 +20,6 @@ export interface WorkoutExercise {
     userExercise: UserExercise | null;
     workoutId: string;
     sets: Set[];
-    deleted: boolean;
 }
 
 export interface Set {
@@ -30,5 +28,4 @@ export interface Set {
     reps: number | null;
     rpe: number | null;
     exerciseId: number;
-    deleted: boolean;
 }

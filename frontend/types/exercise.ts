@@ -5,7 +5,6 @@ export interface Exercise {
     id: number;
     name: string;
     userId?: string | null;
-    deleted?: boolean;
     workoutExercises?: WorkoutExercise[] | null;
 }
 
@@ -13,7 +12,6 @@ export interface UserExercise {
     id: number;
     name: string;
     userId: string;
-    deleted: boolean;
     workoutExercises?: WorkoutExercise[] | null;
 }
 

@@ -152,8 +152,7 @@ export default function ExerciseCard({
                               exercise: {
                                   id: newExercise.id,
                                   name: newExercise.name,
-                                  userId: workout.userId,
-                                  deleted: false,
+                                  userId: workout.userId
                               },
                               exerciseId: null,
                               userExerciseId: newExercise.id,

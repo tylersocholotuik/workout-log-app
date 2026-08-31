@@ -8,8 +8,7 @@ export const createEmptyWorkout = (): Workout => ({
     notes: "",
     date: new Date(),
     userId: "",
-    exercises: [],
-    deleted: false
+    exercises: []
 });
 
 export const createEmptyWorkoutExercise = (): WorkoutExercise => ({
@@ -21,8 +20,7 @@ export const createEmptyWorkoutExercise = (): WorkoutExercise => ({
     exercise: null,
     userExercise: null,
     workoutId: "",
-    sets: [],
-    deleted: false
+    sets: []
 });
 
 export const createEmptySet = (): Set => ({
@@ -30,6 +28,5 @@ export const createEmptySet = (): Set => ({
     weight: null,
     reps: null,
     rpe: null,
-    exerciseId: 0,
-    deleted: false
+    exerciseId: 0
 });
