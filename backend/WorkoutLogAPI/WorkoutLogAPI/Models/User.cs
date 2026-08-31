@@ -17,5 +17,5 @@ public class User : IHasTimestamps
     
     // Navigation properties
     public ICollection<Workout> Workouts { get; set; } = new List<Workout>();
-    public ICollection<UserExercise> UserExercises { get; set; } = new List<UserExercise>();
+    public ICollection<Exercise> Exercises { get; set; } = new List<Exercise>();
 }

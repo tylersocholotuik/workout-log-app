@@ -1,5 +1,5 @@
 import { WeightUnit } from './common';
-import { Exercise, UserExercise } from './exercise';
+import { Exercise } from './exercise';
 
 export interface Workout {
     id: string;
@@ -14,10 +14,8 @@ export interface WorkoutExercise {
     id: number;
     notes: string;
     weightUnit: WeightUnit;
-    exerciseId: number | null;
-    userExerciseId: number | null;
-    exercise: Exercise | null;
-    userExercise: UserExercise | null;
+    exerciseId: number;
+    exercise: Exercise;
     workoutId: string;
     sets: Set[];
 }

@@ -5,16 +5,14 @@ public class WorkoutExercise : IHasTimestamps
     public int Id { get; set; }
     public string? Notes { get; set; }
     public string WeightUnit { get; set; } = null!;
-    public int? ExerciseId { get; set; }
-    public int? UserExerciseId { get; set; }
+    public int ExerciseId { get; set; }
     public string WorkoutId { get; set; } = null!;
     public bool Deleted { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
     
     // Navigation properties
-    public Exercise? Exercise { get; set; }
-    public UserExercise? UserExercise { get; set; }
+    public Exercise Exercise { get; set; } = null!;
     public Workout Workout { get; set; } = null!;
     public ICollection<Set> Sets { get; set; } = new List<Set>();
 }

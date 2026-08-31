@@ -99,15 +99,9 @@ export const deleteUserExercise = async (
 
 export const getExerciseHistory = async (
     userId: string | string[] | undefined,
-    exerciseId: number | null | undefined,
-    userExerciseId: number | null | undefined
+    exerciseId: number | undefined
 ) => {
-    const queryParams = new URLSearchParams({
-        ...(exerciseId && { exerciseId: exerciseId.toString() }),
-        ...(userExerciseId && { userExerciseId: userExerciseId.toString() }),
-    }).toString();
-
-    const res = await fetch(`${API_URL}/api/${userId}/exercises/exercise-history?${queryParams}`, {
+    const res = await fetch(`${API_URL}/api/${userId}/exercises/exercise-history?exerciseId=${exerciseId}`, {
         headers: getAuthHeaders()
     });
 

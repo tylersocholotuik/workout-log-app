@@ -15,10 +15,8 @@ export const createEmptyWorkoutExercise = (): WorkoutExercise => ({
     id: 0,
     notes: "",
     weightUnit: "lbs",
-    exerciseId: null,
-    userExerciseId: null,
-    exercise: null,
-    userExercise: null,
+    exerciseId: 0,
+    exercise: { id: 0, name: "", userId: null },
     workoutId: "",
     sets: []
 });

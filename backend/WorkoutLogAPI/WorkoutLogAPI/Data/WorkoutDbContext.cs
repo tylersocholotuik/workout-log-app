@@ -11,7 +11,6 @@ public class WorkoutDbContext : DbContext
 
     public DbSet<User> Users { get; set; }
     public DbSet<Exercise> Exercises { get; set; }
-    public DbSet<UserExercise> UserExercises { get; set; }
     public DbSet<Workout> Workouts { get; set; }
     public DbSet<WorkoutExercise> WorkoutExercises { get; set; }
     public DbSet<Set> Sets { get; set; }
@@ -65,24 +64,22 @@ public class WorkoutDbContext : DbContext
         modelBuilder.Entity<Exercise>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.Name).IsUnique();
-            entity.Property(e => e.Name).IsRequired();
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-        });
-
-        // UserExercise configuration
-        modelBuilder.Entity<UserExercise>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => new { e.UserId, e.Name }).IsUnique();
+            entity.HasIndex(e => e.Name);
             entity.Property(e => e.Name).IsRequired();
             entity.Property(e => e.Deleted).HasDefaultValue(false);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             
+            // Foreign key to User (nullable - null means system exercise)
             entity.HasOne(e => e.User)
-                .WithMany(u => u.UserExercises)
+                .WithMany(u => u.Exercises)
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+            
+            // Prevent deleting system exercises (UserId = null)
+            entity.HasCheckConstraint(
+                "CK_Exercise_SystemExercise_NotDeleted", 
+                "\"UserId\" IS NOT NULL OR \"Deleted\" = false"
+            );
         });
 
         // Workout configuration
@@ -111,12 +108,7 @@ public class WorkoutDbContext : DbContext
             entity.HasOne(we => we.Exercise)
                 .WithMany(e => e.WorkoutExercises)
                 .HasForeignKey(we => we.ExerciseId)
-                .OnDelete(DeleteBehavior.SetNull);
-            
-            entity.HasOne(we => we.UserExercise)
-                .WithMany(ue => ue.WorkoutExercises)
-                .HasForeignKey(we => we.UserExerciseId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .OnDelete(DeleteBehavior.Restrict);
             
             entity.HasOne(we => we.Workout)
                 .WithMany(w => w.Exercises)

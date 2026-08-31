@@ -128,10 +128,6 @@ export default function WorkoutLog() {
     const addExercise = (exercise: Exercise) => {
         const updatedWorkout = { ...workout };
         const newWorkoutExercise = createEmptyWorkoutExercise();
-        // if userId is present, that means it is a user exercise
-        if ("userId" in exercise) {
-            newWorkoutExercise.userExerciseId = exercise.id;
-        }
         newWorkoutExercise.exerciseId = exercise.id;
         newWorkoutExercise.exercise = exercise;
         newWorkoutExercise.workoutId = workout.id;

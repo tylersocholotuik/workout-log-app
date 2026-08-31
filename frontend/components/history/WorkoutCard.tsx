@@ -46,10 +46,7 @@ export default function WorkoutCard({ workout }: WorkoutCardProps) {
                                 key={exercise.id}
                                 className="text-xs text-default-500"
                             >
-                                {exercise.exercise?.name
-                                    ? exercise.exercise.name
-                                    : exercise.userExercise?.name &&
-                                      exercise.userExercise.name}
+                                {exercise.exercise.name}
                             </li>
                         );
                     })}

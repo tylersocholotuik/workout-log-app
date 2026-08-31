@@ -115,55 +115,22 @@ export default function ExerciseCard({
             })),
         };
 
-        // checking if the new exercise is a stock exercise, and the previous was a
-        // user exercise. If so, set user exercise to null and map new exercise
-        // properties to exercise
-        if (
-            !("userId" in newExercise) &&
-            "userExerciseId" in updatedWorkout.exercises[exerciseIndex!]
-        ) {
-            updatedWorkout = {
-                ...workout,
-                exercises: workout.exercises.map((exercise, index) =>
-                    index === exerciseIndex
-                        ? {
-                              ...exercise,
-                              exercise: {
-                                  id: newExercise.id,
-                                  name: newExercise.name,
-                              },
-                              userExercise: null,
-                              exerciseId: newExercise.id,
-                              userExerciseId: null,
-                              sets: exercise.sets.map((set) => ({
-                                  ...set,
-                              })),
-                          }
-                        : exercise
-                ),
-            };
-        } else {
-            updatedWorkout = {
-                ...workout,
-                exercises: workout.exercises.map((exercise, index) =>
-                    index === exerciseIndex
-                        ? {
-                              ...exercise,
-                              exercise: {
-                                  id: newExercise.id,
-                                  name: newExercise.name,
-                                  userId: workout.userId
-                              },
-                              exerciseId: null,
-                              userExerciseId: newExercise.id,
-                              sets: exercise.sets.map((set) => ({
-                                  ...set,
-                              })),
-                          }
-                        : exercise
-                ),
-            };
-        }
+        // Update the exercise
+        updatedWorkout = {
+            ...workout,
+            exercises: workout.exercises.map((exercise, index) =>
+                index === exerciseIndex
+                    ? {
+                          ...exercise,
+                          exercise: newExercise,
+                          exerciseId: newExercise.id,
+                          sets: exercise.sets.map((set) => ({
+                              ...set,
+                          })),
+                      }
+                    : exercise
+            ),
+        };
 
         setWorkout(updatedWorkout);
     };
@@ -216,13 +183,11 @@ export default function ExerciseCard({
     // for each time the user performed that exercise.
     const fetchExerciseHistory = async (
         userId: string | string | undefined,
-        exerciseId?: number | null | undefined,
-        userExerciseId?: number | null | undefined
+        exerciseId: number | undefined
     ) => {
         const data = await getExerciseHistory(
             userId,
-            exerciseId,
-            userExerciseId
+            exerciseId
         );
 
         setExerciseHistory(data);
@@ -236,7 +201,7 @@ export default function ExerciseCard({
                 <CardHeader className="flex justify-between items-center">
                     <div className="flex items-center gap-1">
                         <h3 className="text-md text-primary">
-                            {exercise.exercise?.name}
+                            {exercise.exercise.name}
                         </h3>
                         <div>
                             <Dropdown>
@@ -275,8 +240,7 @@ export default function ExerciseCard({
                                         onPress={() =>
                                             fetchExerciseHistory(
                                                 userId,
-                                                exercise.exercise?.id,
-                                                exercise.userExerciseId
+                                                exercise.exercise.id
                                             )
                                         }
                                         startContent={
@@ -421,7 +385,7 @@ export default function ExerciseCard({
                 onOpenChange={exerciseHistoryModal.onOpenChange}
                 exerciseHistory={exerciseHistory}
                 exerciseName={
-                    exercise.exercise?.name ?? ""
+                    exercise.exercise.name
                 }
             />
         </>

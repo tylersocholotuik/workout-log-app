@@ -4,14 +4,7 @@ import { WorkoutExercise } from './workout';
 export interface Exercise {
     id: number;
     name: string;
-    userId?: string | null;
-    workoutExercises?: WorkoutExercise[] | null;
-}
-
-export interface UserExercise {
-    id: number;
-    name: string;
-    userId: string;
+    userId: string | null;
     workoutExercises?: WorkoutExercise[] | null;
 }
 
