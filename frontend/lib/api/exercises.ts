@@ -3,24 +3,9 @@ import { getAuthHeaders } from "./auth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5258';
 
-export const getStockExercises = async () => {
+// Get all exercises available to the user (system exercises + their custom exercises)
+export const getExercises = async () => {
     const res = await fetch(`${API_URL}/api/exercises`, {
-        headers: getAuthHeaders()
-    });
-
-    if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to load exercises");
-    }
-
-    const data = await res.json();
-    return data;
-};
-
-export const getUserExercises = async (
-    userId: string | string[] | undefined
-) => {
-    const res = await fetch(`${API_URL}/api/${userId}/exercises`, {
         headers: getAuthHeaders()
     });
 

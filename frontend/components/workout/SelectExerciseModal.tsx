@@ -23,8 +23,7 @@ import { SearchIcon } from "@/icons/SearchIcon";
 
 import { Exercise } from "@/types";
 import {
-  getUserExercises,
-  getStockExercises,
+  getExercises,
   addUserExercise,
 } from "@/lib/api/exercises";
 
@@ -56,8 +55,8 @@ export default function SelectExerciseModal({
   const [error, setError] = useState("");
 
   useEffect(() => {
-    loadExercises(userId);
-  }, [userId]);
+    loadExercises();
+  }, []);
 
   useEffect(() => {
     setFilteredExercises(
@@ -69,14 +68,10 @@ export default function SelectExerciseModal({
     );
   }, [exercises, filterValue]);
 
-  const loadExercises = async (userId: string | string[] | undefined) => {
+  const loadExercises = async () => {
     try {
-      if (!userId) {
-        return;
-      }
-      const data = await getStockExercises();
-      const userData = await getUserExercises(userId);
-      setExercises([...data, ...userData]);
+      const data = await getExercises();
+      setExercises(data);
     } catch (error) {
       addToast({
         title: "Error loading exercises",
@@ -129,7 +124,7 @@ export default function SelectExerciseModal({
       );
 
       // reload exercises to have access to new exercise
-      await loadExercises(userId);
+      await loadExercises();
 
 
       addToast({

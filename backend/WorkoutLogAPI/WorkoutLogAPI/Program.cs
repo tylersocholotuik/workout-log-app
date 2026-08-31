@@ -12,8 +12,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<WorkoutDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Add JWT Service
+// Add Services
 builder.Services.AddScoped<JwtService>();
+builder.Services.AddScoped<ExerciseService>();
 
 // Add Authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
