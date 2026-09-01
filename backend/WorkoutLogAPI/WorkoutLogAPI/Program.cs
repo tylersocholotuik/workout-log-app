@@ -57,6 +57,9 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    
+    // Seed database in development only
+    await app.SeedDatabaseAsync();
 }
 
 app.UseHttpsRedirection();
@@ -67,8 +70,5 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
-// Seed database on startup
-await app.SeedDatabaseAsync();
 
 app.Run();
