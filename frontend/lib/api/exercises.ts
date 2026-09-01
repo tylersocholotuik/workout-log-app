@@ -19,13 +19,12 @@ export const getExercises = async () => {
 };
 
 export const addUserExercise = async (
-    userId: string | string[] | undefined,
     name: string
 ) => {
-    const res = await fetch(`${API_URL}/api/${userId}/exercises`, {
+    const res = await fetch(`${API_URL}/api/exercises`, {
         method: "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify({ userId, name }),
+        body: JSON.stringify({ name }),
     });
 
     if (!res.ok) {

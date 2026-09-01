@@ -93,7 +93,6 @@ export default function SelectExerciseModal({
   };
 
   const createNewExercise = async (
-    userId: string | string[] | undefined,
     name: string
   ) => {
     setError("");
@@ -119,7 +118,6 @@ export default function SelectExerciseModal({
       }
 
       const newExerciseData = await addUserExercise(
-        userId,
         exerciseName.trim()
       );
 
@@ -250,7 +248,7 @@ export default function SelectExerciseModal({
                       color="primary"
                       size="sm"
                       isLoading={isSaving}
-                      onPress={() => createNewExercise(userId, exerciseName)}
+                      onPress={() => createNewExercise(exerciseName)}
                     >
                       Create
                     </Button>
