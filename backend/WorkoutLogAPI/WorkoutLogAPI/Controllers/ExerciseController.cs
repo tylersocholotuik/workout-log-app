@@ -80,7 +80,7 @@ public class ExerciseController : ControllerBase
         catch (Exception e)
         {
             _logger.LogError(e, "Error creating exercise for user {UserId}: {ErrorMessage}", userId, e.Message);
-            return StatusCode(500, new { error = e.Message });
+            return StatusCode(500, new { error = $"Error creating exercise for user {userId}: {e.Message}" });
         }
     }
 }
