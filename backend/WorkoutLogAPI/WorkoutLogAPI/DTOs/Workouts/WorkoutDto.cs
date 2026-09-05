@@ -1,13 +1,16 @@
 using WorkoutLogAPI.Models;
-using WorkoutLogAPI.DTOs;
+using System.ComponentModel.DataAnnotations;
 
-namespace WorkoutLogAPI.DTOs;
+namespace WorkoutLogAPI.DTOs.Workouts;
 
 public record WorkoutDto(
     string? Id,
+    [param: Required(ErrorMessage = "Title is required")]
+    [param: StringLength(50, ErrorMessage = "Title must be less than 50 characters")]
     string Title,
     string UserId,
     DateTime Date,
+    [param: StringLength(250, ErrorMessage = "Notes must be less than 250 characters")]
     string? Notes,
     List<WorkoutExerciseDto>? Exercises )
 {

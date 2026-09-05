@@ -1,7 +1,5 @@
+using WorkoutLogAPI.DTOs.Users;
+
 namespace WorkoutLogAPI.DTOs.Auth;
 
-public class AuthResponse
-{
-    public string Token { get; set; } = null!;
-    public UserDto User { get; set; } = null!;
-}
+public record AuthResponse(string Token, UserDto User);

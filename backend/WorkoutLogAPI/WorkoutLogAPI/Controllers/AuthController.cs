@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WorkoutLogAPI.Data;
-using WorkoutLogAPI.DTOs;
 using WorkoutLogAPI.DTOs.Auth;
+using WorkoutLogAPI.DTOs.Users;
 using WorkoutLogAPI.Models;
 using WorkoutLogAPI.Services;
 using BCrypt.Net;
@@ -57,19 +57,7 @@ public class AuthController : ControllerBase
             
             var token = _jwtService.GenerateToken(user);
 
-            return Ok(new AuthResponse
-            {
-                Token = token,
-                User = new UserDto
-                {
-                    Id = user.Id,
-                    Email = user.Email,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    DisplayName = user.DisplayName,
-                    IsAdmin = user.IsAdmin
-                }
-            });
+            return Ok(new AuthResponse(token, UserDto.FromUser(user)));
         }
         catch (Exception ex)
         {
@@ -116,19 +104,7 @@ public class AuthController : ControllerBase
             
             var token = _jwtService.GenerateToken(user);
 
-            return Ok(new AuthResponse
-            {
-                Token = token,
-                User = new UserDto
-                {
-                    Id = user.Id,
-                    Email = user.Email,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    DisplayName = user.DisplayName,
-                    IsAdmin = user.IsAdmin
-                }
-            });
+            return Ok(new AuthResponse(token, UserDto.FromUser(user)));
         }
         catch (Exception ex)
         {

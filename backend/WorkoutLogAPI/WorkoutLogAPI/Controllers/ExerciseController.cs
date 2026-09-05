@@ -65,13 +65,13 @@ public class ExerciseController : ControllerBase
     }
     
     [HttpPost]
-    public async Task<ActionResult<ExerciseDto>> CreateUserExercise([FromBody] CreateExerciseRequest request)
+    public async Task<ActionResult<ExerciseDto>> CreateUserExercise([FromBody] ExerciseDto exerciseDto)
     {
         string? userId = this.GetUserId();
 
         try
         {
-            var exerciseEntity = await _exerciseService.CreateUserExercise(userId, request.Name);
+            var exerciseEntity = await _exerciseService.CreateUserExercise(userId, exerciseDto.Name);
             
             _logger.LogInformation("Created new exercise with ID {ExerciseId} for user {UserId}", exerciseEntity.Id, userId);
             

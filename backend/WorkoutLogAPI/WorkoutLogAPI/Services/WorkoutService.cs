@@ -1,6 +1,6 @@
 using WorkoutLogAPI.Data;
 using WorkoutLogAPI.Models;
-using WorkoutLogAPI.DTOs;
+using WorkoutLogAPI.DTOs.Workouts;
 using Microsoft.EntityFrameworkCore;
 
 namespace WorkoutLogAPI.Services;

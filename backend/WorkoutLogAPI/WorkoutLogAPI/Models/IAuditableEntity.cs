@@ -1,6 +1,6 @@
 namespace WorkoutLogAPI.Models;
 
-public interface IHasTimestamps
+public interface IAuditableEntity
 {
     DateTime CreatedAt { get; set; }
     DateTime? UpdatedAt { get; set; }

@@ -1,6 +1,6 @@
 using WorkoutLogAPI.Models;
 
-namespace WorkoutLogAPI.DTOs;
+namespace WorkoutLogAPI.DTOs.Workouts;
 
 public record SetDto
 (

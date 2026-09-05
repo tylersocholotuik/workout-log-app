@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WorkoutLogAPI.Services;
-using WorkoutLogAPI.DTOs;
+using WorkoutLogAPI.DTOs.Workouts;
 using WorkoutLogAPI.Extensions;
 
 namespace WorkoutLogAPI.Controllers;

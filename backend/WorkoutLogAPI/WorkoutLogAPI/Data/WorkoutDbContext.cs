@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using WorkoutLogAPI.Enums;
 using WorkoutLogAPI.Models;
 
 namespace WorkoutLogAPI.Data;
@@ -30,11 +31,11 @@ public class WorkoutDbContext : DbContext
     private void UpdateTimestamps()
     {
         var entries = ChangeTracker.Entries()
-            .Where(e => e.Entity is IHasTimestamps && e.State == EntityState.Modified);
+            .Where(e => e.Entity is IAuditableEntity && e.State == EntityState.Modified);
 
         foreach (var entry in entries)
         {
-            if (entry.Entity is IHasTimestamps entity)
+            if (entry.Entity is IAuditableEntity entity)
             {
                 entity.UpdatedAt = DateTime.UtcNow;
             }
@@ -45,84 +46,55 @@ public class WorkoutDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // User configuration
-        modelBuilder.Entity<User>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.Email).IsUnique();
-            entity.Property(e => e.Email).IsRequired();
-            entity.Property(e => e.FirstName).IsRequired();
-            entity.Property(e => e.LastName).IsRequired();
-            entity.Property(e => e.PasswordHash).IsRequired();
-            entity.Property(e => e.FailedLoginAttempts).HasDefaultValue(0);
-            entity.Property(e => e.IsLocked).HasDefaultValue(false);
-            entity.Property(e => e.IsAdmin).HasDefaultValue(false);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-        });
+        // The relationships, indexes, column/table naming, and max lengths below are all
+        // configured via data annotations directly on the entity classes. Only configuration
+        // with no data annotation equivalent lives here: delete behavior and check constraints.
 
-        // Exercise configuration
         modelBuilder.Entity<Exercise>(entity =>
         {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.Name);
-            entity.Property(e => e.Name).IsRequired();
-            entity.Property(e => e.Deleted).HasDefaultValue(false);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            
             // Foreign key to User (nullable - null means system exercise)
             entity.HasOne(e => e.User)
                 .WithMany(u => u.Exercises)
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
-            
+
             // Prevent deleting system exercises (UserId = null)
-            entity.HasCheckConstraint(
-                "CK_Exercise_SystemExercise_NotDeleted", 
-                "\"UserId\" IS NOT NULL OR \"Deleted\" = false"
-            );
+            entity.ToTable(t => t.HasCheckConstraint(
+                "CK_Exercise_SystemExercise_NotDeleted",
+                "\"user_id\" IS NOT NULL OR \"deleted\" = false"
+            ));
         });
 
-        // Workout configuration
         modelBuilder.Entity<Workout>(entity =>
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Title).IsRequired();
-            entity.Property(e => e.Date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.Deleted).HasDefaultValue(false);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            
             entity.HasOne(w => w.User)
                 .WithMany(u => u.Workouts)
                 .HasForeignKey(w => w.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // WorkoutExercise configuration
         modelBuilder.Entity<WorkoutExercise>(entity =>
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.WeightUnit).IsRequired();
-            entity.Property(e => e.Deleted).HasDefaultValue(false);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            
             entity.HasOne(we => we.Exercise)
                 .WithMany(e => e.WorkoutExercises)
                 .HasForeignKey(we => we.ExerciseId)
                 .OnDelete(DeleteBehavior.Restrict);
-            
+
             entity.HasOne(we => we.Workout)
                 .WithMany(w => w.Exercises)
                 .HasForeignKey(we => we.WorkoutId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Store the enum as its lowercase name ("lbs"/"kg") instead of the default
+            // int, so the column stays human-readable and matches the API's JSON values.
+            entity.Property(we => we.WeightUnit)
+                .HasConversion(
+                    unit => unit.ToString().ToLowerInvariant(),
+                    value => Enum.Parse<WeightUnit>(value, ignoreCase: true));
         });
 
-        // Set configuration
         modelBuilder.Entity<Set>(entity =>
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Deleted).HasDefaultValue(false);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            
             entity.HasOne(s => s.Exercise)
                 .WithMany(we => we.Sets)
                 .HasForeignKey(s => s.ExerciseId)

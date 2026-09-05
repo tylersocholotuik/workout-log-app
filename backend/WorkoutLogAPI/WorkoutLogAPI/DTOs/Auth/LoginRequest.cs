@@ -2,12 +2,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace WorkoutLogAPI.DTOs.Auth;
 
-public class LoginRequest
-{
-    [Required(ErrorMessage = "Email is required")]
-    [EmailAddress(ErrorMessage = "Invalid email address")]
-    public string Email { get; set; } = null!;
+public record LoginRequest(
+    [param: Required(ErrorMessage = "Email is required")]
+    [param: EmailAddress(ErrorMessage = "Invalid email address")]
+    string Email,
 
-    [Required(ErrorMessage = "Password is required")]
-    public string Password { get; set; } = null!;
-}
+    [param: Required(ErrorMessage = "Password is required")]
+    string Password);
