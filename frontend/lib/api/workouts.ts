@@ -1,5 +1,5 @@
-import { Workout } from '@/types';
-import { getAuthHeaders } from "./auth";
+import {Workout} from '@/types';
+import {getAuthHeaders} from "./auth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5258';
 
@@ -73,4 +73,17 @@ export const deleteWorkout = async (id: string | string[]) => {
         const errorData = await res.json();
         throw new Error(errorData.error || "Failed to delete workout");
     }
+};
+export const getExerciseHistory = async (exerciseId: number | undefined) => {
+    const res = await fetch(`${API_URL}/api/workouts/exercise-history/${exerciseId}`, {
+        headers: getAuthHeaders()
+    });
+
+    if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to fetch exercise history");
+    }
+
+    const data = await res.json();
+    return data;
 };

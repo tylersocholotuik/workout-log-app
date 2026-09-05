@@ -52,6 +52,22 @@ public class WorkoutController : ControllerBase
         }
     }
     
+    [HttpGet("exercise-history/{exerciseId}")]
+    public async Task<ActionResult<List<ExerciseHistoryDto>>> GetExerciseHistory(int exerciseId)
+    {
+        try
+        {
+            string userId = this.GetUserId();
+            var history = await _workoutService.GetExerciseHistory(exerciseId, userId);
+            return Ok(history.Select(ExerciseHistoryDto.FromWorkoutExercise).ToList());
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Error retrieving exercise history: {Message}", e.Message);
+            return StatusCode(500, new { error = "An error occurred while retrieving exercise history" });
+        }
+    }
+    
     [HttpPost]
     public async Task<ActionResult<WorkoutDto>> CreateWorkout([FromBody] WorkoutDto workoutDto)
     {

@@ -43,6 +43,17 @@ public class WorkoutService
 
         return workout;
     }
+    
+    // Fetches the history of a specific exercise for a user, including all workouts and sets associated with that exercise.
+    public async Task<List<WorkoutExercise>> GetExerciseHistory(int exerciseId, string userId)
+    {
+        return await _context.WorkoutExercises
+            .Where(we => we.ExerciseId == exerciseId && !we.Deleted && we.Workout.UserId == userId && !we.Workout.Deleted)
+            .Include(we => we.Workout)
+            .Include(we => we.Sets.Where(s => !s.Deleted))
+            .OrderByDescending(we => we.Workout.Date)
+            .ToListAsync();
+    }
 
     public async Task<Workout> CreateWorkout(WorkoutDto workoutDto, string userId)
     {

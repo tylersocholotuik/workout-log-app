@@ -43,7 +43,8 @@ import { useWorkoutContext } from "@/pages/workout/[workoutId]";
 
 import { calculateOneRepMax } from "@/utils/calculator/calc-functions";
 
-import { getExerciseHistory } from "@/lib/api/exercises";
+
+import {getExerciseHistory} from "@/lib/api/workouts";
 
 interface ExerciseCardProps {
     exercise: WorkoutExercise;
@@ -182,13 +183,9 @@ export default function ExerciseCard({
     // gets a list including the date, notes, and sets for the selected exercise
     // for each time the user performed that exercise.
     const fetchExerciseHistory = async (
-        userId: string | string | undefined,
         exerciseId: number | undefined
     ) => {
-        const data = await getExerciseHistory(
-            userId,
-            exerciseId
-        );
+        const data = await getExerciseHistory(exerciseId);
 
         setExerciseHistory(data);
 
@@ -238,10 +235,7 @@ export default function ExerciseCard({
                                     <DropdownItem
                                         key="history"
                                         onPress={() =>
-                                            fetchExerciseHistory(
-                                                userId,
-                                                exercise.exercise.id
-                                            )
+                                            fetchExerciseHistory(exercise.exercise.id)
                                         }
                                         startContent={
                                             <Icon
