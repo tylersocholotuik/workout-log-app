@@ -81,4 +81,112 @@ public class WorkoutService
         await _context.SaveChangesAsync();
         return await GetWorkoutById(workout.Id, userId);
     }
+    
+    public async Task<Workout> UpdateWorkout(string id, WorkoutDto workoutDto, string userId)
+    {
+        var workout = await GetWorkoutById(id, userId);
+
+        // Update the top-level properties of the workout
+        workout.Title = workoutDto.Title;
+        workout.Date = workoutDto.Date;
+        workout.Notes = workoutDto.Notes;
+
+        SyncExercises(workout, workoutDto.Exercises);
+
+        await _context.SaveChangesAsync();
+        
+        _context.ChangeTracker.Clear();
+
+        return await GetWorkoutById(workout.Id, userId);
+    }
+    
+    public async Task DeleteWorkout(string id, string userId)
+    {
+        var workout = await GetWorkoutById(id, userId);
+        workout.Deleted = true;
+        await _context.SaveChangesAsync();
+    }
+
+    private static void SyncExercises(Workout workout, List<WorkoutExerciseDto>? exerciseDtos)
+    {
+        var updatedExerciseIds = exerciseDtos?.Select(e => e.Id).ToList() ?? new List<int?>();
+
+        // Mark exercises missing from the update request as deleted
+        foreach (var exercise in workout.Exercises.Where(e => !updatedExerciseIds.Contains(e.Id)))
+        {
+            exercise.Deleted = true;
+        }
+
+        if (exerciseDtos == null)
+        {
+            return;
+        }
+
+        foreach (var exerciseDto in exerciseDtos)
+        {
+            var existingExercise = workout.Exercises.FirstOrDefault(e => e.Id == exerciseDto.Id);
+
+            if (existingExercise != null)
+            {
+                existingExercise.ExerciseId = exerciseDto.ExerciseId;
+                existingExercise.Notes = exerciseDto.Notes;
+                existingExercise.WeightUnit = exerciseDto.WeightUnit;
+
+                SyncSets(existingExercise, exerciseDto.Sets);
+            }
+            else
+            {
+                workout.Exercises.Add(new WorkoutExercise
+                {
+                    Notes = exerciseDto.Notes,
+                    WeightUnit = exerciseDto.WeightUnit,
+                    ExerciseId = exerciseDto.ExerciseId,
+                    Sets = exerciseDto.Sets?
+                        .Select(s => new Set
+                        {
+                            Weight = s.Weight,
+                            Reps = s.Reps,
+                            Rpe = s.Rpe,
+                        }).ToList() ?? new List<Set>(),
+                });
+            }
+        }
+    }
+
+    private static void SyncSets(WorkoutExercise existingExercise, List<SetDto>? setDtos)
+    {
+        var updatedSetIds = setDtos?.Select(s => s.Id).ToList() ?? new List<int?>();
+
+        // Mark sets missing from the update request as deleted
+        foreach (var set in existingExercise.Sets.Where(s => !updatedSetIds.Contains(s.Id)))
+        {
+            set.Deleted = true;
+        }
+
+        if (setDtos == null)
+        {
+            return;
+        }
+
+        foreach (var setDto in setDtos)
+        {
+            var existingSet = existingExercise.Sets.FirstOrDefault(s => s.Id == setDto.Id);
+
+            if (existingSet != null)
+            {
+                existingSet.Weight = setDto.Weight;
+                existingSet.Reps = setDto.Reps;
+                existingSet.Rpe = setDto.Rpe;
+            }
+            else
+            {
+                existingExercise.Sets.Add(new Set
+                {
+                    Weight = setDto.Weight,
+                    Reps = setDto.Reps,
+                    Rpe = setDto.Rpe,
+                });
+            }
+        }
+    }
 }

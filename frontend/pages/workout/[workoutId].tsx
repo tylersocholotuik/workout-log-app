@@ -139,7 +139,6 @@ export default function WorkoutLog() {
     };
 
     const saveWorkout = async (
-        userId: string | string[] | undefined,
         workoutData: Workout
     ) => {
         try {
@@ -152,7 +151,7 @@ export default function WorkoutLog() {
                 // reload the page with the new workoutId
                 await router.push(`/workout/${newWorkout.id}`);
             } else {
-                newWorkout = await updateWorkout(userId, workoutData);
+                newWorkout = await updateWorkout(workoutId, workoutData);
                 setWorkout(newWorkout);
             }
 
@@ -172,7 +171,6 @@ export default function WorkoutLog() {
     };
 
     const discardWorkout = async (
-        userId: string | string[] | undefined,
         workoutId: string | string[] | undefined
     ) => {
         if (typeof workoutId !== "string") {
@@ -190,7 +188,7 @@ export default function WorkoutLog() {
             try {
                 setIsDeleting(true);
 
-                await deleteWorkout(userId, workoutId);
+                await deleteWorkout(workoutId);
 
                 addToast({
                     description: `'${workout.title}' was deleted`,
@@ -413,7 +411,7 @@ export default function WorkoutLog() {
                                             height="24"
                                         />
                                     }
-                                    onPress={() => saveWorkout(userId, workout)}
+                                    onPress={() => saveWorkout(workout)}
                                 >
                                     Save Workout
                                 </Button>
@@ -456,7 +454,7 @@ export default function WorkoutLog() {
                 <DeleteWorkoutModal
                     isOpen={deleteModal.isOpen}
                     onOpenChange={deleteModal.onOpenChange}
-                    callbackFunction={() => discardWorkout(userId, workoutId)}
+                    callbackFunction={() => discardWorkout(workoutId)}
                 />
 
                 <CalculatorModal

@@ -47,13 +47,11 @@ export const addWorkout = async (workoutData: Workout) => {
     return data;
 };
 
-export const updateWorkout = async (userId: string | string[] | undefined, workoutData: Workout) => {
-    const res = await fetch(`${API_URL}/api/${userId}/workouts`, {
-        method: "PATCH",
+export const updateWorkout = async (id: string | string [] | undefined, workoutData: Workout) => {
+    const res = await fetch(`${API_URL}/api/workouts/${id}`, {
+        method: "PUT",
         headers: getAuthHeaders(),
-        body: JSON.stringify({
-            workoutData,
-        }),
+        body: JSON.stringify(workoutData),
     });
 
     if (!res.ok) {
@@ -65,20 +63,14 @@ export const updateWorkout = async (userId: string | string[] | undefined, worko
     return data;
 };
 
-export const deleteWorkout = async (userId: string | string[] | undefined, id: string | string[]) => {
-    const res = await fetch(`${API_URL}/api/${userId}/workouts`, {
+export const deleteWorkout = async (id: string | string[]) => {
+    const res = await fetch(`${API_URL}/api/workouts/${id}`, {
         method: "DELETE",
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-            id,
-        }),
+        headers: getAuthHeaders()
     });
 
     if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.error || "Failed to delete workout");
     }
-
-    const data = await res.json();
-    return data;
 };
