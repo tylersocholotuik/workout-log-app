@@ -1,4 +1,5 @@
 import { User, RegisterData, LoginData, AuthResponse } from '@/types';
+import { extractErrorMessage } from './apiErrors';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5258';
 
@@ -69,7 +70,7 @@ export const register = async (data: RegisterData): Promise<AuthResponse> => {
 
     if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to register');
+        throw new Error(extractErrorMessage(errorData, 'Failed to register'));
     }
 
     const response: AuthResponse = await res.json();
@@ -88,7 +89,7 @@ export const login = async (data: LoginData): Promise<AuthResponse> => {
 
     if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to login');
+        throw new Error(extractErrorMessage(errorData, 'Failed to login'));
     }
 
     const response: AuthResponse = await res.json();

@@ -1,4 +1,5 @@
 import {getAuthHeaders} from "./auth";
+import {extractErrorMessage} from "./apiErrors";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5258';
 
@@ -10,7 +11,7 @@ export const getExercises = async () => {
 
     if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to load exercises");
+        throw new Error(extractErrorMessage(errorData, "Failed to load exercises"));
     }
 
     const data = await res.json();
@@ -28,7 +29,7 @@ export const addUserExercise = async (
 
     if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to add exercise");
+        throw new Error(extractErrorMessage(errorData, "Failed to add exercise"));
     }
 
     const data = await res.json();
@@ -52,7 +53,7 @@ export const updateUserExercise = async (
 
     if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to update exercise");
+        throw new Error(extractErrorMessage(errorData, "Failed to update exercise"));
     }
 
     const data = await res.json();
@@ -73,7 +74,7 @@ export const deleteUserExercise = async (
 
     if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to delete exercise");
+        throw new Error(extractErrorMessage(errorData, "Failed to delete exercise"));
     }
 
     const data = await res.json();

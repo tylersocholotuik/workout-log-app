@@ -1,5 +1,6 @@
 import {Workout} from '@/types';
 import {getAuthHeaders} from "./auth";
+import {extractErrorMessage} from "./apiErrors";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5258';
 
@@ -10,7 +11,7 @@ export const getWorkouts = async () => {
 
     if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to load workouts");
+        throw new Error(extractErrorMessage(errorData, "Failed to load workouts"));
     }
 
     const data = await res.json();
@@ -24,7 +25,7 @@ export const getWorkout = async (id: string | string[]) => {
 
     if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to load workout");
+        throw new Error(extractErrorMessage(errorData, "Failed to load workout"));
     }
 
     const data = await res.json();
@@ -40,7 +41,7 @@ export const addWorkout = async (workoutData: Workout) => {
 
     if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to add workout");
+        throw new Error(extractErrorMessage(errorData, "Failed to add workout"));
     }
 
     const data = await res.json();
@@ -56,7 +57,7 @@ export const updateWorkout = async (id: string | string [] | undefined, workoutD
 
     if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to update workout");
+        throw new Error(extractErrorMessage(errorData, "Failed to update workout"));
     }
 
     const data = await res.json();
@@ -71,7 +72,7 @@ export const deleteWorkout = async (id: string | string[]) => {
 
     if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to delete workout");
+        throw new Error(extractErrorMessage(errorData, "Failed to delete workout"));
     }
 };
 export const getExerciseHistory = async (exerciseId: number | undefined) => {
@@ -81,7 +82,7 @@ export const getExerciseHistory = async (exerciseId: number | undefined) => {
 
     if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to fetch exercise history");
+        throw new Error(extractErrorMessage(errorData, "Failed to fetch exercise history"));
     }
 
     const data = await res.json();
