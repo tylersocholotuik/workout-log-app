@@ -19,13 +19,13 @@ export default function History() {
 
   useEffect(() => {
     if (user) {
-      loadWorkouts(user.id);
+      loadWorkouts();
     }
   }, [user]);
 
-  const loadWorkouts = async (userId: string | string[] | undefined) => {
+  const loadWorkouts = async () => {
     try {
-      const data = await getWorkouts(userId);
+      const data = await getWorkouts();
       setWorkouts(data);
     } catch (error) {
       addToast({

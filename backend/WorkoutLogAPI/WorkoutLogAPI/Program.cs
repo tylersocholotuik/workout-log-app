@@ -15,6 +15,7 @@ builder.Services.AddDbContext<WorkoutDbContext>(options =>
 // Add Services
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<ExerciseService>();
+builder.Services.AddScoped<WorkoutService>();
 
 // Add Authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");

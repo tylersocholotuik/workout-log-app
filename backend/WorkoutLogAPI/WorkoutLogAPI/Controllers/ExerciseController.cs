@@ -30,7 +30,7 @@ public class ExerciseController : ControllerBase
             string? userId = this.GetUserId();
             
             List<Exercise> exercises = await _exerciseService.GetExercises(userId);
-            List<ExerciseDto> exerciseDtos = exercises.Select(e => new ExerciseDto(e)).ToList();
+            List<ExerciseDto> exerciseDtos = exercises.Select(ExerciseDto.FromExercise).ToList();
             
             _logger.LogInformation("Retrieved {Count} exercises for user {UserId}", exerciseDtos.Count, userId);
             
@@ -51,7 +51,7 @@ public class ExerciseController : ControllerBase
         try
         {
             var exercise = await _exerciseService.GetExerciseById(id, userId);
-            return Ok(new ExerciseDto(exercise));
+            return Ok(ExerciseDto.FromExercise(exercise));
         }
         catch (KeyNotFoundException e)
         {
@@ -75,12 +75,12 @@ public class ExerciseController : ControllerBase
             
             _logger.LogInformation("Created new exercise with ID {ExerciseId} for user {UserId}", exerciseEntity.Id, userId);
             
-            return CreatedAtAction(nameof(GetExerciseById), new { id = exerciseEntity.Id }, new ExerciseDto(exerciseEntity));
+            return CreatedAtAction(nameof(GetExerciseById), new { id = exerciseEntity.Id }, ExerciseDto.FromExercise(exerciseEntity));
         }
         catch (Exception e)
         {
             _logger.LogError(e, "Error creating exercise for user {UserId}: {ErrorMessage}", userId, e.Message);
-            return StatusCode(500, new { error = $"Error creating exercise for user {userId}: {e.Message}" });
+            return StatusCode(500, new { error = "An error occurred while creating the exercise" });
         }
     }
 }

@@ -94,19 +94,18 @@ export default function WorkoutLog() {
     useEffect(() => {
         if (router.isReady && workoutId && user) {
             setUserId(user.id);
-            loadWorkout(user.id, workoutId);
+            loadWorkout(workoutId);
         }
     }, [router.isReady, workoutId, user]);
 
     const loadWorkout = async (
-        userId: string | string[] | undefined,
         workoutId: string | string[]
     ) => {
         // id is greater than 0 if navigating from workout history page
         // load the selected workout. Otherwise, it's a new workout.
         if (user && workoutId !== "new-workout") {
             try {
-                const data = await getWorkout(userId, workoutId);
+                const data = await getWorkout(workoutId);
                 // ensuring the logged in user id matches the userId
                 // of the workout
                 if (data?.userId !== user.id) {
@@ -149,7 +148,7 @@ export default function WorkoutLog() {
             let newWorkout: Workout;
 
             if (workoutId === "new-workout") {
-                newWorkout = await addWorkout(userId, workoutData);
+                newWorkout = await addWorkout(workoutData);
                 // reload the page with the new workoutId
                 await router.push(`/workout/${newWorkout.id}`);
             } else {

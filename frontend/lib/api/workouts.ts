@@ -3,8 +3,8 @@ import { getAuthHeaders } from "./auth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5258';
 
-export const getWorkouts = async (userId: string | string[] | undefined) => {
-    const res = await fetch(`${API_URL}/api/${userId}/workouts`, {
+export const getWorkouts = async () => {
+    const res = await fetch(`${API_URL}/api/workouts`, {
         headers: getAuthHeaders()
     });
 
@@ -17,8 +17,8 @@ export const getWorkouts = async (userId: string | string[] | undefined) => {
     return data;
 };
 
-export const getWorkout = async (userId: string | string[] | undefined, id: string | string[]) => {
-    const res = await fetch(`${API_URL}/api/${userId}/workouts/${id}`, {
+export const getWorkout = async (id: string | string[]) => {
+    const res = await fetch(`${API_URL}/api/workouts/${id}`, {
         headers: getAuthHeaders()
     });
 
@@ -31,11 +31,11 @@ export const getWorkout = async (userId: string | string[] | undefined, id: stri
     return data;
 };
 
-export const addWorkout = async (userId: string | string[] | undefined, workoutData: Workout) => {
-    const res = await fetch(`${API_URL}/api/${userId}/workouts`, {
+export const addWorkout = async (workoutData: Workout) => {
+    const res = await fetch(`${API_URL}/api/workouts`, {
         method: "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify({ userId, workoutData }),
+        body: JSON.stringify(workoutData),
     });
 
     if (!res.ok) {

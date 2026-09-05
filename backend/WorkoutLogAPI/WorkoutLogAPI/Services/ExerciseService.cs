@@ -63,8 +63,8 @@ public class ExerciseService
             UserId = userId,
         };
 
-        await _context.Exercises.AddAsync(newExercise);
+        _context.Exercises.Add(newExercise);
         await _context.SaveChangesAsync();
-        return newExercise;
+        return  await GetExerciseById(newExercise.Id, userId);
     }
 }
