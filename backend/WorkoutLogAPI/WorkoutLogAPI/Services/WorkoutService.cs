@@ -101,11 +101,19 @@ public class WorkoutService
         workout.Title = workoutDto.Title;
         workout.Date = workoutDto.Date;
         workout.Notes = workoutDto.Notes;
-
+        
+        // Add, update, or soft delete exercises and sets based on the provided DTO
         SyncExercises(workout, workoutDto.Exercises);
 
         await _context.SaveChangesAsync();
-        
+
+        // We just soft-deleted some exercises/sets in memory above. EF Core keeps
+        // entities it has already loaded, so if we reloaded the workout right now,
+        // it would still show those deleted items in the Exercises/Sets lists even
+        // though the database (and a fresh query) would exclude them. Clearing the
+        // tracker forgets everything this request has loaded so far, forcing the
+        // reload below to rebuild the workout from scratch using only what's
+        // actually in the database.
         _context.ChangeTracker.Clear();
 
         return await GetWorkoutById(workout.Id, userId);
