@@ -58,6 +58,29 @@ NEXT_PUBLIC_API_URL=http://localhost:5258
 
 3. Run `npm run dev`. Open a web browser and enter `localhost:3000` in the address bar.
 
+### 4. Trying the API directly (optional)
+
+[`backend/WorkoutLogAPI/WorkoutLogAPI/WorkoutLogAPI.http`](/backend/WorkoutLogAPI/WorkoutLogAPI/WorkoutLogAPI.http) has a ready-to-run request for every backend endpoint (register, login, exercises, workouts, etc.), useful for testing the API without going through the frontend. It works with Rider's built-in HTTP Client or VS Code's [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) extension.
+
+These requests rely on variables (e.g. `{{Base_Url}}`) defined in a `http-client.env.json` file, which isn't committed to the repo since it holds real credentials/tokens. Create `backend/WorkoutLogAPI/WorkoutLogAPI/http-client.env.json` with the following shape:
+
+```json
+{
+  "local": {
+    "Base_Url": "http://localhost:5258",
+    "email": "your-account-email@example.com",
+    "Password": "your-account-password",
+    "Access_Token": "paste-a-JWT-here-after-logging-in",
+    "Workout_Id": "paste-a-workout-id-here",
+    "Exercise_Id": "paste-an-exercise-id-here"
+  }
+}
+```
+
+`"local"` is the environment name shown in your editor's HTTP client &mdash; select it before sending requests. `Access_Token` isn't filled in automatically: run the login request in `WorkoutLogAPI.http` first, then copy the `token` value from the response into `Access_Token` so the rest of the requests can authenticate. `Workout_Id`/`Exercise_Id` are just for convenience with the `{id}`-based requests &mdash; grab real values from a create/list response, or edit the URL inline instead.
+
+See the comments at the top of `WorkoutLogAPI.http` for more detail.
+
 ## Pages
 
 ### Workout Page

@@ -1,6 +1,135 @@
-@WorkoutLogAPI_HostAddress = http://localhost:5258
+#
+# This file uses environment variables (e.g. {{Base_Url}}) that are defined in a
+# `http-client.env.json` file in this same folder. That file is gitignored since it
+# holds real credentials/tokens, so each developer must create their own locally.
+#
+# Create `http-client.env.json` next to this file with the following shape:
+#
+# {
+#   "local": {
+#     "Base_Url": "http://localhost:5258",
+#     "email": "your-account-email",
+#     "Password": "your-account-password",
+#     "Access_Token": "paste-a-JWT-here-after-logging-in",
+#     "Workout_Id": "paste-a-workout-id-here",
+#     "Exercise_Id": "paste-an-exercise-id-here"
+#   }
+# }
+#
+# "local" is the environment name - add more top-level keys (e.g. "production") for
+# other environments, each with their own set of variables. Your editor's REST client
+# (Rider's HTTP Client / VS Code's REST Client extension) will let you pick which
+# environment to run requests against.
+#
+# Access_Token isn't filled in automatically - run the login request below, copy the
+# "token" value from the response, and paste it into Access_Token in
+# http-client.env.json so the requests below it can authenticate.
+#
+# Workout_Id/Exercise_Id are just for convenience when trying the {id}-based requests
+# below - grab real values from a create/list response and paste them in, or just
+# replace {{Workout_Id}}/{{Exercise_Id}} directly in the request URL each time.
+#
 
-GET {{WorkoutLogAPI_HostAddress}}/weatherforecast/
+### Register a new user
+POST {{Base_Url}}/api/auth/register
+Content-Type: application/json
+
+{
+    "email": "{{email}}",
+    "firstName": "Test",
+    "lastName": "User",
+    "displayName": "Test User",
+    "password": "{{Password}}"
+}
+
+### Log in and get a JWT (copy the "token" from the response into Access_Token above)
+POST {{Base_Url}}/api/auth/login
+Content-Type: application/json
+
+{
+    "email": "{{email}}",
+    "password": "{{Password}}"
+}
+
+### Get all exercises available to the user
+GET {{Base_Url}}/api/exercises
 Accept: application/json
+Authorization: Bearer {{Access_Token}}
 
-###
+### Get a single exercise by id
+GET {{Base_Url}}/api/exercises/{{Exercise_Id}}
+Accept: application/json
+Authorization: Bearer {{Access_Token}}
+
+### Create a new custom exercise for the logged-in user
+POST {{Base_Url}}/api/exercises
+Content-Type: application/json
+Authorization: Bearer {{Access_Token}}
+
+{
+    "name": "Bulgarian Split Squat"
+}
+
+### Get all of the logged-in user's workouts
+GET {{Base_Url}}/api/workouts
+Accept: application/json
+Authorization: Bearer {{Access_Token}}
+
+### Get a single workout by id
+GET {{Base_Url}}/api/workouts/{{Workout_Id}}
+Accept: application/json
+Authorization: Bearer {{Access_Token}}
+
+### Get the history of every time an exercise has been performed by the logged-in user
+GET {{Base_Url}}/api/workouts/exercise-history/{{Exercise_Id}}
+Accept: application/json
+Authorization: Bearer {{Access_Token}}
+
+### Create a new workout
+POST {{Base_Url}}/api/workouts
+Content-Type: application/json
+Authorization: Bearer {{Access_Token}}
+
+{
+    "title": "Push Day",
+    "date": "2026-09-06T00:00:00.000Z",
+    "notes": "Felt strong today",
+    "exercises": [
+        {
+            "notes": "Warm up with 2 easy sets",
+            "weightUnit": "lbs",
+            "exerciseId": {{Exercise_Id}},
+            "sets": [
+                { "weight": 135, "reps": 8, "rpe": 7 },
+                { "weight": 155, "reps": 6, "rpe": 8.5 }
+            ]
+        }
+    ]
+}
+
+### Update an existing workout (send the full workout - exercises/sets omitted from
+### the "exercises"/"sets" arrays are soft-deleted, and any with an "id" are updated)
+PUT {{Base_Url}}/api/workouts/{{Workout_Id}}
+Content-Type: application/json
+Authorization: Bearer {{Access_Token}}
+
+{
+    "title": "Push Day (updated)",
+    "date": "2026-09-06T00:00:00.000Z",
+    "notes": "Felt strong today",
+    "exercises": [
+        {
+            "id": 1,
+            "notes": "Warm up with 2 easy sets",
+            "weightUnit": "lbs",
+            "exerciseId": {{Exercise_Id}},
+            "sets": [
+                { "id": 1, "weight": 145, "reps": 8, "rpe": 7 }
+            ]
+        }
+    ]
+}
+
+### Soft-delete a workout
+DELETE {{Base_Url}}/api/workouts/{{Workout_Id}}
+Authorization: Bearer {{Access_Token}}

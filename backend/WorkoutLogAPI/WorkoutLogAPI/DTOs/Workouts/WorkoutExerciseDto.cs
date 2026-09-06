@@ -11,8 +11,8 @@ public record WorkoutExerciseDto(
     string? Notes,
     WeightUnit WeightUnit,
     int ExerciseId,
-    string WorkoutId,
-    ExerciseDto Exercise,
+    string? WorkoutId,
+    ExerciseDto? Exercise,
     List<SetDto>? Sets = null)
 {
     public static WorkoutExerciseDto FromWorkoutExercise(WorkoutExercise workoutExercise) =>

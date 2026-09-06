@@ -24,6 +24,7 @@ backend/.vs/
 backend/.vscode/
 backend/**/*.dll
 backend/**/*.pdb
+backend/**/*.env.json
 
 # Testing
 /coverage
