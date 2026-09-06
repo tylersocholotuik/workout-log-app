@@ -47,6 +47,8 @@ dotnet run
 
 On startup (in the Development environment only), the API automatically applies any pending EF Core migrations and seeds the database with the stock exercise list, so no manual migration or seed step is needed. The API listens on `http://localhost:5258` by default.
 
+In Development, an interactive [Scalar](https://github.com/scalar/scalar) API reference is also available at `http://localhost:5258/scalar/v1`, generated from the API's OpenAPI document. It lists every endpoint with its request/response schemas and lets you send test requests straight from the browser &mdash; a quicker alternative to the `.http` file below for exploring what's available.
+
 ### 3. Frontend (Next.js)
 
 1. Install dependencies from the `frontend` directory: `npm install`
@@ -133,6 +135,7 @@ Users have the option to login or sign up with an email address and password. Th
 -   Entity Framework Core \(Npgsql provider\)
 -   Postgres
 -   JWT authentication with bcrypt-hashed passwords
+-   OpenAPI + Scalar for interactive API documentation
 
 ## Future Improvements
 
