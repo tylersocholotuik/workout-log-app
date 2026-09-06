@@ -79,7 +79,6 @@ public class WorkoutService
                     Notes = e.Notes,
                     WeightUnit = e.WeightUnit,
                     ExerciseId = e.ExerciseId,
-                    WorkoutId = e.WorkoutId,
                     Sets = e.Sets?.Select(s => new Set
                     {
                         Weight = s.Weight,

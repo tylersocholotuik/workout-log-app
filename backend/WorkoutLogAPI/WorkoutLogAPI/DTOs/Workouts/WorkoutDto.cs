@@ -8,7 +8,7 @@ public record WorkoutDto(
     [param: Required(ErrorMessage = "Title is required")]
     [param: StringLength(50, ErrorMessage = "Title must be less than 50 characters")]
     string Title,
-    string UserId,
+    string? UserId,
     DateTime Date,
     [param: StringLength(250, ErrorMessage = "Notes must be less than 250 characters")]
     string? Notes,
