@@ -62,10 +62,11 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-    
-    // Seed database in development only
-    await app.SeedDatabaseAsync();
 }
+
+// Apply migrations and seed the database
+// Seeding is indempotent, so it can be safely called on every startup
+await app.SeedDatabaseAsync();
 
 app.UseHttpsRedirection();
 
