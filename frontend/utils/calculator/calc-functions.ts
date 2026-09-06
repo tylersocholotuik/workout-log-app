@@ -20,8 +20,8 @@ export const generateTableData = (max: number) => {
     );
 
     // iterate through rpe and reps keys and calculate table cell for each value
-    for (let rpeKey in tableData) {
-        for (let repsKey in tableData[rpeKey]) {
+    for (const rpeKey in tableData) {
+        for (const repsKey in tableData[rpeKey]) {
             // use manipulated 1RM formula to calculate the weight you can lift
             // at each RPE and reps value
             tableData[rpeKey][repsKey] = Math.round(

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 import Head from "next/head";
 
@@ -23,13 +23,17 @@ export default function Calculator() {
     });
     const [oneRepMax, setOneRepMax] = useState(0);
     const [conversionWeightUnit, setConversionWeightUnit] = useState("lbs");
+    const [prevWeightUnit, setPrevWeightUnit] = useState("lbs");
     const { weightUnit } = setData;
 
-    useEffect(() => {
-        // change the conversion unit to the weight unit whenever weight unit changes
-        // so that the conversion calculation is correct for the selected weight unit
+    // change the conversion unit to the weight unit whenever weight unit changes
+    // so that the conversion calculation is correct for the selected weight unit.
+    // Adjusted during render (per React docs) instead of in a useEffect, since
+    // this is derived from a prop/state change rather than an external system.
+    if (weightUnit !== prevWeightUnit) {
+        setPrevWeightUnit(weightUnit);
         setConversionWeightUnit(weightUnit);
-    }, [weightUnit]);
+    }
 
     const convertWeightUnit = () => {
         const LBS_TO_KG = 0.453592;

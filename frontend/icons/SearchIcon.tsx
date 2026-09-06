@@ -1,4 +1,6 @@
-export const SearchIcon = (props) => {
+import { SVGProps } from "react";
+
+export const SearchIcon = (props: SVGProps<SVGSVGElement>) => {
     return (
       <svg
         aria-hidden="true"

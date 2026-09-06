@@ -1,6 +1,7 @@
 import {
     useEffect,
     useState,
+    useCallback,
     createContext,
     useContext,
     Dispatch,
@@ -39,8 +40,6 @@ import {
 
 import {
     Workout,
-    WorkoutExercise,
-    Set,
     Exercise,
 } from "@/types";
 
@@ -77,10 +76,10 @@ export default function WorkoutLog() {
     const [isSaving, setIsSaving] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [startNewWorkout, setStartNewWorkout] = useState(false);
-    const [userId, setUserId] = useState("");
     const [isUnauthorized, setIsUnauthorized] = useState(false);
 
     const { user } = useAuth();
+    const userId = user?.id ?? "";
 
     const detailsModal = useDisclosure();
     const deleteModal = useDisclosure();
@@ -91,38 +90,41 @@ export default function WorkoutLog() {
 
     const { workoutId } = router.query;
 
+    const loadWorkout = useCallback(
+        async (workoutId: string | string[]) => {
+            // id is greater than 0 if navigating from workout history page
+            // load the selected workout. Otherwise, it's a new workout.
+            if (user && workoutId !== "new-workout") {
+                try {
+                    const data = await getWorkout(workoutId);
+                    // ensuring the logged in user id matches the userId
+                    // of the workout
+                    if (data?.userId !== user.id) {
+                        setIsUnauthorized(true);
+                    }
+                    setWorkout(data);
+                } catch (error) {
+                    addToast({
+                        title: "Error",
+                        description: error instanceof Error ? error.message : "An unknown error occurred",
+                        color: "danger",
+                    });
+                }
+            }
+
+            setIsLoading(false);
+        },
+        [user]
+    );
+
     useEffect(() => {
         if (router.isReady && workoutId && user) {
-            setUserId(user.id);
+            // Fetching data on mount is an intentional synchronization with an
+            // external system (the API), not a derived-state calculation.
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             loadWorkout(workoutId);
         }
-    }, [router.isReady, workoutId, user]);
-
-    const loadWorkout = async (
-        workoutId: string | string[]
-    ) => {
-        // id is greater than 0 if navigating from workout history page
-        // load the selected workout. Otherwise, it's a new workout.
-        if (user && workoutId !== "new-workout") {
-            try {
-                const data = await getWorkout(workoutId);
-                // ensuring the logged in user id matches the userId
-                // of the workout
-                if (data?.userId !== user.id) {
-                    setIsUnauthorized(true);
-                }
-                setWorkout(data);
-            } catch (error) {
-                addToast({
-                    title: "Error",
-                    description: error instanceof Error ? error.message : "An unknown error occurred",
-                    color: "danger",
-                });
-            }
-        }
-
-        setIsLoading(false);
-    };
+    }, [router.isReady, workoutId, user, loadWorkout]);
 
     const addExercise = (exercise: Exercise) => {
         const updatedWorkout = { ...workout };
@@ -380,7 +382,6 @@ export default function WorkoutLog() {
                                             key={`exercise-${index}`}
                                             exercise={exercise}
                                             exerciseIndex={index}
-                                            userId={userId}
                                         />
                                     );
                                 })}
@@ -444,7 +445,6 @@ export default function WorkoutLog() {
                 />
 
                 {userId && <SelectExerciseModal
-                    userId={userId}
                     isOpen={addExerciseModal.isOpen}
                     onOpenChange={addExerciseModal.onOpenChange}
                     callbackFunction={addExercise}

@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from "react";
+import { useState, useEffect, useMemo, createContext, useContext, ReactNode } from "react";
 import { useRouter } from "next/router";
 import { User } from "@/types";
 import { getUserFromToken, logout as logoutAuth } from "@/lib/api/auth";
@@ -31,10 +31,13 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     const [user, setUser] = useState<User | null>(null);
     const router = useRouter();
 
-    const protectedPages = [
-        "/workout/[workoutId]",
-        "/history"
-    ];
+    const protectedPages = useMemo(
+        () => [
+            "/workout/[workoutId]",
+            "/history"
+        ],
+        []
+    );
 
     // Check for user on mount and route changes
     useEffect(() => {
@@ -49,7 +52,13 @@ export default function AuthProvider({ children }: AuthProviderProps) {
         };
 
         checkAuth();
-    }, [router.pathname]);
+        // router is intentionally omitted: Next.js's Pages Router returns a
+        // new router object on every render (see makePublicRouterInstance
+        // in next/dist/client/router.js), so including it here would cause
+        // setUser to run on every render, triggering an infinite render loop.
+        // Only router.pathname (a primitive) should trigger this effect.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [router.pathname, protectedPages]);
 
     const refreshUser = () => {
         const currentUser = getUserFromToken();

@@ -1,8 +1,8 @@
 import { Switch, Tooltip } from "@heroui/react";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { SVGProps, useEffect, useState } from "react";
 
-export const MoonIcon = (props) => {
+export const MoonIcon = (props: SVGProps<SVGSVGElement>) => {
     return (
         <svg
             aria-hidden="true"
@@ -21,7 +21,7 @@ export const MoonIcon = (props) => {
     );
 };
 
-export const SunIcon = (props) => {
+export const SunIcon = (props: SVGProps<SVGSVGElement>) => {
     return (
         <svg
             aria-hidden="true"
@@ -41,17 +41,28 @@ export const SunIcon = (props) => {
 };
 
 export default function DarkModeSwitch() {
-    const { theme, setTheme, resolvedTheme } = useTheme();
-    const [isSelected, setIsSelected] = useState(true);
+    const { setTheme, resolvedTheme } = useTheme();
+    // next-themes can't know the real theme during SSR (it reads
+    // localStorage/media queries, which only exist in the browser), so
+    // resolvedTheme is undefined on the server and on the client's first
+    // render. Tracking "mounted" and deferring to the theme value only
+    // after mount keeps server/client markup in sync and avoids a
+    // hydration mismatch. This is a legitimate use of useEffect: it's
+    // synchronizing with an external system (the browser's theme storage).
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        // checks the current theme to determine switch selected
-        // state on mount
-        setIsSelected(resolvedTheme === "dark");
-    }, [resolvedTheme]);
+        // This flag intentionally flips exactly once after the client
+        // mounts, to detect the client environment before trusting
+        // resolvedTheme. It cannot be computed during render since
+        // "have we mounted" is unknowable at render time.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setMounted(true);
+    }, []);
+
+    const isSelected = mounted && resolvedTheme === "dark";
 
     const toggleTheme = (newValue: boolean) => {
-        setIsSelected(newValue);
         const themeSelection = newValue ? "dark" : "light";
         setTheme(themeSelection);
     };

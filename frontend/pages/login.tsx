@@ -60,7 +60,7 @@ export default function App() {
       // redirect to home page after sign in
       router.push("/");
     }
-  }, [user]);
+  }, [user, isSignedIn, router]);
 
   const loginWithPassword = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -106,11 +106,13 @@ export default function App() {
         });
         resetForms();
         router.push("/");
-      } catch (error: any) {
-        setLoginError(error.message);
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : "An unknown error occurred";
+        setLoginError(message);
         addToast({
           title: "Error",
-          description: error.message,
+          description: message,
           color: "danger",
         });
       }
@@ -206,11 +208,13 @@ export default function App() {
         });
         resetForms();
         router.push("/");
-      } catch (error: any) {
-        setSignupError(error.message);
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : "An unknown error occurred";
+        setSignupError(message);
         addToast({
           title: "Error",
-          description: error.message,
+          description: message,
           color: "danger",
         });
       }
@@ -276,7 +280,7 @@ export default function App() {
                         placeholder="Enter your email"
                         type="email"
                         variant="bordered"
-                        validate={(_) => {
+                        validate={() => {
                           if (loginEmailError !== "") {
                             return loginEmailError;
                           }
@@ -299,7 +303,7 @@ export default function App() {
                         placeholder="Enter your password"
                         type="password"
                         variant="bordered"
-                        validate={(_) => {
+                        validate={() => {
                           if (loginPasswordError !== "") {
                             return loginPasswordError;
                           }
@@ -354,7 +358,7 @@ export default function App() {
                         type="email"
                         name="email"
                         variant="bordered"
-                        validate={(_) => {
+                        validate={() => {
                           if (signupEmailError !== "") {
                             return signupEmailError;
                           }
@@ -376,7 +380,7 @@ export default function App() {
                         placeholder="Enter your first name"
                         type="text"
                         variant="bordered"
-                        validate={(_) => {
+                        validate={() => {
                           if (firstNameError !== "") {
                             return firstNameError;
                           }
@@ -392,7 +396,7 @@ export default function App() {
                         placeholder="Enter your last name"
                         type="text"
                         variant="bordered"
-                        validate={(_) => {
+                        validate={() => {
                           if (lastNameError !== "") {
                             return lastNameError;
                           }
@@ -409,7 +413,7 @@ export default function App() {
                         maxLength={25}
                         type="text"
                         variant="bordered"
-                        validate={(_) => {
+                        validate={() => {
                           if (displayNameError !== "") {
                             return displayNameError;
                           }
@@ -427,7 +431,7 @@ export default function App() {
                         type="password"
                         minLength={6}
                         variant="bordered"
-                        validate={(_) => {
+                        validate={() => {
                           if (signupPasswordError !== "") {
                             return signupPasswordError;
                           }
@@ -445,7 +449,7 @@ export default function App() {
                         type="password"
                         minLength={6}
                         variant="bordered"
-                        validate={(_) => {
+                        validate={() => {
                           if (confirmPasswordError !== "") {
                             return confirmPasswordError;
                           }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 
 import {
     Button,
@@ -30,7 +30,6 @@ import SetsTable from "./SetsTable";
 import {
     Exercise,
     WorkoutExercise,
-    Set,
     ExerciseHistory,
 } from "@/types";
 
@@ -49,19 +48,16 @@ import {getExerciseHistory} from "@/lib/api/workouts";
 interface ExerciseCardProps {
     exercise: WorkoutExercise;
     exerciseIndex: number;
-    userId: string;
 }
 
 export default function ExerciseCard({
     exercise,
     exerciseIndex,
-    userId,
 }: ExerciseCardProps) {
     const { workout, setWorkout } = useWorkoutContext();
 
     const [notes, setNotes] = useState(exercise.notes);
     const [weightUnit, setWeightUnit] = useState(exercise.weightUnit.toString());
-    const [oneRepMax, setOneRepMax] = useState<number | null>();
     const [showOneRepMax, setShowOneRepMax] = useState(true);
     const [exerciseHistory, setExerciseHistory] = useState<ExerciseHistory[]>(
         []
@@ -70,9 +66,27 @@ export default function ExerciseCard({
     const changeExerciseModal = useDisclosure();
     const exerciseHistoryModal = useDisclosure();
 
-    useEffect(() => {
-        updateOneRepMax(exercise.sets);
-    }, [workout]);
+    // determine best set that has between 1-10 reps and RPE >= 6
+    // this rule is due to there only being data for these values
+    // see utils/calc-functions/rpeData.ts
+    const oneRepMax = useMemo(() => {
+        const eligibleSets = exercise.sets.filter((set) => {
+            if (set.weight && set.reps && set.rpe) {
+                return set.reps >= 1 && set.reps <= 10 && set.rpe >= 6;
+            }
+        });
+
+        if (eligibleSets.length > 0) {
+            // calculate e1RM for each set and use the highest value
+            const maxList = eligibleSets.map((set) => {
+                return calculateOneRepMax(set.weight!, set.reps!, set.rpe!);
+            });
+
+            return Math.max(...maxList);
+        }
+
+        return null;
+    }, [exercise.sets]);
 
     const addSet = () => {
         const newSet = createEmptySet();
@@ -154,30 +168,6 @@ export default function ExerciseCard({
         };
 
         setWorkout(updatedWorkout);
-    };
-
-    const updateOneRepMax = (sets: Set[]) => {
-        // determine best set that has between 1-10 reps and RPE >= 6
-        // this rule is due to there only being data for these values
-        // see utils/calc-functions/rpeData.ts
-        const eligibleSets = sets.filter((set) => {
-            if (set.weight && set.reps && set.rpe) {
-                return set.reps >= 1 && set.reps <= 10 && set.rpe >= 6;
-            }
-        });
-
-        if (eligibleSets.length > 0) {
-            // calculate e1RM for each set and use the highest value
-            const maxList = eligibleSets.map((set) => {
-                return calculateOneRepMax(set.weight!, set.reps!, set.rpe!);
-            });
-
-            const highestOneRepMax = Math.max(...maxList);
-
-            setOneRepMax(highestOneRepMax);
-        } else {
-            setOneRepMax(null);
-        }
     };
 
     // gets a list including the date, notes, and sets for the selected exercise
@@ -366,7 +356,6 @@ export default function ExerciseCard({
             </Card>
 
             <SelectExerciseModal
-                userId={userId}
                 isOpen={changeExerciseModal.isOpen}
                 onOpenChange={changeExerciseModal.onOpenChange}
                 callbackFunction={changeExercise}

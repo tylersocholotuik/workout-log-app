@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useState } from "react";
 
 import {
     Modal,
@@ -100,9 +100,11 @@ export default function WorkoutDetailsModal({ isOpen, onOpenChange }: WorkoutDet
                                     new Date(date).toISOString().split("T")[0]
                                 )}
                                 onChange={(newValue) => {
-                                    setDate(
-                                        newValue?.toDate(getLocalTimeZone())
-                                    );
+                                    if (newValue) {
+                                        setDate(
+                                            newValue.toDate(getLocalTimeZone())
+                                        );
+                                    }
                                     setDateError("");
                                 }
                                 }

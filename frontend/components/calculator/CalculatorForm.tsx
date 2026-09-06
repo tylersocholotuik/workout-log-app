@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 import { Dispatch, SetStateAction } from "react";
 
@@ -22,9 +22,42 @@ export default function CalculatorForm({
     const [reps, setReps] = useState("");
     const [rpe, setRPE] = useState("");
 
+    const updateOneRepMax = useCallback(
+        (weight: string, reps: string, rpe: string) => {
+            if (
+                weight !== "" &&
+                reps !== "" &&
+                rpe !== "" &&
+                parseFloat(rpe) >= 6
+            ) {
+                const weightNumber = parseFloat(weight);
+                const repsNumber = parseInt(reps);
+                const rpeNumber = parseFloat(rpe);
+
+                const oneRepMax = calculateOneRepMax(
+                    weightNumber,
+                    repsNumber,
+                    rpeNumber
+                );
+                const setData = {
+                    weight: weightNumber,
+                    weightUnit: weightUnit,
+                    reps: repsNumber,
+                    rpe: rpeNumber,
+                };
+
+                setOneRepMax(oneRepMax);
+                setSetData(setData);
+            } else {
+                setOneRepMax(0);
+            }
+        },
+        [weightUnit, setOneRepMax, setSetData]
+    );
+
     useEffect(() => {
         updateOneRepMax(weight, reps, rpe);
-    }, [weight, reps, rpe, weightUnit]);
+    }, [weight, reps, rpe, weightUnit, updateOneRepMax]);
 
     const toggleWeightUnit = () => {
         if (weightUnit === "lbs") {
@@ -146,36 +179,6 @@ export default function CalculatorForm({
             setRPE("");
         }
     }
-
-    const updateOneRepMax = (weight: string, reps: string, rpe: string) => {
-        if (
-            weight !== "" &&
-            reps !== "" &&
-            rpe !== "" &&
-            parseFloat(rpe) >= 6
-        ) {
-            const weightNumber = parseFloat(weight);
-            const repsNumber = parseInt(reps);
-            const rpeNumber = parseFloat(rpe);
-
-            const oneRepMax = calculateOneRepMax(
-                weightNumber,
-                repsNumber,
-                rpeNumber
-            );
-            const setData = {
-                weight: weightNumber,
-                weightUnit: weightUnit,
-                reps: repsNumber,
-                rpe: rpeNumber,
-            };
-
-            setOneRepMax(oneRepMax);
-            setSetData(setData);
-        } else {
-            setOneRepMax(0);
-        }
-    };
 
     const Clear = () => {
         setWeight("");

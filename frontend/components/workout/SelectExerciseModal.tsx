@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 
 import {
   Modal,
@@ -28,7 +28,6 @@ import {
 } from "@/lib/api/exercises";
 
 interface SelectExerciseModalProps {
-  userId: string | string[] | undefined;
   isOpen: boolean;
   onOpenChange: () => void;
   callbackFunction: (newExercise: Exercise, exerciseIndex?: number) => void;
@@ -37,7 +36,6 @@ interface SelectExerciseModalProps {
 }
 
 export default function SelectExerciseModal({
-  userId,
   isOpen,
   onOpenChange,
   callbackFunction,
@@ -47,28 +45,23 @@ export default function SelectExerciseModal({
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [selectedKey, setSelectedKey] = useState<Selection>(new Set());
   const [filterValue, setFilterValue] = useState("");
-  const [filteredExercises, setFilteredExercises] = useState<Exercise[]>([]);
   const [exerciseName, setExerciseName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    loadExercises();
-  }, []);
-
-  useEffect(() => {
-    setFilteredExercises(
+  const filteredExercises = useMemo(
+    () =>
       filterValue
         ? exercises.filter((exercise) =>
             exercise.name.toLowerCase().includes(filterValue.toLowerCase())
           )
-        : exercises
-    );
-  }, [exercises, filterValue]);
+        : exercises,
+    [exercises, filterValue]
+  );
 
-  const loadExercises = async () => {
+  const loadExercises = useCallback(async () => {
     try {
       const data = await getExercises();
       setExercises(data);
@@ -81,7 +74,14 @@ export default function SelectExerciseModal({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // Fetching data on mount is an intentional synchronization with an
+    // external system (the API), not a derived-state calculation.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadExercises();
+  }, [loadExercises]);
 
   // gets the selected exercise id, and returns the exercise that matches the id
   const getSelectedExercise = () => {
