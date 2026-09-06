@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import {
     Table,
     TableHeader,
@@ -21,7 +21,10 @@ export default function RPEDataTable({
     oneRepMax,
     weightUnit,
 }: RPEDataTableProps) {
-    const [tableData, setTableData] = useState<typeof rpeData>({});
+    const tableData = useMemo<typeof rpeData>(
+        () => generateTableData(oneRepMax),
+        [oneRepMax]
+    );
 
     const columns = [
         {
@@ -70,10 +73,6 @@ export default function RPEDataTable({
         },
     ];
 
-    useEffect(() => {
-        setTableData(generateTableData(oneRepMax));
-    }, [oneRepMax]);
-
     return (
         <div className="max-w-[800px] mx-auto">
             <Table
@@ -118,18 +117,20 @@ export default function RPEDataTable({
                             )
                             .map(([rpeKey, rpeData]) => (
                                 <TableRow key={`rpe-${rpeKey}`}>
-                                    <TableCell>
-                                        <span className="text-foreground-500 font-semibold">
-                                            {rpeKey}
-                                        </span>
-                                    </TableCell>
-                                    {Object.entries(rpeData).map(
-                                        ([repsKey, repsData]) => (
-                                            <TableCell key={`reps-${repsKey}`}>
-                                                {repsData > 0 ? repsData : "-"}
-                                            </TableCell>
-                                        )
-                                    )}
+                                    {[
+                                        <TableCell key={`rpe-label-${rpeKey}`}>
+                                            <span className="text-foreground-500 font-semibold">
+                                                {rpeKey}
+                                            </span>
+                                        </TableCell>,
+                                        ...Object.entries(rpeData).map(
+                                            ([repsKey, repsData]) => (
+                                                <TableCell key={`reps-${repsKey}`}>
+                                                    {repsData > 0 ? repsData : "-"}
+                                                </TableCell>
+                                            )
+                                        ),
+                                    ]}
                                 </TableRow>
                             ))}
                     </>

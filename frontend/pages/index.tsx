@@ -7,25 +7,35 @@ import Footer from "@/components/Footer";
 
 import { Image, Card, CardBody, Link, Button } from "@heroui/react";
 
-import calculator_dark from "/public/img/calculator_dark.webp";
-import calculator_light from "/public/img/calculator_light.webp";
-import history_dark from "/public/img/history_dark.webp";
-import history_light from "/public/img/history_light.webp";
-import workout_dark from "/public/img/workout_dark.webp";
-import workout_light from "/public/img/workout_light.webp";
-import select_exercise_dark from "/public/img/select_exercise_dark.webp";
-import select_exercise_light from "/public/img/select_exercise_light.webp";
+import calculator_dark from "../public/img/calculator_dark.webp";
+import calculator_light from "../public/img/calculator_light.webp";
+import history_dark from "../public/img/history_dark.webp";
+import history_light from "../public/img/history_light.webp";
+import workout_dark from "../public/img/workout_dark.webp";
+import workout_light from "../public/img/workout_light.webp";
+import select_exercise_dark from "../public/img/select_exercise_dark.webp";
+import select_exercise_light from "../public/img/select_exercise_light.webp";
 
 export default function Home() {
     const { resolvedTheme } = useTheme();
-    const [isDarkMode, setIsDarkMode] = useState(true);
+    // next-themes can't know the real theme during SSR (it reads
+    // localStorage/media queries, which only exist in the browser), so
+    // resolvedTheme is undefined on the server and on the client's first
+    // render. Tracking "mounted" and deferring to the theme value only
+    // after mount keeps server/client markup in sync and avoids a
+    // hydration mismatch.
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        // checks the current theme. Using this to change the card
-        // images based on the theme.
-        console.log();
-        setIsDarkMode(resolvedTheme === "dark");
-    }, [resolvedTheme]);
+        // This flag intentionally flips exactly once after the client
+        // mounts, to detect the client environment before trusting
+        // resolvedTheme. It cannot be computed during render since
+        // "have we mounted" is unknowable at render time.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setMounted(true);
+    }, []);
+
+    const isDarkMode = mounted && resolvedTheme === "dark";
 
     return (
         <>

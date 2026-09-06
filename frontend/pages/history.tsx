@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 import Head from "next/head";
 
-import { Spinner, useDisclosure, addToast } from "@heroui/react";
+import { Spinner, addToast } from "@heroui/react";
 import WorkoutList from "@/components/history/WorkoutList";
 
 import { Workout } from "@/types";
@@ -17,13 +17,7 @@ export default function History() {
 
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (user) {
-      loadWorkouts();
-    }
-  }, [user]);
-
-  const loadWorkouts = async () => {
+  const loadWorkouts = useCallback(async () => {
     try {
       const data = await getWorkouts();
       setWorkouts(data);
@@ -37,7 +31,16 @@ export default function History() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      // Fetching data on mount is an intentional synchronization with an
+      // external system (the API), not a derived-state calculation.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      loadWorkouts();
+    }
+  }, [user, loadWorkouts]);
 
   if (isLoading) {
     return (
