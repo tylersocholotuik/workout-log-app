@@ -39,4 +39,47 @@ public class UserService
 
         return user;
     }
+    
+    public async Task<User> GetUserByIdAsync(string userId)
+    {
+        User? user;
+        try
+        {
+            user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving user by ID: {Message}", ex.Message);
+            throw;
+        }
+
+        if (user == null)
+        {
+            _logger.LogWarning("User with ID {UserId} not found.", userId);
+            throw new KeyNotFoundException("A user with this ID was not found.");
+        }
+
+        return user;
+    }
+    
+    public async Task UpdatePasswordAsync(string userId, string newPasswordHash)
+    {
+        try
+        {
+            var user = await GetUserByIdAsync(userId);
+
+            user.PasswordHash = newPasswordHash;
+            user.PasswordChangedAt = DateTime.UtcNow;
+            user.FailedLoginAttempts = 0; // Reset failed login attempts on password change
+            user.IsLocked = false; // Unlock the account on password change
+        
+            _dbContext.Users.Update(user);
+            await _dbContext.SaveChangesAsync();   
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating password for user ID {UserId}: {Message}", userId, ex.Message);
+            throw;
+        }
+    }
 }

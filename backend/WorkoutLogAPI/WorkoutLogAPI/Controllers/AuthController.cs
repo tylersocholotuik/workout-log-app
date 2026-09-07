@@ -162,4 +162,24 @@ public class AuthController : ControllerBase
             return StatusCode(500, new { error = "An error occurred while sending the password reset email." });
         }
     }
+    
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        try
+        {
+            await _authService.ResetPasswordAsync(request.NewPassword, request.Token);
+            return Ok(new { message = "Password has been reset successfully" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Invalid or expired password reset token: {Message}", ex.Message);
+            return BadRequest(new { error = "Invalid or expired password reset token." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error resetting password: {Message}", ex.Message);
+            return StatusCode(500, new { error = "An error occurred while resetting the password." });
+        }
+    }
 }

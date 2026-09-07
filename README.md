@@ -39,6 +39,17 @@ dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Po
 dotnet user-secrets set "Jwt:SecretKey" "any-random-string-at-least-32-characters-long"
 ```
 
+Password reset and account emails are sent through [Brevo](https://www.brevo.com/)'s SMTP relay. If you're working on email-related functionality, create a free Brevo account, generate an SMTP key, and set the following user secrets:
+
+```bash
+dotnet user-secrets set "Smtp:Username" "your-brevo-smtp-login"
+dotnet user-secrets set "Smtp:Password" "your-brevo-smtp-key"
+```
+
+Also update the non-secret `FromEmail` value in `appsettings.Development.json` to a verified sender address on your Brevo account.
+
+A Brevo account is only required for testing email functionality (e.g. password reset). If you aren't working on email-related changes, you can safely leave `Smtp:Username`/`Smtp:Password` unset &mdash; the app will still run, and any attempt to send an email will simply fail and be logged rather than crash the request.
+
 2. Run the API:
 
 ```bash
@@ -58,6 +69,11 @@ A few non-secret settings live directly in `appsettings.json`/`appsettings.Devel
 | `Cors:AllowedOrigins` | Array of origins allowed to call the API (with credentials). Must include the frontend's URL exactly &mdash; `http://localhost:3000` for local dev, and the deployed frontend's URL (e.g. `https://workoutlogapp.vercel.app`) in production. **Update this when deploying to a new frontend URL**, or requests from the frontend will be blocked by CORS. |
 | `Jwt:TokenExpirationInMinutes` | How long a freshly issued JWT is valid for before it must be renewed or the user must log in again. |
 | `Jwt:RefreshThresholdInMinutes` | Sliding expiration window: once an authenticated request comes in with less than this many minutes left on its token, the API silently issues a replacement token (returned via the `X-Refreshed-Token` response header) so active users aren't logged out mid-session. Should stay comfortably smaller than `TokenExpirationInMinutes`. |
+| `Smtp:Host` / `Smtp:Port` | Brevo's SMTP relay address/port. These don't need to change between environments. |
+| `Smtp:FromEmail` / `Smtp:FromName` | The sender address/name emails (password reset, etc.) are sent from. `FromEmail` must be a verified sender on the configured Brevo account. |
+| `PasswordReset:TokenExpirationInMinutes` | How long a password reset link/token stays valid after being requested. |
+
+`Smtp:Username`/`Smtp:Password` are set via user secrets instead, since they're sensitive &mdash; see the Brevo setup note above.
 
 
 

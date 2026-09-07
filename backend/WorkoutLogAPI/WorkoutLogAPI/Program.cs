@@ -63,7 +63,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     context.Fail("Token has been revoked");
                     return;
                 }
-
+                
+                // Reject tokens if the user's password has been changed since the token was issued.
+                if (await jwtService.HasPasswordChangedSinceTokenIssuedAsync(principal))
+                {
+                    context.Fail("Password has been changed since token was issued");
+                    return;
+                }
+                
                 // Sliding expiration: if this valid token is close to
                 // expiring, create a replacement so an active user
                 // never gets logged out mid-task. The frontend picks this up

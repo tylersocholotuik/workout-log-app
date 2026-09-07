@@ -81,6 +81,81 @@ public class AuthService
             throw;
         }
     }
+
+    public async Task ResetPasswordAsync(string newPassword, string token)
+    {
+        var tokenHash = HashToken(token);
+        
+        var passwordResetToken = await _context.PasswordResetTokens
+            .FirstOrDefaultAsync(t => t.TokenHash == tokenHash && t.ExpiresAt > DateTime.UtcNow);
+
+        if (passwordResetToken == null)
+        {
+            _logger.LogWarning("Password reset token {Token} not found", token);
+            throw new InvalidOperationException("Invalid or expired password reset token.");
+        }
+        
+        var passwordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        
+        await _userService.UpdatePasswordAsync(passwordResetToken.UserId, passwordHash);
+        
+        // Remove the used token from the database
+        _context.PasswordResetTokens.Remove(passwordResetToken);
+        await _context.SaveChangesAsync();
+        
+        try 
+        {
+            var user = await _userService.GetUserByIdAsync(passwordResetToken.UserId);
+            var userFullName = $"{user.FirstName} {user.LastName}";
+            await SendPasswordResetConfirmationEmailAsync(user.Email, userFullName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending password reset confirmation email for user ID {UserId}: {Message}", passwordResetToken.UserId, ex.Message);
+            // Don't throw an error here to avoid failing the password reset process due to email issues
+        }
+    }
+    
+    private async Task SendPasswordResetEmailAsync(string email, string toName, string resetToken, int expirationMinutes)
+    {
+        try
+        {
+            var baseUrl = _configuration.GetValue<string>("Frontend:BaseUrl");
+            var resetUrl = $"{baseUrl}/reset-password?token={resetToken}";
+            var subject = AppConstants.EmailSubjects.PasswordReset;
+            var body = $"""
+                        <p>Hi {toName},</p>
+                        <p>We received a request to reset the password for your Workout Log account. Click the button below to choose a new one:</p>
+                        <p>
+                            <a href="{resetUrl}" style="display:inline-block;padding:10px 20px;background-color:#0d6efd;color:#ffffff;text-decoration:none;border-radius:4px;">
+                                Reset Password
+                            </a>
+                        </p>
+                        <p>This link will expire in {expirationMinutes} minutes and can only be used once.</p>
+                        <p>If you didn't request a password reset, you can safely ignore this email &mdash; your password will not be changed.</p>
+                        """;
+            
+            await _emailService.SendEmailAsync(email, subject, toName, body);
+            _logger.LogInformation("Password reset email sent to {Email}", email);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending password reset email to {Email}: {Message}", email, ex.Message);
+            throw;
+        }
+    }
+    
+    private async Task SendPasswordResetConfirmationEmailAsync(string email, string toName)
+    {
+        var subject = AppConstants.EmailSubjects.PasswordResetConfirmation;
+        var body = $"""
+                    <p>Hi {toName},</p>
+                    <p>Your password has been successfully reset. If you did not perform this action, please contact our support team immediately.</p>
+                    """;
+        
+        await _emailService.SendEmailAsync(email, subject, toName, body);
+        _logger.LogInformation("Password reset confirmation email sent to {Email}", email);
+    }
     
     private static string GenerateSecureToken(int length = 32)
     {
@@ -94,7 +169,7 @@ public class AuthService
         return WebEncoders.Base64UrlEncode(tokenBytes);
     }
 
-    public static string HashToken(string token)
+    private static string HashToken(string token)
     {
         var tokenBytes = Encoding.UTF8.GetBytes(token);
         var hashBytes = SHA256.HashData(tokenBytes);
@@ -102,32 +177,4 @@ public class AuthService
         return Convert.ToHexString(hashBytes);
     }
     
-    private async Task SendPasswordResetEmailAsync(string email, string toName, string resetToken, int expirationMinutes)
-    {
-        try
-        {
-            var baseUrl = _configuration.GetValue<string>("Frontend:BaseUrl");
-            var resetUrl = $"{baseUrl}/reset-password?token={resetToken}";
-            var subject = AppConstants.EmailSubjects.PasswordReset;
-            var body = $"""
-                <p>Hi {toName},</p>
-                <p>We received a request to reset the password for your Workout Log account. Click the button below to choose a new one:</p>
-                <p>
-                    <a href="{resetUrl}" style="display:inline-block;padding:10px 20px;background-color:#0d6efd;color:#ffffff;text-decoration:none;border-radius:4px;">
-                        Reset Password
-                    </a>
-                </p>
-                <p>This link will expire in {expirationMinutes} minutes and can only be used once.</p>
-                <p>If you didn't request a password reset, you can safely ignore this email &mdash; your password will not be changed.</p>
-                """;
-            
-            await _emailService.SendEmailAsync(email, subject, toName, body);
-            _logger.LogInformation("Password reset email sent to {Email}", email);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error sending password reset email to {Email}: {Message}", email, ex.Message);
-            throw;
-        }
-    }
 }
