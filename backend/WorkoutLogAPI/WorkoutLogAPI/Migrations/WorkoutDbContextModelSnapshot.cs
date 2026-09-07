@@ -64,6 +64,36 @@ namespace WorkoutLogAPI.Migrations
                         });
                 });
 
+            modelBuilder.Entity("WorkoutLogAPI.Models.RevokedToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("Jti")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("jti");
+
+                    b.Property<DateTime>("RevokedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Jti")
+                        .IsUnique();
+
+                    b.ToTable("revoked_tokens");
+                });
+
             modelBuilder.Entity("WorkoutLogAPI.Models.Set", b =>
                 {
                     b.Property<int>("Id")

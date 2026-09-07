@@ -49,6 +49,18 @@ On startup (in the Development environment only), the API automatically applies 
 
 In Development, an interactive [Scalar](https://github.com/scalar/scalar) API reference is also available at `http://localhost:5258/scalar/v1`, generated from the API's OpenAPI document. It lists every endpoint with its request/response schemas and lets you send test requests straight from the browser &mdash; a quicker alternative to the `.http` file below for exploring what's available.
 
+#### appsettings.json reference
+
+A few non-secret settings live directly in `appsettings.json`/`appsettings.Development.json` rather than user secrets, since they aren't sensitive but do need to change per environment:
+
+| Setting | Purpose |
+| --- | --- |
+| `Cors:AllowedOrigins` | Array of origins allowed to call the API (with credentials). Must include the frontend's URL exactly &mdash; `http://localhost:3000` for local dev, and the deployed frontend's URL (e.g. `https://workoutlogapp.vercel.app`) in production. **Update this when deploying to a new frontend URL**, or requests from the frontend will be blocked by CORS. |
+| `Jwt:TokenExpirationInMinutes` | How long a freshly issued JWT is valid for before it must be renewed or the user must log in again. |
+| `Jwt:RefreshThresholdInMinutes` | Sliding expiration window: once an authenticated request comes in with less than this many minutes left on its token, the API silently issues a replacement token (returned via the `X-Refreshed-Token` response header) so active users aren't logged out mid-session. Should stay comfortably smaller than `TokenExpirationInMinutes`. |
+
+
+
 ### 3. Frontend (Next.js)
 
 1. Install dependencies from the `frontend` directory: `npm install`

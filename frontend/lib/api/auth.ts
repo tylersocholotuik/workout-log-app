@@ -1,35 +1,12 @@
 import { User, RegisterData, LoginData, AuthResponse } from '@/types';
 import { extractErrorMessage } from './apiErrors';
+import { apiFetch } from './client';
+import { saveToken, getToken, removeToken, getAuthHeaders } from './tokenStorage';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5258';
 
-const TOKEN_KEY = 'workout_auth_token';
-
-// Auth Helpers
-export const saveToken = (token: string): void => {
-    localStorage.setItem(TOKEN_KEY, token);
-};
-
-export const getToken = (): string | null => {
-    return localStorage.getItem(TOKEN_KEY);
-};
-
-export const removeToken = (): void => {
-    localStorage.removeItem(TOKEN_KEY);
-};
-
-export const getAuthHeaders = (): HeadersInit => {
-    const token = getToken();
-    const headers: HeadersInit = {
-        'Content-Type': 'application/json'
-    };
-    
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
-    
-    return headers;
-};
+// Re-exported so existing imports from "./auth" keep working unchanged.
+export { saveToken, getToken, removeToken, getAuthHeaders };
 
 export const getUserFromToken = (): User | null => {
     const token = getToken();
@@ -46,10 +23,10 @@ export const getUserFromToken = (): User | null => {
         return {
             id: payload.sub,
             email: payload.email,
-            firstName: payload.firstName,
-            lastName: payload.lastName,
-            displayName: payload.displayName || null,
-            isAdmin: payload.isAdmin === 'True' || payload.isAdmin === true
+            firstName: payload.given_name,
+            lastName: payload.family_name,
+            displayName: payload.preferred_username || null,
+            isAdmin: payload.is_admin === 'True' || payload.is_admin === true
         };
     } catch (error) {
         console.error('Error parsing token:', error);
@@ -60,7 +37,7 @@ export const getUserFromToken = (): User | null => {
 
 // Auth API calls
 export const register = async (data: RegisterData): Promise<AuthResponse> => {
-    const res = await fetch(`${API_URL}/api/auth/register`, {
+    const res = await apiFetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -79,7 +56,7 @@ export const register = async (data: RegisterData): Promise<AuthResponse> => {
 };
 
 export const login = async (data: LoginData): Promise<AuthResponse> => {
-    const res = await fetch(`${API_URL}/api/auth/login`, {
+    const res = await apiFetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -97,7 +74,22 @@ export const login = async (data: LoginData): Promise<AuthResponse> => {
     return response;
 };
 
-export const logout = (): void => {
+export const logout = async (): Promise<void> => {
+    const token = getToken();
+
+    if (token) {
+        try {
+            await apiFetch(`${API_URL}/api/auth/logout`, {
+                method: 'POST',
+                headers: getAuthHeaders(),
+            });
+        } catch (error) {
+            // Even if the request fails (e.g. offline), still clear the
+            // local token so the user is signed out on this device.
+            console.error('Error invalidating token on server:', error);
+        }
+    }
+
     removeToken();
 };
 
