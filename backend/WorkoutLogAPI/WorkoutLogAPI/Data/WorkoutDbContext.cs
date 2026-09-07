@@ -15,6 +15,7 @@ public class WorkoutDbContext : DbContext
     public DbSet<Workout> Workouts { get; set; }
     public DbSet<WorkoutExercise> WorkoutExercises { get; set; }
     public DbSet<Set> Sets { get; set; }
+    public DbSet<RevokedToken> RevokedTokens { get; set; }
 
     public override int SaveChanges()
     {
@@ -99,6 +100,11 @@ public class WorkoutDbContext : DbContext
                 .WithMany(we => we.Sets)
                 .HasForeignKey(s => s.ExerciseId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<RevokedToken>(entity =>
+        {
+            entity.HasIndex(rt => rt.Jti).IsUnique();
         });
     }
 }

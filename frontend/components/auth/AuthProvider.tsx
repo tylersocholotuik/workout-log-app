@@ -75,8 +75,8 @@ export default function AuthProvider({ children }: AuthProviderProps) {
         }
     };
 
-    const logout = () => {
-        logoutAuth();
+    const logout = async () => {
+        await logoutAuth();
         setUser(null);
         router.push("/login");
     };

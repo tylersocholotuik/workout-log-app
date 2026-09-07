@@ -1,11 +1,12 @@
 import {Workout} from '@/types';
 import {getAuthHeaders} from "./auth";
+import {apiFetch} from "./client";
 import {extractErrorMessage} from "./apiErrors";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5258';
 
 export const getWorkouts = async () => {
-    const res = await fetch(`${API_URL}/api/workouts`, {
+    const res = await apiFetch(`${API_URL}/api/workouts`, {
         headers: getAuthHeaders()
     });
 
@@ -19,7 +20,7 @@ export const getWorkouts = async () => {
 };
 
 export const getWorkout = async (id: string | string[]) => {
-    const res = await fetch(`${API_URL}/api/workouts/${id}`, {
+    const res = await apiFetch(`${API_URL}/api/workouts/${id}`, {
         headers: getAuthHeaders()
     });
 
@@ -33,7 +34,7 @@ export const getWorkout = async (id: string | string[]) => {
 };
 
 export const addWorkout = async (workoutData: Workout) => {
-    const res = await fetch(`${API_URL}/api/workouts`, {
+    const res = await apiFetch(`${API_URL}/api/workouts`, {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify(workoutData),
@@ -49,7 +50,7 @@ export const addWorkout = async (workoutData: Workout) => {
 };
 
 export const updateWorkout = async (id: string | string [] | undefined, workoutData: Workout) => {
-    const res = await fetch(`${API_URL}/api/workouts/${id}`, {
+    const res = await apiFetch(`${API_URL}/api/workouts/${id}`, {
         method: "PUT",
         headers: getAuthHeaders(),
         body: JSON.stringify(workoutData),
@@ -65,7 +66,7 @@ export const updateWorkout = async (id: string | string [] | undefined, workoutD
 };
 
 export const deleteWorkout = async (id: string | string[]) => {
-    const res = await fetch(`${API_URL}/api/workouts/${id}`, {
+    const res = await apiFetch(`${API_URL}/api/workouts/${id}`, {
         method: "DELETE",
         headers: getAuthHeaders()
     });
@@ -76,7 +77,7 @@ export const deleteWorkout = async (id: string | string[]) => {
     }
 };
 export const getExerciseHistory = async (exerciseId: number | undefined) => {
-    const res = await fetch(`${API_URL}/api/workouts/exercise-history/${exerciseId}`, {
+    const res = await apiFetch(`${API_URL}/api/workouts/exercise-history/${exerciseId}`, {
         headers: getAuthHeaders()
     });
 

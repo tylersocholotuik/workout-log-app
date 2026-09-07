@@ -133,3 +133,7 @@ Authorization: Bearer {{Access_Token}}
 ### Soft-delete a workout
 DELETE {{Base_Url}}/api/workouts/{{Workout_Id}}
 Authorization: Bearer {{Access_Token}}
+
+### Log out the current user (invalidates the JWT on the server)
+POST {{Base_Url}}/api/auth/logout
+Authorization: Bearer {{Access_Token}}

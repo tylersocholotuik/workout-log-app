@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WorkoutLogAPI.Data;
@@ -5,7 +6,6 @@ using WorkoutLogAPI.DTOs.Auth;
 using WorkoutLogAPI.DTOs.Users;
 using WorkoutLogAPI.Models;
 using WorkoutLogAPI.Services;
-using BCrypt.Net;
 
 namespace WorkoutLogAPI.Controllers;
 
@@ -110,6 +110,39 @@ public class AuthController : ControllerBase
         {
             _logger.LogError(ex, "Error during user login");
             return StatusCode(500, new { error = "An error occurred during login" });
+        }
+    }
+
+    [Authorize]
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout()
+    {
+        try
+        {
+            var authHeader = Request.Headers.Authorization.ToString();
+            var token = authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+                ? authHeader["Bearer ".Length..].Trim()
+                : null;
+
+            if (string.IsNullOrEmpty(token))
+            {
+                return BadRequest(new { error = "No token provided" });
+            }
+
+            var revoked = await _jwtService.RevokeTokenAsync(token);
+            if (!revoked)
+            {
+                return BadRequest(new { error = "Invalid token" });
+            }
+
+            _logger.LogInformation("User logged out successfully: {UserId}", User.FindFirst("sub")?.Value);
+
+            return Ok(new { message = "Logged out successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during logout");
+            return StatusCode(500, new { error = "An error occurred during logout" });
         }
     }
 }
