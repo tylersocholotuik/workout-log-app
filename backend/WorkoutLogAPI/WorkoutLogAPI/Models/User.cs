@@ -32,6 +32,12 @@ public class User : IAuditableEntity
 
     [Column("is_locked")]
     public bool IsLocked { get; set; } = false;
+    
+    [Column("password_changed_at")]
+    public DateTime PasswordChangedAt { get; set; }
+    
+    [Column("is_email_verified")]
+    public bool IsEmailVerified { get; set; } = false;
 
     [Column("is_admin")]
     public bool IsAdmin { get; set; } = false;

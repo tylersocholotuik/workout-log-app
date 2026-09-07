@@ -137,3 +137,11 @@ Authorization: Bearer {{Access_Token}}
 ### Log out the current user (invalidates the JWT on the server)
 POST {{Base_Url}}/api/auth/logout
 Authorization: Bearer {{Access_Token}}
+
+### Forgot password (sends a reset email to the user)
+POST {{Base_Url}}/api/auth/forgot-password
+Content-Type: application/json
+
+{
+    "email": "socholotuikt@gmail.com"
+}

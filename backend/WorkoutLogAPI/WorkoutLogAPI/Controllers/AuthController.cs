@@ -15,12 +15,14 @@ public class AuthController : ControllerBase
 {
     private readonly WorkoutDbContext _context;
     private readonly JwtService _jwtService;
+    private readonly AuthService _authService;
     private readonly ILogger<AuthController> _logger;
 
-    public AuthController(WorkoutDbContext context, JwtService jwtService, ILogger<AuthController> logger)
+    public AuthController(WorkoutDbContext context, JwtService jwtService, AuthService authService, ILogger<AuthController> logger)
     {
         _context = context;
         _jwtService = jwtService;
+        _authService = authService;
         _logger = logger;
     }
 
@@ -143,6 +145,21 @@ public class AuthController : ControllerBase
         {
             _logger.LogError(ex, "Error during logout");
             return StatusCode(500, new { error = "An error occurred during logout" });
+        }
+    }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        try
+        {
+            await _authService.GenerateAndSendPasswordResetTokenAsync(request.Email);
+            return Ok(new { message = "Password reset email sent successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending password reset email: {Message}", ex.Message);
+            return StatusCode(500, new { error = "An error occurred while sending the password reset email." });
         }
     }
 }
