@@ -20,6 +20,11 @@ export interface LoginData {
     password: string;
 }
 
+export interface ResetPasswordData {
+    token: string;
+    newPassword: string;
+}
+
 export interface AuthResponse {
     token: string;
     user: User;

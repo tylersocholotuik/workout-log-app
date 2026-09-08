@@ -34,7 +34,7 @@ public class User : IAuditableEntity
     public bool IsLocked { get; set; } = false;
     
     [Column("password_changed_at")]
-    public DateTime PasswordChangedAt { get; set; }
+    public DateTime? PasswordChangedAt { get; set; } = null;
     
     [Column("is_email_verified")]
     public bool IsEmailVerified { get; set; } = false;

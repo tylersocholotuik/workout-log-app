@@ -217,7 +217,7 @@ namespace WorkoutLogAPI.Migrations
                         .HasColumnType("text")
                         .HasColumnName("last_name");
 
-                    b.Property<DateTime>("PasswordChangedAt")
+                    b.Property<DateTime?>("PasswordChangedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("password_changed_at");
 
