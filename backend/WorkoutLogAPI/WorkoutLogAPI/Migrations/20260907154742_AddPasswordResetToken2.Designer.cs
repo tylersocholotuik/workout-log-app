@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using WorkoutLogAPI.Data;
@@ -11,9 +12,11 @@ using WorkoutLogAPI.Data;
 namespace WorkoutLogAPI.Migrations
 {
     [DbContext(typeof(WorkoutDbContext))]
-    partial class WorkoutDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260907154742_AddPasswordResetToken2")]
+    partial class AddPasswordResetToken2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -217,7 +220,7 @@ namespace WorkoutLogAPI.Migrations
                         .HasColumnType("text")
                         .HasColumnName("last_name");
 
-                    b.Property<DateTime?>("PasswordChangedAt")
+                    b.Property<DateTime>("PasswordChangedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("password_changed_at");
 

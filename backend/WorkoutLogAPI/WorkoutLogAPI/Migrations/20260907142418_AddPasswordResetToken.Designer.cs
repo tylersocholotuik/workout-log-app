@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using WorkoutLogAPI.Data;
@@ -11,9 +12,11 @@ using WorkoutLogAPI.Data;
 namespace WorkoutLogAPI.Migrations
 {
     [DbContext(typeof(WorkoutDbContext))]
-    partial class WorkoutDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260907142418_AddPasswordResetToken")]
+    partial class AddPasswordResetToken
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -62,36 +65,6 @@ namespace WorkoutLogAPI.Migrations
                         {
                             t.HasCheckConstraint("CK_Exercise_SystemExercise_NotDeleted", "\"user_id\" IS NOT NULL OR \"deleted\" = false");
                         });
-                });
-
-            modelBuilder.Entity("WorkoutLogAPI.Models.PasswordResetToken", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("expires_at");
-
-                    b.Property<string>("TokenHash")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("token_hash");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("password_reset_tokens");
                 });
 
             modelBuilder.Entity("WorkoutLogAPI.Models.RevokedToken", b =>
@@ -217,7 +190,7 @@ namespace WorkoutLogAPI.Migrations
                         .HasColumnType("text")
                         .HasColumnName("last_name");
 
-                    b.Property<DateTime?>("PasswordChangedAt")
+                    b.Property<DateTime>("PasswordChangedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("password_changed_at");
 

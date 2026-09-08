@@ -12,11 +12,13 @@ public class JwtService
 {
     private readonly IConfiguration _configuration;
     private readonly WorkoutDbContext _context;
+    private readonly UserService _userService;
 
-    public JwtService(IConfiguration configuration, WorkoutDbContext context)
+    public JwtService(IConfiguration configuration, WorkoutDbContext context, UserService userService)
     {
         _configuration = configuration;
         _context = context;
+        _userService = userService;
     }
 
     public string GenerateToken(User user)
@@ -27,7 +29,8 @@ public class JwtService
             firstName: user.FirstName,
             lastName: user.LastName,
             displayName: user.DisplayName ?? "",
-            isAdmin: user.IsAdmin.ToString());
+            isAdmin: user.IsAdmin.ToString(),
+            issuedAt: DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString());
 
         return CreateToken(claims);
     }
@@ -43,12 +46,20 @@ public class JwtService
             firstName: principal.FindFirstValue(JwtRegisteredClaimNames.GivenName) ?? "",
             lastName: principal.FindFirstValue(JwtRegisteredClaimNames.FamilyName) ?? "",
             displayName: principal.FindFirstValue(JwtRegisteredClaimNames.PreferredUsername) ?? "",
-            isAdmin: principal.FindFirstValue("is_admin") ?? bool.FalseString);
+            isAdmin: principal.FindFirstValue("is_admin") ?? bool.FalseString,
+            issuedAt: principal.FindFirstValue(JwtRegisteredClaimNames.Iat) ?? DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString());
 
         return CreateToken(claims);
     }
 
-    private static Claim[] BuildClaims(string id, string email, string firstName, string lastName, string displayName, string isAdmin)
+    private static Claim[] BuildClaims(
+        string id, 
+        string email, 
+        string firstName, 
+        string lastName, 
+        string displayName, 
+        string isAdmin, 
+        string issuedAt)
     {
         return new[]
         {
@@ -58,7 +69,8 @@ public class JwtService
             new Claim(JwtRegisteredClaimNames.FamilyName, lastName),
             new Claim(JwtRegisteredClaimNames.PreferredUsername, displayName),
             new Claim("is_admin", isAdmin),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new Claim(JwtRegisteredClaimNames.Iat, issuedAt),
         };
     }
 
@@ -114,33 +126,6 @@ public class JwtService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public ClaimsPrincipal? ValidateToken(string token)
-    {
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.UTF8.GetBytes(_configuration["Jwt:SecretKey"]!);
-
-        try
-        {
-            var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
-            {
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(key),
-                ValidateIssuer = true,
-                ValidIssuer = _configuration["Jwt:Issuer"],
-                ValidateAudience = true,
-                ValidAudience = _configuration["Jwt:Audience"],
-                ValidateLifetime = true,
-                ClockSkew = TimeSpan.Zero
-            }, out _);
-
-            return principal;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
     // Invalidates the given token immediately by recording its unique id (jti)
     // and expiry as revoked, so it will be rejected on future requests even
     // though it hasn't naturally expired yet.
@@ -192,5 +177,34 @@ public class JwtService
         }
 
         return await _context.RevokedTokens.AnyAsync(rt => rt.Jti == jti);
+    }
+    
+    public async Task<bool> HasPasswordChangedSinceTokenIssuedAsync(ClaimsPrincipal principal)
+    {
+        var userId = principal.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        var iat = principal.FindFirstValue(JwtRegisteredClaimNames.Iat);
+        
+        // If either the user ID or issued-at timestamp is missing, we can't verify the token's validity against password changes.
+        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(iat))
+        {
+            return true;
+        }
+
+        User? user;
+        try
+        {
+            user = await _userService.GetUserByIdAsync(userId);    
+        }
+        catch (KeyNotFoundException)
+        {
+            // If the user can't be found, return true to indicate the token is not valid for a non-existent user.
+            return true;
+        }
+        
+        var passwordChangedAt = user.PasswordChangedAt;
+        var issuedAt = DateTimeOffset.FromUnixTimeSeconds(long.Parse(iat)).UtcDateTime;
+                
+        // Reject tokens that were issued before the user's password was changed.
+        return issuedAt < passwordChangedAt;
     }
 }

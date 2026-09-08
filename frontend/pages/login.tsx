@@ -15,11 +15,15 @@ import {
   Tab,
   Link,
   addToast,
+  useDisclosure,
 } from "@heroui/react";
 
 import Head from "next/head";
 
 import { useAuth } from "@/components/auth/AuthProvider";
+
+import ForgotPasswordModal from "@/components/auth/ForgotPasswordModal";
+import WorkoutDetailsModal from "@/components/workout/WorkoutDetailsModal";
 
 export default function App() {
   // bound to inputs for email and password login
@@ -45,10 +49,13 @@ export default function App() {
   const [lastNameError, setLastNameError] = useState("");
   const [displayNameError, setDisplayNameError] = useState("");
   const [selected, setSelected] = useState<number | string>("login");
+  const [isLoading, setIsLoading] = useState(false);
 
   const { user, isSignedIn, refreshUser } = useAuth();
 
   const router = useRouter();
+  
+  const forgotPasswordModal = useDisclosure();
 
   interface ErrorDictionary {
     field: string;
@@ -90,6 +97,9 @@ export default function App() {
       });
     } else {
       try {
+        
+        setIsLoading(true);
+        
         const response = await login({
           email: loginEmail,
           password: loginPassword,
@@ -115,6 +125,8 @@ export default function App() {
           description: message,
           color: "danger",
         });
+      } finally {
+        setIsLoading(false);
       }
     }
   };
@@ -148,6 +160,13 @@ export default function App() {
       errors.push({
         field: "password",
         message: "Password must be at least 6 characters",
+      });
+    }
+    
+    if (signupPassword !== "" && signupPassword.length > 100) {
+      errors.push({
+        field: "password",
+        message: "Password must be 100 characters or less.",
       });
     }
 
@@ -189,6 +208,9 @@ export default function App() {
       });
     } else {
       try {
+        
+        setIsLoading(true);
+        
         const response = await register({
           email: signupEmail,
           firstName,
@@ -217,6 +239,8 @@ export default function App() {
           description: message,
           color: "danger",
         });
+      } finally {
+        setIsLoading(false);
       }
     }
   };
@@ -320,12 +344,21 @@ export default function App() {
                       />
                     </div>
                   </Form>
+                  <p className="test-sm">
+                    <Link
+                      className="hover:cursor-pointer"
+                      onPress={forgotPasswordModal.onOpen}
+                    >
+                      Forgot your password?
+                    </Link>
+                  </p>
                   <div className="w-full">
                     <Button
                       fullWidth
                       color="primary"
                       type="submit"
                       form="password-login-form"
+                      isLoading={isLoading}
                     >
                       Login
                     </Button>
@@ -466,6 +499,7 @@ export default function App() {
                       color="primary"
                       type="submit"
                       form="signup-form"
+                        isLoading={isLoading}
                     >
                       Sign up
                     </Button>
@@ -485,6 +519,11 @@ export default function App() {
           </CardBody>
         </Card>
       </div>
+
+      <ForgotPasswordModal
+          isOpen={forgotPasswordModal.isOpen}
+          onOpenChange={forgotPasswordModal.onOpenChange}
+      />
     </>
   );
 }

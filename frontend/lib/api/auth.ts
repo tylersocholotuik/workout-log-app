@@ -1,4 +1,4 @@
-import { User, RegisterData, LoginData, AuthResponse } from '@/types';
+import { User, RegisterData, LoginData, AuthResponse, ResetPasswordData } from '@/types';
 import { extractErrorMessage } from './apiErrors';
 import { apiFetch } from './client';
 import { saveToken, getToken, removeToken, getAuthHeaders } from './tokenStorage';
@@ -91,6 +91,36 @@ export const logout = async (): Promise<void> => {
     }
 
     removeToken();
+};
+
+export const sendPasswordResetEmail = async (email: string): Promise<void> => {
+    const res = await apiFetch(`${API_URL}/api/auth/forgot-password`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+    });
+
+    if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(extractErrorMessage(errorData, 'Failed to send password reset email'));
+    }
+};
+
+export const resetPassword = async (data: ResetPasswordData): Promise<void> => {
+    const res = await apiFetch(`${API_URL}/api/auth/reset-password`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(extractErrorMessage(errorData, 'Failed to reset password'));
+    }
 };
 
 export const isAuthenticated = (): boolean => {

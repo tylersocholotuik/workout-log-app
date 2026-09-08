@@ -1,4 +1,4 @@
-import { saveToken } from './tokenStorage';
+import { saveToken, removeToken } from './tokenStorage';
 
 const REFRESHED_TOKEN_HEADER = 'X-Refreshed-Token';
 
@@ -10,6 +10,14 @@ export const apiFetch = async (
     init?: RequestInit
 ): Promise<Response> => {
     const res = await fetch(input, init);
+    
+    const hasAuthHeader = init?.headers && new Headers(init.headers).get('Authorization');
+    
+    // If the user is not authenticated, redirect to the login page and expire the token in the cookie.
+    if (res.status === 401 && hasAuthHeader) {
+        removeToken();
+        window.location.href = '/login';
+    }
 
     const refreshedToken = res.headers.get(REFRESHED_TOKEN_HEADER);
     if (refreshedToken) {
