@@ -21,14 +21,14 @@ public class EmailService
 
     /// <summary>
     /// Sends an email to one or more recipients using either direct SMTP or the Brevo transactional
-    /// email REST API, depending on the <paramref name="useSmtp"/> flag.
+    /// email REST API, depending on the <c>Smtp:EnableSmtp</c> configuration setting.
     /// </summary>
     /// <remarks>
     /// Two delivery paths are supported:
     /// <list type="bullet">
     /// <item>
     /// <description>
-    /// <b>SMTP</b> (<paramref name="useSmtp"/> is <c>true</c>): connects directly to the SMTP host
+    /// <b>SMTP</b> (<c>Smtp:EnableSmtp</c> is <c>true</c>): connects directly to the SMTP host
     /// configured under <c>Smtp:Host</c>/<c>Smtp:Port</c> using MailKit. This path is blocked on
     /// hosts (e.g. Render's free tier) that don't allow outbound SMTP traffic, so it should only be
     /// enabled where SMTP connectivity is known to work (e.g. local development or paid hosting tiers).
@@ -36,7 +36,7 @@ public class EmailService
     /// </item>
     /// <item>
     /// <description>
-    /// <b>Brevo API</b> (<paramref name="useSmtp"/> is <c>false</c>): sends the email via an HTTP
+    /// <b>Brevo API</b> (<c>Smtp:EnableSmtp</c> is <c>false</c>): sends the email via an HTTP
     /// POST to the Brevo transactional email endpoint (<c>Brevo:BaseUrl</c>), authenticated with
     /// <c>Brevo:ApiKey</c>. This is the default/recommended path since it works over standard HTTPS
     /// and isn't affected by SMTP port blocking.
@@ -49,19 +49,14 @@ public class EmailService
     /// <param name="recipients">One or more recipients (email address + display name) to send the email to.</param>
     /// <param name="subject">The email subject line.</param>
     /// <param name="body">The HTML content of the email.</param>
-    /// <param name="useSmtp">
-    /// If <c>true</c>, sends via SMTP; if <c>false</c>, sends via the Brevo REST API.
-    /// </param>
     /// <exception cref="ArgumentException">Thrown when <paramref name="recipients"/> is empty.</exception>
     /// <exception cref="InvalidOperationException">
     /// Thrown when required sender, SMTP, or Brevo API key configuration is missing, or when the
     /// Brevo API request fails.
     /// </exception>
-    public async Task SendEmailAsync(IEnumerable<EmailRecipient> recipients, string subject, string body, bool useSmtp)
+    public async Task SendEmailAsync(List<EmailRecipient> recipients, string subject, string body)
     {
-        var recipientList = recipients.ToList();
-
-        if (recipientList.Count == 0)
+        if (recipients.Count == 0)
         {
             throw new ArgumentException("At least one recipient is required.", nameof(recipients));
         }
@@ -70,6 +65,7 @@ public class EmailService
         {
             var fromName = _configuration.GetValue<string>("Smtp:FromName", "Workout Log");
             var fromAddress = _configuration.GetValue<string>("Smtp:FromEmail");
+            var useSmtp = _configuration.GetValue("Smtp:EnableSmtp", false);
 
             if (string.IsNullOrEmpty(fromAddress))
             {
@@ -77,15 +73,15 @@ public class EmailService
                 throw new InvalidOperationException("Sender email address configuration is missing.");
             }
 
-            var recipientEmails = string.Join(", ", recipientList.Select(r => r.Email));
-
+            var recipientEmails = string.Join(", ", recipients.Select(r => r.Email));
+            
             if (useSmtp)
             {
-                await SendViaSmtpAsync(recipientList, fromName, fromAddress, subject, body, recipientEmails);
+                await SendViaSmtpAsync(recipients, fromName, fromAddress, subject, body, recipientEmails);
             }
             else
             {
-                await SendViaBrevoApiAsync(recipientList, fromName, fromAddress, subject, body, recipientEmails);
+                await SendViaBrevoApiAsync(recipients, fromName, fromAddress, subject, body, recipientEmails);
             }
         }
         catch (Exception e)

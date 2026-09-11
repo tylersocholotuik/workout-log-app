@@ -16,7 +16,6 @@ public class AuthService
     private readonly WorkoutDbContext _context;
     private readonly EmailService _emailService;
     private readonly UserService _userService;
-    private readonly bool _isSmtpEnabled;
     
     public AuthService(IConfiguration configuration, ILogger<AuthService> logger, WorkoutDbContext context, EmailService emailService, UserService userService)
     {
@@ -25,7 +24,6 @@ public class AuthService
         _context = context;
         _emailService = emailService;
         _userService = userService;
-        _isSmtpEnabled = _configuration.GetValue<bool>("Smtp:EnableSmtp", false);
     }
     
     public async Task GenerateAndSendPasswordResetTokenAsync(string email)
@@ -138,7 +136,7 @@ public class AuthService
                         <p>If you didn't request a password reset, you can safely ignore this email &mdash; your password will not be changed.</p>
                         """;
             
-            await _emailService.SendEmailAsync([new EmailRecipient(email, toName)], subject, body, _isSmtpEnabled);
+            await _emailService.SendEmailAsync([new EmailRecipient(email, toName)], subject, body);
             _logger.LogInformation("Password reset email sent to {Email}", email);
         }
         catch (Exception ex)
@@ -156,7 +154,7 @@ public class AuthService
                     <p>Your password has been successfully reset. If you did not perform this action, please contact our support team immediately.</p>
                     """;
         
-        await _emailService.SendEmailAsync([new EmailRecipient(email, toName)], subject, body, _isSmtpEnabled);
+        await _emailService.SendEmailAsync([new EmailRecipient(email, toName)], subject, body);
         _logger.LogInformation("Password reset confirmation email sent to {Email}", email);
     }
     
