@@ -39,16 +39,36 @@ dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Po
 dotnet user-secrets set "Jwt:SecretKey" "any-random-string-at-least-32-characters-long"
 ```
 
-Password reset and account emails are sent through [Brevo](https://www.brevo.com/)'s SMTP relay. If you're working on email-related functionality, create a free Brevo account, generate an SMTP key, and set the following user secrets:
+Password reset and account emails can be sent either through [Brevo](https://www.brevo.com/)'s SMTP relay or through Brevo's transactional email REST API. **The API is required in production** because Render's free tier blocks outbound SMTP traffic entirely &mdash; SMTP connections will simply time out or fail to connect. For local development, either option works, so you can pick whichever is more convenient.
+
+If you're working on email-related functionality, create a free Brevo account, then set up **one** of the two options below.
+
+**Option A: Brevo API (matches production, recommended)**
+
+1. Generate an API key from your Brevo account (Settings &rarr; SMTP & API &rarr; API Keys).
+2. Set it as a user secret:
+
+```bash
+dotnet user-secrets set "Brevo:ApiKey" "your-brevo-api-key"
+```
+
+3. In your Brevo account, go to **Settings &rarr; Security** and make sure IP address authorization is **disabled** (or your current IP is whitelisted). Brevo can restrict API key usage to specific authorized IPs; since Render's free tier doesn't provide a static outbound IP (and most home internet connections have IPs that rotate periodically too), this restriction will intermittently reject valid requests if left enabled. Disabling it is safe since the API key itself is still required to authenticate.
+4. Leave `Smtp:EnableSmtp` as `false` (the default) in `appsettings.Development.json`.
+
+**Option B: SMTP relay (local development only)**
+
+1. Generate an SMTP key from your Brevo account and set it as user secrets:
 
 ```bash
 dotnet user-secrets set "Smtp:Username" "your-brevo-smtp-login"
 dotnet user-secrets set "Smtp:Password" "your-brevo-smtp-key"
 ```
 
-Also update the non-secret `FromEmail` value in `appsettings.Development.json` to a verified sender address on your Brevo account.
+2. Set `Smtp:EnableSmtp` to `true` in `appsettings.Development.json`.
 
-A Brevo account is only required for testing email functionality (e.g. password reset). If you aren't working on email-related changes, you can safely leave `Smtp:Username`/`Smtp:Password` unset &mdash; the app will still run, and any attempt to send an email will simply fail and be logged rather than crash the request.
+For either option, update the non-secret `FromEmail` value in `appsettings.Development.json` to a verified sender address on your Brevo account.
+
+A Brevo account is only required for testing email functionality (e.g. password reset). If you aren't working on email-related changes, you can safely leave the Brevo/SMTP secrets unset &mdash; the app will still run, and any attempt to send an email will simply fail and be logged rather than crash the request.
 
 2. Run the API:
 
@@ -70,10 +90,12 @@ A few non-secret settings live directly in `appsettings.json`/`appsettings.Devel
 | `Jwt:TokenExpirationInMinutes` | How long a freshly issued JWT is valid for before it must be renewed or the user must log in again. |
 | `Jwt:RefreshThresholdInMinutes` | Sliding expiration window: once an authenticated request comes in with less than this many minutes left on its token, the API silently issues a replacement token (returned via the `X-Refreshed-Token` response header) so active users aren't logged out mid-session. Should stay comfortably smaller than `TokenExpirationInMinutes`. |
 | `Smtp:Host` / `Smtp:Port` | Brevo's SMTP relay address/port. These don't need to change between environments. |
+| `Smtp:EnableSmtp` | Toggles which email delivery path is used: `true` sends via SMTP, `false` (default) sends via the Brevo REST API. Must be `false` in production since Render's free tier blocks outbound SMTP. |
 | `Smtp:FromEmail` / `Smtp:FromName` | The sender address/name emails (password reset, etc.) are sent from. `FromEmail` must be a verified sender on the configured Brevo account. |
+| `Brevo:BaseUrl` | Brevo's transactional email API endpoint. Doesn't need to change between environments. |
 | `PasswordReset:TokenExpirationInMinutes` | How long a password reset link/token stays valid after being requested. |
 
-`Smtp:Username`/`Smtp:Password` are set via user secrets instead, since they're sensitive &mdash; see the Brevo setup note above.
+`Smtp:Username`/`Smtp:Password` and `Brevo:ApiKey` are set via user secrets instead, since they're sensitive &mdash; see the Brevo setup note above.
 
 
 
