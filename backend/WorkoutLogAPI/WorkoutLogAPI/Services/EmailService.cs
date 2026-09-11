@@ -70,10 +70,6 @@ public class EmailService
         {
             var fromName = _configuration.GetValue<string>("Smtp:FromName", "Workout Log");
             var fromAddress = _configuration.GetValue<string>("Smtp:FromEmail");
-            var smtpHost = _configuration.GetValue<string>("Smtp:Host");
-            var smtpPort = _configuration.GetValue<int>("Smtp:Port", 587);
-            var smtpUsername = _configuration.GetValue<string>("Smtp:Username");
-            var smtpPassword = _configuration.GetValue<string>("Smtp:Password");
 
             if (string.IsNullOrEmpty(fromAddress))
             {
@@ -81,87 +77,15 @@ public class EmailService
                 throw new InvalidOperationException("Sender email address configuration is missing.");
             }
 
-            if (useSmtp && (string.IsNullOrEmpty(smtpHost) || string.IsNullOrEmpty(smtpUsername) || string.IsNullOrEmpty(smtpPassword)))
-            {
-                _logger.LogError("SMTP configuration is missing or incomplete.");
-                throw new InvalidOperationException("SMTP configuration is missing or incomplete.");
-            }
-
             var recipientEmails = string.Join(", ", recipientList.Select(r => r.Email));
 
             if (useSmtp)
             {
-                var message = new MimeMessage();
-                message.From.Add(new MailboxAddress(fromName, fromAddress));
-
-                foreach (var recipient in recipientList)
-                {
-                    message.To.Add(new MailboxAddress(recipient.Name, recipient.Email));
-                }
-
-                message.Subject = subject;
-                message.Body = new TextPart("html")
-                {
-                    Text = body
-                };
-        
-                using var client = new SmtpClient();
-            
-                client.CheckCertificateRevocation = false;
-
-                await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
-                await client.AuthenticateAsync(smtpUsername, smtpPassword);
-                await client.SendAsync(message);
-            
-                _logger.LogInformation("Sending email to {To} with subject '{Subject}'", recipientEmails, subject);
-            
-                await client.DisconnectAsync(true);
+                await SendViaSmtpAsync(recipientList, fromName, fromAddress, subject, body, recipientEmails);
             }
             else
             {
-                // If SMTP is disabled, use the Brevo API.
-                
-                var brevoApiKey = _configuration.GetValue<string>("Brevo:ApiKey");
-
-                if (string.IsNullOrEmpty(brevoApiKey))
-                {
-                    _logger.LogError("Brevo API key is missing.");
-                    throw new InvalidOperationException("Brevo API key is missing.");
-                }
-                
-                // SendEmailRequest and EmailSender are DTOs that match the expected JSON structure for the Brevo API.
-                var sender = new EmailSender(Name: fromName, Email: fromAddress);
-
-                var message = new SendEmailRequest(
-                    Sender: sender,
-                    To: recipientList,
-                    Subject: subject,
-                    HtmlContent: body
-                );
-
-                var baseUrl = _configuration.GetValue<string>("Brevo:BaseUrl", "https://api.brevo.com/v3/smtp/email");
-                
-                using var request = new HttpRequestMessage(HttpMethod.Post, baseUrl)
-                {
-                    Content = JsonContent.Create(message),
-                    Headers =
-                    {
-                        { "accept", "application/json" },
-                        { "api-key", brevoApiKey }
-                    }
-                };
-                
-                var response = await Client.SendAsync(request);
-                
-                if (!response.IsSuccessStatusCode)
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogError("Failed to send email via Brevo API. Status Code: {StatusCode}, Response: {Response}", response.StatusCode, errorContent);
-                    throw new InvalidOperationException($"Failed to send email via Brevo API. Status Code: {response.StatusCode}, Response: {errorContent}");
-                }
-                
-                _logger.LogInformation("Email sent successfully to {To} with subject '{Subject}' via Brevo API", recipientEmails, subject);
-                
+                await SendViaBrevoApiAsync(recipientList, fromName, fromAddress, subject, body, recipientEmails);
             }
         }
         catch (Exception e)
@@ -169,5 +93,89 @@ public class EmailService
             _logger.LogError(e, "An error occurred while trying to send email: {Message}", e.Message);
             throw;
         }
+    }
+
+    private async Task SendViaSmtpAsync(List<EmailRecipient> recipientList, string fromName, string fromAddress, string subject, string body, string recipientEmails)
+    {
+        var smtpHost = _configuration.GetValue<string>("Smtp:Host");
+        var smtpPort = _configuration.GetValue<int>("Smtp:Port", 587);
+        var smtpUsername = _configuration.GetValue<string>("Smtp:Username");
+        var smtpPassword = _configuration.GetValue<string>("Smtp:Password");
+
+        if (string.IsNullOrEmpty(smtpHost) || string.IsNullOrEmpty(smtpUsername) || string.IsNullOrEmpty(smtpPassword))
+        {
+            _logger.LogError("SMTP configuration is missing or incomplete.");
+            throw new InvalidOperationException("SMTP configuration is missing or incomplete.");
+        }
+
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress(fromName, fromAddress));
+
+        foreach (var recipient in recipientList)
+        {
+            message.To.Add(new MailboxAddress(recipient.Name, recipient.Email));
+        }
+
+        message.Subject = subject;
+        message.Body = new TextPart("html")
+        {
+            Text = body
+        };
+
+        using var client = new SmtpClient();
+
+        client.CheckCertificateRevocation = false;
+
+        await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
+        await client.AuthenticateAsync(smtpUsername, smtpPassword);
+        await client.SendAsync(message);
+
+        _logger.LogInformation("Email sent successfully to {To} with subject '{Subject}' via SMTP", recipientEmails, subject);
+
+        await client.DisconnectAsync(true);
+    }
+
+    private async Task SendViaBrevoApiAsync(List<EmailRecipient> recipientList, string fromName, string fromAddress, string subject, string body, string recipientEmails)
+    {
+        var brevoApiKey = _configuration.GetValue<string>("Brevo:ApiKey");
+
+        if (string.IsNullOrEmpty(brevoApiKey))
+        {
+            _logger.LogError("Brevo API key is missing.");
+            throw new InvalidOperationException("Brevo API key is missing.");
+        }
+
+        // SendEmailRequest and EmailSender are DTOs that match the expected JSON structure for the Brevo API.
+        var sender = new EmailSender(Name: fromName, Email: fromAddress);
+
+        var message = new SendEmailRequest(
+            Sender: sender,
+            To: recipientList,
+            Subject: subject,
+            HtmlContent: body
+        );
+
+        var baseUrl = _configuration.GetValue<string>("Brevo:BaseUrl", "https://api.brevo.com/v3/smtp/email");
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, baseUrl)
+        {
+            Content = JsonContent.Create(message),
+            Headers =
+            {
+                { "accept", "application/json" },
+                { "api-key", brevoApiKey }
+            }
+        };
+
+        var response = await Client.SendAsync(request);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            _logger.LogError("Failed to send email via Brevo API. Status Code: {StatusCode}, Response: {Response}", response.StatusCode, errorContent);
+            throw new InvalidOperationException($"Failed to send email via Brevo API. Status Code: {response.StatusCode}, Response: {errorContent}");
+        }
+
+        _logger.LogInformation("Email sent successfully to {To} with subject '{Subject}' via Brevo API", recipientEmails, subject);
     }
 }
