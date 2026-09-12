@@ -120,7 +120,13 @@ if (app.Environment.IsDevelopment())
 // Seeding is indempotent, so it can be safely called on every startup
 await app.SeedDatabaseAsync();
 
-app.UseHttpsRedirection();
+// Note: no app.UseHttpsRedirection() here. Render (and most PaaS hosts) terminate TLS
+// at their edge/load balancer and forward requests to the container over plain HTTP,
+// so Kestrel always sees Request.Scheme as "http". Enabling HTTPS redirection in that
+// setup causes an infinite redirect loop: the app redirects to https, the client
+// re-requests over https, Render forwards it internally as http again, and the app
+// redirects again. Render already enforces HTTPS for public traffic at the edge, so
+// this middleware isn't needed.
 
 app.UseCors("AllowFrontend");
 
