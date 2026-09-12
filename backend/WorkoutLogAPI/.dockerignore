@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+**/.idea/
+**/.vs/
+**/.vscode/
+**/*.user
+**/*.DotSettings.user
+.git/
+.gitignore
+.DS_Store
+docker-compose.yml
