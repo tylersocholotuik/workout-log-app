@@ -52,6 +52,11 @@ public class WorkoutDbContext : DbContext
         // configured via data annotations directly on the entity classes. Only configuration
         // with no data annotation equivalent lives here: delete behavior and check constraints.
 
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasIndex(e => e.Email).IsUnique();
+        });
+
         modelBuilder.Entity<Exercise>(entity =>
         {
             // Foreign key to User (nullable - null means system exercise)
