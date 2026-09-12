@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace WorkoutLogAPI.DTOs.Email;
 
-public record EmailRecipient(
+public record EmailAddress(
     [property: JsonPropertyName("email")] string Email,
     [property: JsonPropertyName("name")] string Name
     );

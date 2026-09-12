@@ -136,7 +136,7 @@ public class AuthService
                         <p>If you didn't request a password reset, you can safely ignore this email &mdash; your password will not be changed.</p>
                         """;
             
-            await _emailService.SendEmailAsync([new EmailRecipient(email, toName)], subject, body);
+            await _emailService.SendEmailAsync([new EmailAddress(email, toName)], subject, body);
             _logger.LogInformation("Password reset email sent to {Email}", email);
         }
         catch (Exception ex)
@@ -154,7 +154,7 @@ public class AuthService
                     <p>Your password has been successfully reset. If you did not perform this action, please contact our support team immediately.</p>
                     """;
         
-        await _emailService.SendEmailAsync([new EmailRecipient(email, toName)], subject, body);
+        await _emailService.SendEmailAsync([new EmailAddress(email, toName)], subject, body);
         _logger.LogInformation("Password reset confirmation email sent to {Email}", email);
     }
     
