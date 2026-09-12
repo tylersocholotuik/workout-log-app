@@ -133,6 +133,25 @@ app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Health check endpoint for Render to verify the instance is ready
+// to receive traffic. Confirms DB connectivity, since a running process that can't
+// reach the database isn't actually healthy. Mapped before auth so it's publicly
+// reachable without a token, and outside MapControllers so it isn't versioned as
+// part of the public API surface.
+app.MapGet("/health-check", async (WorkoutDbContext context) =>
+{
+    try
+    {
+        return await context.Database.CanConnectAsync()
+            ? Results.Ok(new { status = "healthy" })
+            : Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+    }
+    catch
+    {
+        return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+    }
+});
+
 app.MapControllers();
 
 app.Run();
