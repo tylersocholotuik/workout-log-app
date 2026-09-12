@@ -54,7 +54,7 @@ public class EmailService
     /// Thrown when required sender, SMTP, or Brevo API key configuration is missing, or when the
     /// Brevo API request fails.
     /// </exception>
-    public async Task SendEmailAsync(List<EmailRecipient> recipients, string subject, string body)
+    public async Task SendEmailAsync(List<EmailAddress> recipients, string subject, string body)
     {
         if (recipients.Count == 0)
         {
@@ -91,7 +91,7 @@ public class EmailService
         }
     }
 
-    private async Task SendViaSmtpAsync(List<EmailRecipient> recipientList, string fromName, string fromAddress, string subject, string body, string recipientEmails)
+    private async Task SendViaSmtpAsync(List<EmailAddress> recipientList, string fromName, string fromAddress, string subject, string body, string recipientEmails)
     {
         var smtpHost = _configuration.GetValue<string>("Smtp:Host");
         var smtpPort = _configuration.GetValue<int>("Smtp:Port", 587);
@@ -131,7 +131,7 @@ public class EmailService
         await client.DisconnectAsync(true);
     }
 
-    private async Task SendViaBrevoApiAsync(List<EmailRecipient> recipientList, string fromName, string fromAddress, string subject, string body, string recipientEmails)
+    private async Task SendViaBrevoApiAsync(List<EmailAddress> recipientList, string fromName, string fromAddress, string subject, string body, string recipientEmails)
     {
         var brevoApiKey = _configuration.GetValue<string>("Brevo:ApiKey");
 
@@ -141,8 +141,8 @@ public class EmailService
             throw new InvalidOperationException("Brevo API key is missing.");
         }
 
-        // SendEmailRequest and EmailSender are DTOs that match the expected JSON structure for the Brevo API.
-        var sender = new EmailSender(Name: fromName, Email: fromAddress);
+        // SendEmailRequest and EmailAddress are DTOs that match the expected JSON structure for the Brevo API.
+        var sender = new EmailAddress(Name: fromName, Email: fromAddress);
 
         var message = new SendEmailRequest(
             Sender: sender,
