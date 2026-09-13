@@ -31,7 +31,7 @@ export default function NavBar() {
 
     const router = useRouter();
 
-    const { user, isSignedIn, logout } = useAuth();
+    const { user, isSignedIn, isLoading, logout } = useAuth();
 
     const logoutModal = useDisclosure();
 
@@ -148,7 +148,8 @@ export default function NavBar() {
                 </NavbarContent>
 
                 <NavbarContent justify="end">
-                    {!isSignedIn() ? (
+                    {/* Prevent Login flash while user is fetched from the server */}
+                    {isLoading ? null : !isSignedIn() ? (
                         <NavbarItem className="hidden sm:flex">
                             <Link href="/login">Login</Link>
                         </NavbarItem>
@@ -274,7 +275,7 @@ export default function NavBar() {
                             </Link>
                         </NavbarMenuItem>
                     ))}
-                    {!isSignedIn() ? (
+                    {isLoading ? null : !isSignedIn() ? (
                         <NavbarMenuItem>
                             <Link color="foreground" href="/login">
                                 Login

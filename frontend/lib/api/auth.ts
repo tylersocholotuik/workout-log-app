@@ -1,39 +1,8 @@
-import { User, RegisterData, LoginData, AuthResponse, ResetPasswordData } from '@/types';
-import { extractErrorMessage } from './apiErrors';
-import { apiFetch } from './client';
-import { saveToken, getToken, removeToken, getAuthHeaders } from './tokenStorage';
+import {User, RegisterData, LoginData, ResetPasswordData, AuthResponse} from '@/types';
+import {extractErrorMessage} from './apiErrors';
+import {apiFetch} from './client';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5258';
-
-// Re-exported so existing imports from "./auth" keep working unchanged.
-export { saveToken, getToken, removeToken, getAuthHeaders };
-
-export const getUserFromToken = (): User | null => {
-    const token = getToken();
-    if (!token) return null;
-
-    try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        
-        if (payload.exp && payload.exp * 1000 < Date.now()) {
-            removeToken();
-            return null;
-        }
-
-        return {
-            id: payload.sub,
-            email: payload.email,
-            firstName: payload.given_name,
-            lastName: payload.family_name,
-            displayName: payload.preferred_username || null,
-            isAdmin: payload.is_admin === 'True' || payload.is_admin === true
-        };
-    } catch (error) {
-        console.error('Error parsing token:', error);
-        removeToken();
-        return null;
-    }
-};
 
 // Auth API calls
 export const register = async (data: RegisterData): Promise<AuthResponse> => {
@@ -49,10 +18,8 @@ export const register = async (data: RegisterData): Promise<AuthResponse> => {
         const errorData = await res.json();
         throw new Error(extractErrorMessage(errorData, 'Failed to register'));
     }
-
-    const response: AuthResponse = await res.json();
-    saveToken(response.token);
-    return response;
+    
+    return await res.json();
 };
 
 export const login = async (data: LoginData): Promise<AuthResponse> => {
@@ -68,29 +35,12 @@ export const login = async (data: LoginData): Promise<AuthResponse> => {
         const errorData = await res.json();
         throw new Error(extractErrorMessage(errorData, 'Failed to login'));
     }
-
-    const response: AuthResponse = await res.json();
-    saveToken(response.token);
-    return response;
+    
+    return await res.json();
 };
 
 export const logout = async (): Promise<void> => {
-    const token = getToken();
-
-    if (token) {
-        try {
-            await apiFetch(`${API_URL}/api/auth/logout`, {
-                method: 'POST',
-                headers: getAuthHeaders(),
-            });
-        } catch (error) {
-            // Even if the request fails (e.g. offline), still clear the
-            // local token so the user is signed out on this device.
-            console.error('Error invalidating token on server:', error);
-        }
-    }
-
-    removeToken();
+    await apiFetch(`${API_URL}/api/auth/logout`, {method: 'POST'});
 };
 
 export const sendPasswordResetEmail = async (email: string): Promise<void> => {
@@ -99,7 +49,7 @@ export const sendPasswordResetEmail = async (email: string): Promise<void> => {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({email}),
     });
 
     if (!res.ok) {
@@ -123,6 +73,15 @@ export const resetPassword = async (data: ResetPasswordData): Promise<void> => {
     }
 };
 
-export const isAuthenticated = (): boolean => {
-    return getUserFromToken() !== null;
+export const fetchCurrentUser = async (): Promise<User | null> => {
+    const res = await apiFetch(`${API_URL}/api/auth/me`, {method: 'GET'});
+
+    if (res.ok) {
+        return await res.json();
+    } else if (res.status === 401) {
+        return null;
+    } else {
+        throw new Error('Failed to fetch current user');
+    }
 };
+

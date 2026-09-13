@@ -1,12 +1,12 @@
 import { useState, useEffect, useMemo, createContext, useContext, ReactNode } from "react";
 import { useRouter } from "next/router";
 import { User } from "@/types";
-import { getUserFromToken, logout as logoutAuth } from "@/lib/api/auth";
+import { logout as logoutAuth, fetchCurrentUser } from "@/lib/api/auth";
 
 interface AuthContextType {
-    authorizeUser: () => void,
     user: User | null,
     isSignedIn: () => boolean,
+    isLoading: boolean,
     logout: () => void,
     refreshUser: () => void
 }
@@ -29,6 +29,7 @@ export const useAuth = () => {
 
 export default function AuthProvider({ children }: AuthProviderProps) {
     const [user, setUser] = useState<User | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
 
     const protectedPages = useMemo(
@@ -41,13 +42,22 @@ export default function AuthProvider({ children }: AuthProviderProps) {
 
     // Check for user on mount and route changes
     useEffect(() => {
-        const checkAuth = () => {
-            const currentUser = getUserFromToken();
-            setUser(currentUser);
+        const checkAuth = async () => {
+            try {
+                const currentUser = await fetchCurrentUser();
+                setUser(currentUser);
 
-            // If not logged in and on a protected page, redirect to login
-            if (!currentUser && protectedPages.includes(router.pathname)) {
-                router.push("/login");
+                // If not logged in and on a protected page, redirect to login
+                if (!currentUser && protectedPages.includes(router.pathname)) {
+                    await router.push("/login");
+                }
+            } finally {
+                // Runs after every call (mount + each route change), but
+                // since isLoading only ever starts at true and is never set
+                // back to true afterward, this just confirms "the check has
+                // resolved at least once" - it won't cause any flicker on
+                // later route changes.
+                setIsLoading(false);
             }
         };
 
@@ -60,31 +70,21 @@ export default function AuthProvider({ children }: AuthProviderProps) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [router.pathname, protectedPages]);
 
-    const refreshUser = () => {
-        const currentUser = getUserFromToken();
+    const refreshUser = async () => {
+        const currentUser = await fetchCurrentUser();
         setUser(currentUser);
-    };
-
-    const authorizeUser = async () => {
-        const currentUser = getUserFromToken();
-
-        if (!currentUser) {
-            router.push("/login");
-        } else {
-            setUser(currentUser);
-        }
     };
 
     const logout = async () => {
         await logoutAuth();
         setUser(null);
-        router.push("/login");
+        await router.push("/login");
     };
 
     const isSignedIn = () => user !== null;
     
     return (
-        <AuthContext.Provider value={{authorizeUser, user, isSignedIn, logout, refreshUser}}>
+        <AuthContext.Provider value={{user, isSignedIn, isLoading, logout, refreshUser}}>
             {children}
         </AuthContext.Provider>
     );
