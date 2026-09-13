@@ -21,9 +21,19 @@
 # (Rider's HTTP Client / VS Code's REST Client extension) will let you pick which
 # environment to run requests against.
 #
-# Access_Token isn't filled in automatically - run the login request below, copy the
-# "token" value from the response, and paste it into Access_Token in
-# http-client.env.json so the requests below it can authenticate.
+# The auth cookie the backend sets on login/register is marked Secure, so browsers
+# and REST clients will silently refuse to store/send it over plain http://localhost -
+# only real HTTPS deployments get automatic cookie-based auth. For local testing, the
+# backend also accepts a normal "Authorization: Bearer <token>" header instead (see
+# OnMessageReceived in Program.cs). Access_Token isn't filled in automatically - run
+# the login request below, then look at the "Set-Cookie" response header, copy the
+# value between "workout_auth_token=" and the first ";" (that's the raw JWT - the
+# response body no longer includes it as a "token" field), and paste it into
+# Access_Token in http-client.env.json.
+#
+# Every state-changing request (anything other than GET/HEAD/OPTIONS) must also
+# include an "X-Requested-With" header, or the backend's CSRF middleware will reject
+# it with a 403 before it even reaches authentication.
 #
 # Workout_Id/Exercise_Id are just for convenience when trying the {id}-based requests
 # below - grab real values from a create/list response and paste them in, or just
@@ -33,6 +43,7 @@
 ### Register a new user
 POST {{Base_Url}}/api/auth/register
 Content-Type: application/json
+X-Requested-With: XMLHttpRequest
 
 {
     "email": "{{email}}",
@@ -42,9 +53,10 @@ Content-Type: application/json
     "password": "{{Password}}"
 }
 
-### Log in and get a JWT (copy the "token" from the response into Access_Token above)
+### Log in (copy the JWT out of the Set-Cookie response header into Access_Token above)
 POST {{Base_Url}}/api/auth/login
 Content-Type: application/json
+X-Requested-With: XMLHttpRequest
 
 {
     "email": "{{email}}",
@@ -65,6 +77,7 @@ Authorization: Bearer {{Access_Token}}
 POST {{Base_Url}}/api/exercises
 Content-Type: application/json
 Authorization: Bearer {{Access_Token}}
+X-Requested-With: XMLHttpRequest
 
 {
     "name": "Bulgarian Split Squat"
@@ -89,6 +102,7 @@ Authorization: Bearer {{Access_Token}}
 POST {{Base_Url}}/api/workouts
 Content-Type: application/json
 Authorization: Bearer {{Access_Token}}
+X-Requested-With: XMLHttpRequest
 
 {
     "title": "Push Day",
@@ -112,6 +126,7 @@ Authorization: Bearer {{Access_Token}}
 PUT {{Base_Url}}/api/workouts/{{Workout_Id}}
 Content-Type: application/json
 Authorization: Bearer {{Access_Token}}
+X-Requested-With: XMLHttpRequest
 
 {
     "title": "Push Day (updated)",
@@ -133,14 +148,23 @@ Authorization: Bearer {{Access_Token}}
 ### Soft-delete a workout
 DELETE {{Base_Url}}/api/workouts/{{Workout_Id}}
 Authorization: Bearer {{Access_Token}}
+X-Requested-With: XMLHttpRequest
 
 ### Log out the current user (invalidates the JWT on the server)
+#
+# Unlike every other authenticated request, /api/auth/logout reads the token only
+# from the "workout_auth_token" cookie - it ignores the Authorization header
+# entirely (see AuthController.Logout). Since the Secure cookie set by login isn't
+# stored locally over plain HTTP (see the note at the top of this file), attach it
+# manually as a raw Cookie header using the same Access_Token value instead.
 POST {{Base_Url}}/api/auth/logout
-Authorization: Bearer {{Access_Token}}
+Cookie: workout_auth_token={{Access_Token}}
+X-Requested-With: XMLHttpRequest
 
 ### Forgot password (sends a reset email to the user)
 POST {{Base_Url}}/api/auth/forgot-password
 Content-Type: application/json
+X-Requested-With: XMLHttpRequest
 
 {
     "email": "{{email}}"
@@ -149,6 +173,7 @@ Content-Type: application/json
 ### Reset password (user clicks the link in the email, which contains a token)
 POST {{Base_Url}}/api/auth/reset-password
 Content-Type: application/json
+X-Requested-With: XMLHttpRequest
 
 {
     "newPassword": "{{New_Password}}",
