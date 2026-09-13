@@ -13,12 +13,14 @@ public class JwtService
     private readonly IConfiguration _configuration;
     private readonly WorkoutDbContext _context;
     private readonly UserService _userService;
+    private readonly IWebHostEnvironment _environment;
 
-    public JwtService(IConfiguration configuration, WorkoutDbContext context, UserService userService)
+    public JwtService(IConfiguration configuration, WorkoutDbContext context, UserService userService, IWebHostEnvironment environment)
     {
         _configuration = configuration;
         _context = context;
         _userService = userService;
+        _environment = environment;
     }
 
     public string GenerateToken(User user)
@@ -108,12 +110,7 @@ public class JwtService
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:SecretKey"]!));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
         
-        // Default token expiration to 180 minutes if the configuration value is missing or invalid
-        // During a workout, there will be no requests if the user does not save.
-        if (!double.TryParse(_configuration["Jwt:TokenExpirationInMinutes"], out var tokenExpirationInMinutes))
-        {
-            tokenExpirationInMinutes = 180;
-        }
+        var tokenExpirationInMinutes = GetTokenExpirationInMinutes(_configuration);
 
         var token = new JwtSecurityToken(
             issuer: _configuration["Jwt:Issuer"],
@@ -124,6 +121,35 @@ public class JwtService
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    // Builds the CookieOptions used whenever the auth cookie is issued or
+    // refreshed, so Login, Register, and the sliding-expiration refresh in
+    // Program.cs all stay in sync instead of duplicating these settings.
+    public CookieOptions BuildAuthCookieOptions()
+    {
+        var tokenExpirationInMinutes = GetTokenExpirationInMinutes(_configuration);
+        
+        var isDevelopment = _environment.IsDevelopment();
+
+        return new CookieOptions
+        {
+            HttpOnly = true,
+            // Locally, the frontend and backend are both served from "localhost"
+            // In production, they're different origins (Vercel/Render)
+            SameSite = isDevelopment ? SameSiteMode.Lax : SameSiteMode.None,
+            Secure = !isDevelopment,
+            Expires = DateTimeOffset.UtcNow.AddMinutes(tokenExpirationInMinutes)
+        };
+    }
+    
+    private static double GetTokenExpirationInMinutes(IConfiguration configuration)
+    {
+        if (!double.TryParse(configuration["Jwt:TokenExpirationInMinutes"], out var tokenExpirationInMinutes))
+        {
+            tokenExpirationInMinutes = 180; // Default to 180 minutes if the configuration value is missing or invalid
+        }
+        return tokenExpirationInMinutes;
     }
 
     // Invalidates the given token immediately by recording its unique id (jti)
