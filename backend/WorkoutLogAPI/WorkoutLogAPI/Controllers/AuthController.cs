@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using WorkoutLogAPI.Constants;
 using WorkoutLogAPI.Data;
 using WorkoutLogAPI.DTOs.Auth;
 using WorkoutLogAPI.DTOs.Users;
@@ -16,13 +17,20 @@ public class AuthController : ControllerBase
     private readonly WorkoutDbContext _context;
     private readonly JwtService _jwtService;
     private readonly AuthService _authService;
+    private readonly UserService _userService;
     private readonly ILogger<AuthController> _logger;
 
-    public AuthController(WorkoutDbContext context, JwtService jwtService, AuthService authService, ILogger<AuthController> logger)
+    public AuthController(
+        WorkoutDbContext context, 
+        JwtService jwtService, 
+        AuthService authService, 
+        UserService userService, 
+        ILogger<AuthController> logger)
     {
         _context = context;
         _jwtService = jwtService;
         _authService = authService;
+        _userService = userService;
         _logger = logger;
     }
 
@@ -31,35 +39,21 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
-            if (existingUser != null)
-            {
-                return BadRequest(new { error = "A user with this email already exists" });
-            }
-            var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
-
-            var user = new User
-            {
-                Id = Guid.NewGuid().ToString(),
-                Email = request.Email,
-                FirstName = request.FirstName,
-                LastName = request.LastName,
-                DisplayName = request.DisplayName,
-                PasswordHash = passwordHash,
-                FailedLoginAttempts = 0,
-                IsLocked = false,
-                IsAdmin = false,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            var user = await _authService.CreateUserAsync(
+                request.Email, request.FirstName, request.LastName, request.DisplayName, request.Password);
 
             _logger.LogInformation("User registered successfully: {Email}", user.Email);
             
             var token = _jwtService.GenerateToken(user);
 
-            return Ok(new AuthResponse(token, UserDto.FromUser(user)));
+            Response.Cookies.Append(AppConstants.Auth.TokenCookieName, token, _jwtService.BuildAuthCookieOptions());
+
+            return Ok(new AuthResponse(UserDto.FromUser(user)));
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Registration failed: {Message}", ex.Message);
+            return BadRequest(new { error = ex.Message });
         }
         catch (Exception ex)
         {
@@ -73,40 +67,20 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
-            if (user == null)
-            {
-                return Unauthorized(new { error = "Invalid email or password" });
-            }
-            
-            if (user.IsLocked)
-            {
-                return Unauthorized(new { error = "Account is locked. Please contact support." });
-            }
-            
-            var isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
-            if (!isPasswordValid)
-            {
-                user.FailedLoginAttempts++;
-                if (user.FailedLoginAttempts >= 5)
-                {
-                    user.IsLocked = true;
-                    _logger.LogWarning("Account locked due to too many failed login attempts: {Email}", user.Email);
-                }
-                await _context.SaveChangesAsync();
-
-                return Unauthorized(new { error = "Invalid email or password" });
-            }
-            
-            user.FailedLoginAttempts = 0;
-            user.LastLoginAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
+            var user = await _authService.AuthenticateUserAsync(request.Email, request.Password);
 
             _logger.LogInformation("User logged in successfully: {Email}", user.Email);
             
             var token = _jwtService.GenerateToken(user);
 
-            return Ok(new AuthResponse(token, UserDto.FromUser(user)));
+            Response.Cookies.Append(AppConstants.Auth.TokenCookieName, token, _jwtService.BuildAuthCookieOptions());
+
+            return Ok(new AuthResponse(UserDto.FromUser(user)));
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Login failed: {Message}", ex.Message);
+            return Unauthorized(new { error = ex.Message });
         }
         catch (Exception ex)
         {
@@ -121,10 +95,7 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var authHeader = Request.Headers.Authorization.ToString();
-            var token = authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
-                ? authHeader["Bearer ".Length..].Trim()
-                : null;
+            string? token = Request.Cookies[AppConstants.Auth.TokenCookieName];
 
             if (string.IsNullOrEmpty(token))
             {
@@ -137,6 +108,8 @@ public class AuthController : ControllerBase
                 return BadRequest(new { error = "Invalid token" });
             }
 
+            Response.Cookies.Delete(AppConstants.Auth.TokenCookieName);
+            
             _logger.LogInformation("User logged out successfully: {UserId}", User.FindFirst("sub")?.Value);
 
             return Ok(new { message = "Logged out successfully" });
@@ -145,6 +118,28 @@ public class AuthController : ControllerBase
         {
             _logger.LogError(ex, "Error during logout");
             return StatusCode(500, new { error = "An error occurred during logout" });
+        }
+    }
+
+    [Authorize]
+    [HttpGet("me")]
+    public async Task<ActionResult<UserDto>> Me()
+    {
+        var userId = User.FindFirst("sub")?.Value;
+        
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "User ID not found in token" });
+        }
+
+        try
+        {
+            var user = await _userService.GetUserByIdAsync(userId);
+            return Ok(UserDto.FromUser(user));
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
         }
     }
 

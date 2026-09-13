@@ -9,6 +9,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using Scalar.AspNetCore;
+using WorkoutLogAPI.Constants;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,6 +50,22 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
         options.Events = new JwtBearerEvents
         {
+            // Override the default behavior to look for the token in the cookie if no Authorization header is present
+            // Frontend does not send an Authorization header because the cookie is HttpOnly and set by the server
+            OnMessageReceived = context =>
+            {
+                if (!string.IsNullOrEmpty(context.Request.Headers.Authorization))
+                {
+                    // Authorization header is present, let JwtBearer handle it
+                    // required for manual testing to work
+                    return Task.CompletedTask;
+                }
+                
+                // If no Authorization header, look for the token in the cookie instead
+                context.Token = context.Request.Cookies[AppConstants.Auth.TokenCookieName];
+                return Task.CompletedTask;
+            },
+
             OnTokenValidated = async context =>
             {
                 var principal = context.Principal!;
@@ -73,12 +90,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 
                 // Sliding expiration: if this valid token is close to
                 // expiring, create a replacement so an active user
-                // never gets logged out mid-task. The frontend picks this up
-                // from the response header and swaps its stored token.
+                // never gets logged out mid-task.
                 if (jwtService.ShouldRefreshToken(principal))
                 {
                     var refreshedToken = jwtService.RefreshToken(principal);
-                    context.HttpContext.Response.Headers["X-Refreshed-Token"] = refreshedToken;
+                    context.HttpContext.Response.Cookies.Append(
+                        AppConstants.Auth.TokenCookieName, refreshedToken, jwtService.BuildAuthCookieOptions());
                 }
             }
         };
@@ -101,10 +118,9 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy.WithOrigins(allowedOrigins)
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials()
-              .WithExposedHeaders("X-Refreshed-Token");
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
     });
 });
 
@@ -117,7 +133,7 @@ if (app.Environment.IsDevelopment())
 }
 
 // Apply migrations and seed the database
-// Seeding is indempotent, so it can be safely called on every startup
+// Seeding is idempotent, so it can be safely called on every startup
 await app.SeedDatabaseAsync();
 
 // Note: no app.UseHttpsRedirection() here. Render (and most PaaS hosts) terminate TLS
@@ -129,6 +145,19 @@ await app.SeedDatabaseAsync();
 // this middleware isn't needed.
 
 app.UseCors("AllowFrontend");
+
+// CSRF protection middleware: reject state-changing requests without the CSRF header
+app.Use(async (context, next) =>
+{
+    var method = context.Request.Method;
+    var isStateChanging = !HttpMethods.IsGet(method) && !HttpMethods.IsHead(method) && !HttpMethods.IsOptions(method);
+    if (isStateChanging && !context.Request.Headers.ContainsKey(AppConstants.Auth.CsrfHeaderName))
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        return;
+    }
+    await next();
+});
 
 app.UseAuthentication();
 app.UseAuthorization();

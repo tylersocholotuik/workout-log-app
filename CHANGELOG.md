@@ -16,6 +16,21 @@ change behind it.
 
 ## [Unreleased]
 
+### Security
+
+- Migrated JWT auth storage from a JS-readable cookie to a backend-set
+  `HttpOnly` cookie, eliminating the token as an XSS exfiltration target.
+  Cross-site request forgery is mitigated via strict CORS, a required
+  custom `X-Requested-With` header on all state-changing requests, and
+  environment-aware cookie flags (`SameSite=Lax`/`Secure=false` in
+  development, `SameSite=None`/`Secure=true` in production).
+
+### Changed
+
+- Extracted user registration and login business logic out of
+  `AuthController` and into `AuthService`, keeping the controller focused
+  on HTTP concerns (status codes, cookie issuance).
+
 ## [1.0.0] - 2026-09-12
 
 This is the first formally tracked release. The project predates this

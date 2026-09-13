@@ -25,6 +25,76 @@ public class AuthService
         _emailService = emailService;
         _userService = userService;
     }
+
+    public async Task<User> CreateUserAsync(string email, string firstName, string lastName, string? displayName, string password)
+    {
+        var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+        if (existingUser != null)
+        {
+            throw new InvalidOperationException("A user with this email already exists");
+        }
+
+        var passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
+
+        var user = new User
+        {
+            Id = Guid.NewGuid().ToString(),
+            Email = email,
+            FirstName = firstName,
+            LastName = lastName,
+            DisplayName = displayName,
+            PasswordHash = passwordHash,
+            FailedLoginAttempts = 0,
+            IsLocked = false,
+            IsAdmin = false,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+
+        return user;
+    }
+
+    public async Task<User> AuthenticateUserAsync(string email, string password)
+    {
+        User user;
+        try
+        {
+            user = await _userService.GetUserByEmailAsync(email);
+        }
+        catch (KeyNotFoundException)
+        {
+            throw new InvalidOperationException("Invalid email or password");
+        }
+        
+        if (user.IsLocked)
+        {
+            _logger.LogWarning("User account is locked: {Email}", email);
+            throw new InvalidOperationException("Your account is locked due to multiple failed login attempts. Please reset your password or contact support.");
+        }
+        
+        var isPasswordValid = BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
+        if (!isPasswordValid)
+        {
+            user.FailedLoginAttempts++;
+            if (user.FailedLoginAttempts >= 5)
+            {
+                user.IsLocked = true;
+                _logger.LogWarning("Account locked due to too many failed login attempts: {Email}", user.Email);
+            }
+            await _context.SaveChangesAsync();
+
+            throw new InvalidOperationException("Invalid email or password");
+        }
+
+        user.FailedLoginAttempts = 0;
+        user.LastLoginAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        return user;
+    }
     
     public async Task GenerateAndSendPasswordResetTokenAsync(string email)
     {
