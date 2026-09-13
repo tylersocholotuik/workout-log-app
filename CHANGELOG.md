@@ -16,6 +16,8 @@ change behind it.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-13
+
 ### Security
 
 - Migrated JWT auth storage from a JS-readable cookie to a backend-set
@@ -30,6 +32,11 @@ change behind it.
 - Extracted user registration and login business logic out of
   `AuthController` and into `AuthService`, keeping the controller focused
   on HTTP concerns (status codes, cookie issuance).
+
+### Removed
+
+- `frontend/lib/api/tokenStorage.ts` file that contained cookie helper functions.
+  Cookies are now issued and read by the backend.
 
 ## [1.0.0] - 2026-09-12
 
@@ -49,5 +56,6 @@ not itemized here — this entry describes the state of the app as of this tag.
   `/health` endpoint for platform health checks.
 - Database migrations and idempotent seed data for local/dev environments.
 
-[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.1.0
 [1.0.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.0.0
