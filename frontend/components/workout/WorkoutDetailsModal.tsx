@@ -12,9 +12,8 @@ import {
     Textarea,
 } from "@heroui/react";
 
-import { getLocalTimeZone, parseDate } from "@internationalized/date";
-
 import { useWorkoutContext } from "@/pages/workout/[workoutId]";
+import { parseWorkoutDate } from "@/utils/workoutDate";
 
 interface WorkoutDetailsModalProps {
     isOpen: boolean,
@@ -96,14 +95,10 @@ export default function WorkoutDetailsModal({ isOpen, onOpenChange }: WorkoutDet
                                 isRequired
                                 errorMessage={dateError}
                                 isInvalid={dateError !== ""}
-                                value={parseDate(
-                                    new Date(date).toISOString().split("T")[0]
-                                )}
+                                value={parseWorkoutDate(date)}
                                 onChange={(newValue) => {
                                     if (newValue) {
-                                        setDate(
-                                            newValue.toDate(getLocalTimeZone())
-                                        );
+                                        setDate(newValue.toString());
                                     }
                                     setDateError("");
                                 }

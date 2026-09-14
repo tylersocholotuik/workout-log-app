@@ -37,6 +37,7 @@ import {
     updateWorkout,
     deleteWorkout,
 } from "@/lib/api/workouts";
+import { formatWorkoutDate } from "@/utils/workoutDate";
 
 import {
     Workout,
@@ -326,12 +327,9 @@ export default function WorkoutLog() {
                                 {workout.title}
                             </h2>
                             <p className="text-md">
-                                {new Date(workout.date).toLocaleString(
-                                    "en-CA",
-                                    {
-                                        dateStyle: "full",
-                                    }
-                                )}
+                                {formatWorkoutDate(workout.date, {
+                                    dateStyle: "full",
+                                })}
                             </p>
                             <div className="max-w-[400px] text-center">
                                 {workout.notes && (

@@ -13,16 +13,18 @@ import {
 
 import { Icon } from "@iconify/react/dist/iconify.js";
 
-import {
-  parseDate,
-  DateValue,
-  toZoned,
-  getLocalTimeZone,
-} from "@internationalized/date";
+import { DateValue } from "@internationalized/date";
 
 import WorkoutCard from "./WorkoutCard";
 
 import { Workout } from "@/types";
+
+import {
+  formatWorkoutDate,
+  getTodayWorkoutDate,
+  parseWorkoutDate,
+  workoutDateToLocalDate,
+} from "@/utils/workoutDate";
 
 interface WorkoutListProps {
   workouts: Workout[];
@@ -30,22 +32,17 @@ interface WorkoutListProps {
 
 export default function WorkoutList({ workouts }: WorkoutListProps) {
   // workouts are in descending order by date
-  const firstWorkoutDate = workouts[workouts.length - 1]?.date ?? new Date();
-  // Parse dates to CalendarDate object to be used in Next UI
-  // date range picker. parseDate function needs an ISO string with
-  // time removed
-  const firstWorkoutDateString = parseDate(
-    new Date(firstWorkoutDate).toISOString().split("T")[0]
+  const firstWorkoutDate = parseWorkoutDate(
+    workouts[workouts.length - 1]?.date ?? getTodayWorkoutDate()
   );
-  const lastWorkoutDate = workouts[0]?.date ?? new Date();
-  const lastWorkoutDateString = parseDate(
-    new Date(lastWorkoutDate).toISOString().split("T")[0]
+  const lastWorkoutDate = parseWorkoutDate(
+    workouts[0]?.date ?? getTodayWorkoutDate()
   );
 
   const [groupByOption, setGroupByOption] = useState("none");
   const [dateRange, setDateRange] = useState<RangeValue<DateValue> | null>({
-    start: toZoned(firstWorkoutDateString, getLocalTimeZone()),
-    end: toZoned(lastWorkoutDateString, getLocalTimeZone()),
+    start: firstWorkoutDate,
+    end: lastWorkoutDate,
   } as RangeValue<DateValue>);
   const [filteredWorkouts, setFilteredWorkouts] = useState<Workout[]>(workouts);
 
@@ -55,12 +52,15 @@ export default function WorkoutList({ workouts }: WorkoutListProps) {
   ) => {
     setDateRange(dateRange);
 
+    if (!dateRange) {
+      setFilteredWorkouts(workouts);
+      return;
+    }
+
     const workoutsInRange = workouts.filter((workout) => {
-      const workoutDate = toZoned(
-        parseDate(new Date(workout.date).toISOString().split("T")[0]),
-        getLocalTimeZone()
-      );
-      return workoutDate >= dateRange!.start && workoutDate <= dateRange!.end;
+      const workoutDate = parseWorkoutDate(workout.date);
+      return workoutDate.compare(dateRange.start) >= 0
+        && workoutDate.compare(dateRange.end) <= 0;
     });
 
     setFilteredWorkouts(workoutsInRange);
@@ -77,7 +77,7 @@ export default function WorkoutList({ workouts }: WorkoutListProps) {
       // Creates an object with keys that are the workout date's
       // month and year as a string
       return Object.groupBy(workouts, ({ date }) =>
-        new Date(date).toLocaleDateString("en-CA", {
+        formatWorkoutDate(date, {
           year: "numeric",
           month: "long",
         })
@@ -105,7 +105,7 @@ export default function WorkoutList({ workouts }: WorkoutListProps) {
       // Create an object with keys that are strings of the date range
       // (December 22, 2024 - December 28, 2024)
       return Object.groupBy(workouts, ({ date }) => {
-        const startDate = getWeekStartDate(new Date(date));
+        const startDate = getWeekStartDate(workoutDateToLocalDate(date));
         const endDate = getWeekEndDate(startDate);
 
         return `${startDate.toLocaleDateString("en-CA", {
@@ -126,8 +126,8 @@ export default function WorkoutList({ workouts }: WorkoutListProps) {
   // sets date range back to the range of the first workout to last workout
   const resetDateRange = () => {
     const dateRange = {
-      start: toZoned(firstWorkoutDateString, getLocalTimeZone()),
-      end: toZoned(lastWorkoutDateString, getLocalTimeZone()),
+      start: firstWorkoutDate,
+      end: lastWorkoutDate,
     };
 
     filterWorkoutsByDateRange(workouts, dateRange);

@@ -16,6 +16,25 @@ change behind it.
 
 ## [Unreleased]
 
+### Fixed
+
+- Workout dates were stored and transmitted as UTC timestamps, which could
+  cause a workout saved late at night to display or be grouped under the
+  wrong calendar day depending on the user's timezone. Workout dates are
+  now handled as plain calendar dates end-to-end, removing any dependency
+  on time-of-day or timezone conversion.
+
+### Changed
+
+- Changed `Workout.Date` from `DateTime` (`timestamp with time zone`) to
+  `DateOnly` (`date`) in the database schema and the `WorkoutDto`/
+  `ExerciseHistoryDto` API contracts. Existing workout dates were backfilled
+  by re-interpreting their stored UTC instants in the Alberta timezone they
+  were originally created in.
+- Changed the frontend `Workout.date` type from `Date` to a `YYYY-MM-DD`
+  string, and added `frontend/utils/workoutDate.ts` with shared helpers for
+  parsing, formatting, and comparing workout dates.
+
 ## [1.1.0] - 2026-09-13
 
 ### Security
