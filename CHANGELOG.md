@@ -16,6 +16,8 @@ change behind it.
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-09-13
+
 ### Fixed
 
 - Workout dates were stored and transmitted as UTC timestamps, which could
@@ -75,6 +77,7 @@ not itemized here — this entry describes the state of the app as of this tag.
   `/health` endpoint for platform health checks.
 - Database migrations and idempotent seed data for local/dev environments.
 
-[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.1.1
 [1.1.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.1.0
 [1.0.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.0.0
