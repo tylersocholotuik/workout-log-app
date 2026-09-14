@@ -5,7 +5,7 @@ export interface Workout {
     id: string;
     title: string;
     notes: string;
-    date: Date;
+    date: string;
     userId: string;
     exercises: WorkoutExercise[];
 }

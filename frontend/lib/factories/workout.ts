@@ -1,15 +1,20 @@
 import { Workout, WorkoutExercise, Set } from '@/types/workout';
+import { getTodayWorkoutDate } from '@/utils/workoutDate';
 
-export const createEmptyWorkout = (): Workout => ({
-    id: "",
-    title: `${new Date().toLocaleString("en-CA", {
-        dateStyle: "short",
-    })} Workout`,
-    notes: "",
-    date: new Date(),
-    userId: "",
-    exercises: []
-});
+export const createEmptyWorkout = (): Workout => {
+    const date = getTodayWorkoutDate();
+
+    return {
+        id: "",
+        title: `${new Date().toLocaleDateString("en-CA", {
+            dateStyle: "short",
+        })} Workout`,
+        notes: "",
+        date,
+        userId: "",
+        exercises: []
+    };
+};
 
 export const createEmptyWorkoutExercise = (): WorkoutExercise => ({
     id: 0,

@@ -8,6 +8,7 @@ import {
 } from "@heroui/react";
 
 import { ExerciseHistory } from "@/types";
+import { formatWorkoutDate } from "@/utils/workoutDate";
 
 interface ExerciseHistoryModalProps {
     isOpen: boolean;
@@ -38,9 +39,7 @@ export default function ExerciseHistoryModal({
                                     {exerciseHistory.map((exercise, eIndex) => (
                                         <div key={`exercise-history-${eIndex}`} className="mb-2">
                                             <p className="font-bold">
-                                                {new Date(
-                                                    exercise.workout.date
-                                                ).toLocaleDateString("en-CA", {
+                                                {formatWorkoutDate(exercise.workout.date, {
                                                     dateStyle: "full",
                                                 })}
                                             </p>

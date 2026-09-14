@@ -8,13 +8,13 @@ import {
 } from "@heroui/react";
 
 import { Workout } from "@/types";
+import { formatWorkoutDate } from "@/utils/workoutDate";
 
 interface WorkoutCardProps {
     workout: Workout;
 }
 
 export default function WorkoutCard({ workout }: WorkoutCardProps) {
-    const workoutDate = new Date(workout.date);
     return (
         <Card>
             <CardHeader className="flex justify-between">
@@ -23,7 +23,7 @@ export default function WorkoutCard({ workout }: WorkoutCardProps) {
                         {workout.title}
                     </h3>
                     <p className="text-small text-default-500">
-                        {workoutDate.toLocaleString("en-CA", {
+                        {formatWorkoutDate(workout.date, {
                             dateStyle: "full",
                         })}
                     </p>
