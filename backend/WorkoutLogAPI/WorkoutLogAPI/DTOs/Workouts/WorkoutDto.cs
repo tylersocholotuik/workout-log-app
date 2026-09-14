@@ -9,7 +9,7 @@ public record WorkoutDto(
     [param: StringLength(50, ErrorMessage = "Title must be less than 50 characters")]
     string Title,
     string? UserId,
-    DateTime Date,
+    DateOnly Date,
     [param: StringLength(250, ErrorMessage = "Notes must be less than 250 characters")]
     string? Notes,
     List<WorkoutExerciseDto>? Exercises )

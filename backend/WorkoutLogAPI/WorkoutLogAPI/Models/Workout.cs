@@ -17,7 +17,7 @@ public class Workout : IAuditableEntity
     public string? Notes { get; set; }
 
     [Column("date")]
-    public DateTime Date { get; set; } = DateTime.UtcNow;
+    public DateOnly Date { get; set; } = DateOnly.FromDateTime(DateTime.UtcNow);
 
     [Column("user_id")]
     public string UserId { get; set; } = null!;

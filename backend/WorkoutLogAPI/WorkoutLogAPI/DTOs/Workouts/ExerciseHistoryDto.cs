@@ -20,5 +20,4 @@ public record ExerciseHistoryDto(
 }
 
 // Required to view the workout date in the exercise history modal
-public record ExerciseHistoryWorkoutDto(DateTime Date);
-
+public record ExerciseHistoryWorkoutDto(DateOnly Date);
