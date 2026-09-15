@@ -54,7 +54,7 @@ public class EmailService
     /// Thrown when required sender, SMTP, or Brevo API key configuration is missing, or when the
     /// Brevo API request fails.
     /// </exception>
-    public async Task SendEmailAsync(List<EmailAddress> recipients, string subject, string body)
+    public virtual async Task SendEmailAsync(List<EmailAddress> recipients, string subject, string body)
     {
         if (recipients.Count == 0)
         {
