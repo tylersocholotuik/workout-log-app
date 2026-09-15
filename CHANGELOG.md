@@ -16,6 +16,24 @@ change behind it.
 
 ## [Unreleased]
 
+### Added
+
+- Added a `WorkoutLogAPI.Tests` xUnit project covering the most important
+  backend logic: authentication and account lockout, JWT generation/
+  revocation/refresh, password reset, and workout/exercise service business
+  rules.
+
+### Fixed
+
+- Fixed `WorkoutService` not soft-deleting a removed exercise's `Set` rows
+  along with the exercise itself, which could leave orphaned, non-deleted
+  sets behind after a workout update.
+
+### Changed
+
+- Marked `EmailService.SendEmailAsync` as `virtual` so it can be mocked in
+  unit tests; no behavior change.
+
 ## [1.1.1] - 2026-09-13
 
 ### Fixed
