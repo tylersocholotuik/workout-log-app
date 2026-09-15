@@ -129,10 +129,17 @@ public class WorkoutService
     {
         var updatedExerciseIds = exerciseDtos?.Select(e => e.Id).ToList() ?? new List<int?>();
 
-        // Mark exercises missing from the update request as deleted
+        // Mark exercises missing from the update request as deleted, along with
+        // their sets, so a removed exercise doesn't leave orphaned, non-deleted
+        // set rows behind.
         foreach (var exercise in workout.Exercises.Where(e => !updatedExerciseIds.Contains(e.Id)))
         {
             exercise.Deleted = true;
+
+            foreach (var set in exercise.Sets)
+            {
+                set.Deleted = true;
+            }
         }
 
         if (exerciseDtos == null)
