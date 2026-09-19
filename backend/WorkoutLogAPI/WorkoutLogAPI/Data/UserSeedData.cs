@@ -1,3 +1,4 @@
+using WorkoutLogAPI.Constants;
 using WorkoutLogAPI.Models;
 
 namespace WorkoutLogAPI.Data;
@@ -11,10 +12,10 @@ public class UserSeedData
             new User
             {
                 Id = Guid.NewGuid().ToString(),
-                Email = "workoutlogtestuser@gmail.com",
-                FirstName = "Test",
-                LastName = "User",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("testuserpassword"),
+                Email = AppConstants.SeedData.TestUserEmail,
+                FirstName = AppConstants.SeedData.TestUserFirstName,
+                LastName = AppConstants.SeedData.TestUserLastName,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(AppConstants.SeedData.TestUserPassword),
             }
         };
     }
