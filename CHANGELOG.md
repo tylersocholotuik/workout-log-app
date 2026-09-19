@@ -22,12 +22,23 @@ change behind it.
   backend logic: authentication and account lockout, JWT generation/
   revocation/refresh, password reset, and workout/exercise service business
   rules.
+- Added an integration test suite (`WorkoutLogAPI.Tests/Integration`) that runs
+  the API in-process against a real, ephemeral PostgreSQL instance
+  (via Testcontainers) and exercises the auth, exercise, and workout
+  controllers end-to-end over HTTP.
 
 ### Fixed
 
 - Fixed `WorkoutService` not soft-deleting a removed exercise's `Set` rows
   along with the exercise itself, which could leave orphaned, non-deleted
   sets behind after a workout update.
+- Fixed `GET /api/workouts/{id}` returning a 500 error instead of a 403 when
+  requested for a workout belonging to another user. `WorkoutService` now
+  distinguishes a missing workout (404) from one owned by a different user
+  (403), and the frontend workout page was updated to detect the 403
+  response directly instead of relying on an unauthenticated client-side
+  `userId` comparison that no longer applied once the API stopped returning
+  other users' workout data.
 
 ### Changed
 

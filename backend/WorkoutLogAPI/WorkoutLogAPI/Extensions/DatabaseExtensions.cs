@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using WorkoutLogAPI.Constants;
 using WorkoutLogAPI.Data;
 
 namespace WorkoutLogAPI.Extensions;
@@ -14,7 +15,7 @@ public static class DatabaseExtensions
         await context.Database.MigrateAsync();
         
         // Seed test user if it doesn't exist
-        if (!await context.Users.AnyAsync(u => u.Email == "workoutlogtestuser@gmail.com"))
+        if (!await context.Users.AnyAsync(u => u.Email == AppConstants.SeedData.TestUserEmail))
         {
             var users = UserSeedData.GetSeedUsers();
             await context.Users.AddRangeAsync(users);
@@ -25,11 +26,21 @@ public static class DatabaseExtensions
             Console.WriteLine($"Seeded test users to the database: {testUserList}");
         }
         
+        // Seed stock exercises if they don't exist
+        if (!await context.Exercises.AnyAsync())
+        {
+            var exercises = ExerciseSeedData.GetSeedExercises();
+            await context.Exercises.AddRangeAsync(exercises);
+            await context.SaveChangesAsync();
+            
+            Console.WriteLine($"Seeded {exercises.Count} exercises to the database.");
+        }
+        
         // Seed test user workouts if they don't exist
-        if (!await context.Workouts.AnyAsync(w => w.User.Email == "workoutlogtestuser@gmail.com"))
+        if (!await context.Workouts.AnyAsync(w => w.User.Email == AppConstants.SeedData.TestUserEmail))
         {
             var testUserId = await context.Users
-                .Where(u => u.Email == "workoutlogtestuser@gmail.com")
+                .Where(u => u.Email == AppConstants.SeedData.TestUserEmail)
                 .Select(u => u.Id)
                 .FirstOrDefaultAsync();
 
@@ -45,16 +56,6 @@ public static class DatabaseExtensions
             {
                 Console.WriteLine("Skipped seeding test user workouts: test user not found.");
             }
-        }
-        
-        // Seed exercises if they don't exist
-        if (!await context.Exercises.AnyAsync())
-        {
-            var exercises = ExerciseSeedData.GetSeedExercises();
-            await context.Exercises.AddRangeAsync(exercises);
-            await context.SaveChangesAsync();
-            
-            Console.WriteLine($"Seeded {exercises.Count} exercises to the database.");
         }
     }
 }

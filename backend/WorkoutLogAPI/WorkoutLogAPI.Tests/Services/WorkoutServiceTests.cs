@@ -93,7 +93,7 @@ public class WorkoutServiceTests
     }
 
     [Fact]
-    public async Task GetWorkoutById_WhenWorkoutDoesNotBelongToUser_ThrowsKeyNotFoundException()
+    public async Task GetWorkoutById_WhenWorkoutDoesNotBelongToUser_ThrowsUnauthorizedAccessException()
     {
         var (context, service) = CreateSut();
         var workout = new Workout
@@ -106,7 +106,7 @@ public class WorkoutServiceTests
         context.Workouts.Add(workout);
         await context.SaveChangesAsync();
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(
             () => service.GetWorkoutById(workout.Id, "different-user"));
     }
 
