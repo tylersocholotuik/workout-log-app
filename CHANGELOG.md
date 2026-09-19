@@ -16,6 +16,8 @@ change behind it.
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-09-19
+
 ### Added
 
 - Added a `WorkoutLogAPI.Tests` xUnit project covering the most important
@@ -106,7 +108,8 @@ not itemized here — this entry describes the state of the app as of this tag.
   `/health` endpoint for platform health checks.
 - Database migrations and idempotent seed data for local/dev environments.
 
-[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.1.2...HEAD
+[1.1.2]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.1.2
 [1.1.1]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.1.1
 [1.1.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.1.0
 [1.0.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.0.0
