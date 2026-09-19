@@ -29,7 +29,7 @@ public class WorkoutService
     public async Task<Workout> GetWorkoutById(string id, string userId)
     {
         var workout = await _context.Workouts
-            .Where(w => w.Id == id && w.UserId == userId && !w.Deleted)
+            .Where(w => w.Id == id && !w.Deleted)
             .Include(w => w.Exercises.Where(e => !e.Deleted))
                 .ThenInclude(e => e.Sets.Where(s => !s.Deleted))
             .Include(w => w.Exercises.Where(e => !e.Deleted))
@@ -39,6 +39,11 @@ public class WorkoutService
         if (workout == null)
         {
             throw new KeyNotFoundException($"Workout with ID {id} not found.");
+        }
+
+        if (workout.UserId != userId)
+        {
+            throw new UnauthorizedAccessException($"User {userId} does not have access to workout with ID {id}.");
         }
 
         return workout;

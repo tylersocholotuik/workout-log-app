@@ -45,6 +45,19 @@ public class WorkoutController : ControllerBase
             var workout = await _workoutService.GetWorkoutById(id, userId);
             return Ok(WorkoutDto.FromWorkout(workout));
         }
+        catch (KeyNotFoundException e)
+        {
+            _logger.LogWarning(e, "Workout not found: {Message}", e.Message);
+            return NotFound(new { error = "Workout not found" });
+        }
+        catch (UnauthorizedAccessException e)
+        {
+            _logger.LogWarning(e, "Unauthorized access to workout: {Message}", e.Message);
+            // Use StatusCode with a JSON body rather than Forbid(), since Forbid()
+            // returns an empty response body and the frontend expects a JSON
+            // error payload it can parse.
+            return StatusCode(403, new { error = "You do not have access to this workout" });
+        }
         catch (Exception e)
         {
             _logger.LogError(e, "Error retrieving workout: {Message}", e.Message);

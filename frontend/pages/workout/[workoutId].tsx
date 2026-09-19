@@ -98,12 +98,13 @@ export default function WorkoutLog() {
             if (user && workoutId !== "new-workout") {
                 try {
                     const data = await getWorkout(workoutId);
-                    // ensuring the logged in user id matches the userId
-                    // of the workout
-                    if (data?.userId !== user.id) {
+                    // getWorkout returns null when the workout belongs to
+                    // another user (403 from the API).
+                    if (data === null) {
                         setIsUnauthorized(true);
+                    } else {
+                        setWorkout(data);
                     }
-                    setWorkout(data);
                 } catch (error) {
                     addToast({
                         title: "Error",

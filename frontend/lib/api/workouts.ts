@@ -18,6 +18,12 @@ export const getWorkouts = async () => {
 export const getWorkout = async (id: string | string[]) => {
     const res = await apiFetch(`${API_URL}/api/workouts/${id}`);
 
+    // Returns null if the workout belongs to another user, so callers can show
+    // an "unauthorized" state instead of a generic error.
+    if (res.status === 403) {
+        return null;
+    }
+
     if (!res.ok) {
         const errorData = await res.json();
         throw new Error(extractErrorMessage(errorData, "Failed to load workout"));
