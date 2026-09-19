@@ -133,7 +133,10 @@ if (app.Environment.IsDevelopment())
 }
 
 // Apply migrations and seed the database
-// Seeding is idempotent, so it can be safely called on every startup
+// Seeding is idempotent, so it can be safely called on every startup.
+// Integration tests point ConnectionStrings:DefaultConnection at their own ephemeral
+// Postgres database (see WorkoutLogAPI.Tests/Integration), so this runs there too -
+// exercising the real migrations against a real Postgres instance, same as production.
 await app.SeedDatabaseAsync();
 
 // Note: no app.UseHttpsRedirection() here. Render (and most PaaS hosts) terminate TLS
@@ -184,3 +187,8 @@ app.MapGet("/health-check", async (WorkoutDbContext context) =>
 app.MapControllers();
 
 app.Run();
+
+// Exposes the top-level statement Program as a public partial class so
+// WebApplicationFactory<Program> can be used from the test project to
+// spin up a real, in-process instance of this API for integration tests.
+public partial class Program { }
