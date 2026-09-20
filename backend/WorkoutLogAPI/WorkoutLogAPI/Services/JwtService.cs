@@ -135,9 +135,17 @@ public class JwtService
         return new CookieOptions
         {
             HttpOnly = true,
-            // Locally, the frontend and backend are both served from "localhost"
-            // In production, they're different origins (Vercel/Render)
-            SameSite = isDevelopment ? SameSiteMode.Lax : SameSiteMode.None,
+            // Locally, the frontend calls the backend directly (different ports,
+            // but still "localhost" - same-site). In staging/production, the
+            // frontend (Vercel) proxies /api/* requests to this backend (Render)
+            // via next.config.ts rewrites, so the browser only ever sees the
+            // cookie as first-party/same-site, even though the frontend and
+            // backend are on different domains. SameSite=None was used here
+            // previously, but that makes the cookie a cross-site cookie that
+            // iOS Safari and Chrome-for-iOS (both WebKit) block by default via
+            // Intelligent Tracking Prevention - Lax works in every environment
+            // now that the proxy is in place.
+            SameSite = SameSiteMode.Lax,
             Secure = !isDevelopment,
             Expires = DateTimeOffset.UtcNow.AddMinutes(tokenExpirationInMinutes)
         };
