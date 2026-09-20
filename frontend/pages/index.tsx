@@ -65,7 +65,7 @@ export default function Home() {
                             </span>
                         </h2>
                         <p className="text-md sm:text-lg text-center text-foreground-500">
-                            A simple training log app to help your track your
+                            A simple training log app to help you track your
                             progress in the gym!
                         </p>
                     </section>

@@ -16,6 +16,30 @@ change behind it.
 
 ## [Unreleased]
 
+### Added
+
+- Added an end-to-end Playwright test suite (`playwright-tests/`) covering
+  authentication, workout creation/editing/deletion (including soft-delete
+  behavior for removed exercises/sets), workout history filtering and
+  grouping, the one-rep max calculator, and login/register form validation.
+  Tests run against Chromium, Firefox, and WebKit locally; WebKit is
+  excluded when targeting a non-local (e.g. staging) environment due to a
+  cross-site cookie limitation. Includes a `README.md` covering setup,
+  running tests locally or against staging, and a test-plan-first
+  development workflow (`test-plans/`).
+- Added the Playwright MCP server to this workspace's VS Code configuration
+  (`.vscode/mcp.json`) and a `/develop-playwright-test` Copilot prompt file
+  (`.github/prompts/`) that encodes the test suite's conventions and known
+  component-library quirks, for implementing new Playwright specs from an
+  approved test plan.
+
+### Fixed
+
+- Fixed a "your"/"you" typo in the home page's tagline.
+- Fixed a typo in the History page's "Filtering/Grouping" popover trigger
+  button (previously read "Filering/Grouping").
+- Fixed a typo ("exisiting" → "existing") in the footer's disclaimer text.
+
 ## [1.1.2] - 2026-09-19
 
 ### Added
