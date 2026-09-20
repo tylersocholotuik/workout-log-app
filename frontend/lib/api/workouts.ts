@@ -2,10 +2,16 @@ import {Workout} from '@/types';
 import {apiFetch} from "./client";
 import {extractErrorMessage} from "./apiErrors";
 
-// Nullish coalescing (not ||) so an intentionally empty string in
-// staging/production (meaning "same origin, proxied via next.config.ts")
-// isn't overridden by the localhost fallback.
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5258';
+// NEXT_PUBLIC_API_URL should be left unset in Vercel (staging/production) so
+// requests are made relative to the frontend's own origin and proxied to the
+// backend via the rewrite in next.config.ts (see BuildAuthCookieOptions in
+// JwtService.cs for why). It's only needed locally, where the frontend calls
+// the backend directly - Vercel doesn't support saving an empty-string env
+// var (it just discards it), so the "same-origin" default only applies when
+// NODE_ENV is "production" (true for both Vercel environments), not merely
+// when the variable is unset.
+const API_URL = process.env.NEXT_PUBLIC_API_URL
+    ?? (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5258');
 
 export const getWorkouts = async () => {
     const res = await apiFetch(`${API_URL}/api/workouts`);
