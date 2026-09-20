@@ -1,7 +1,10 @@
 import {apiFetch} from "./client";
 import {extractErrorMessage} from "./apiErrors";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5258';
+// Nullish coalescing (not ||) so an intentionally empty string in
+// staging/production (meaning "same origin, proxied via next.config.ts")
+// isn't overridden by the localhost fallback.
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5258';
 
 // Get all exercises available to the user (system exercises + their custom exercises)
 export const getExercises = async () => {

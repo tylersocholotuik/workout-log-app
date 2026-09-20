@@ -2,7 +2,10 @@ import {User, RegisterData, LoginData, ResetPasswordData, AuthResponse} from '@/
 import {extractErrorMessage} from './apiErrors';
 import {apiFetch} from './client';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5258';
+// Nullish coalescing (not ||) so an intentionally empty string in
+// staging/production (meaning "same origin, proxied via next.config.ts")
+// isn't overridden by the localhost fallback.
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5258';
 
 // Auth API calls
 export const register = async (data: RegisterData): Promise<AuthResponse> => {
