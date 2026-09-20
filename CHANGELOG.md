@@ -16,6 +16,8 @@ change behind it.
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-09-20
+
 ### Added
 
 - Added an end-to-end Playwright test suite (`playwright-tests/`) covering
@@ -35,6 +37,20 @@ change behind it.
 
 ### Fixed
 
+- Fixed users on iOS being redirected straight back to the login page
+  after authenticating, whenever they navigated to a protected page (e.g.
+  `/history`) - reproducible in both Safari and Chrome on iOS, but not on
+  any desktop browser. Since the frontend (Vercel) and backend (Render)
+  are served from different domains, the `HttpOnly` auth cookie was a
+  cross-site cookie, which iOS Safari and Chrome-for-iOS (both built on
+  WebKit) block by default via Intelligent Tracking Prevention. The
+  frontend now proxies `/api/*` requests to the backend through its own
+  origin via a Next.js rewrite (`next.config.ts`, configured with a new
+  server-side `BACKEND_API_URL` environment variable), making the auth
+  cookie first-party in every environment so it can use `SameSite=Lax`
+  instead of `SameSite=None`. `NEXT_PUBLIC_API_URL` is no longer required
+  in staging/production - it now defaults to same-origin automatically
+  whenever the app is running in a production build.
 - Fixed a "your"/"you" typo in the home page's tagline.
 - Fixed a typo in the History page's "Filtering/Grouping" popover trigger
   button (previously read "Filering/Grouping").
@@ -132,7 +148,8 @@ not itemized here — this entry describes the state of the app as of this tag.
   `/health` endpoint for platform health checks.
 - Database migrations and idempotent seed data for local/dev environments.
 
-[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.1.2...HEAD
+[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.1.3...HEAD
+[1.1.3]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.1.3
 [1.1.2]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.1.2
 [1.1.1]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.1.1
 [1.1.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.1.0
