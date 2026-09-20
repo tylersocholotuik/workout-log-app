@@ -149,7 +149,7 @@ export default function WorkoutList({ workouts }: WorkoutListProps) {
                 <Icon icon="system-uicons:filtering" width="21" height="21" />
               }
             >
-              Filering/Grouping
+              Filtering/Grouping
             </Button>
           </PopoverTrigger>
           <PopoverContent>

@@ -31,7 +31,7 @@ export default function Footer() {
                         <p className="text-sm sm:text-md text-start text-foreground-500">
                             This application is a portfolio project and is
                             intended for demonstration. I will not profit from
-                            any ideas that are borrowed from exisiting
+                            any ideas that are borrowed from existing
                             applications.
                         </p>
                     </div>
