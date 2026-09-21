@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import {
   uniqueTitle,
   workoutIdFromUrl,
@@ -234,7 +234,7 @@ test.describe('Sets', () => {
 });
 
 test.describe('Weight unit & notes', () => {
-  test('weight unit can be switched between lbs and kg', async ({ page, request }) => {
+  test('weight unit can be switched between lbs and kg', async ({ page, trackWorkout }) => {
     await startNewWorkout(page);
     await editWorkoutDetails(page, { title: uniqueTitle('Weight Unit') });
     await addExercise(page, 'Ab Wheel');
@@ -245,15 +245,13 @@ test.describe('Weight unit & notes', () => {
     await page.keyboard.press('Escape');
 
     await saveWorkout(page);
-    const workoutId = workoutIdFromUrl(page);
+    trackWorkout(workoutIdFromUrl(page));
 
     await page.reload();
     await expect(exerciseCard(page, 'Ab Wheel').getByText('kg')).toBeVisible();
-
-    await deleteWorkoutViaApi(request, workoutId);
   });
 
-  test('exercise notes are saved', async ({ page, request }) => {
+  test('exercise notes are saved', async ({ page, trackWorkout }) => {
     await startNewWorkout(page);
     await editWorkoutDetails(page, { title: uniqueTitle('Exercise Notes') });
     await addExercise(page, 'Ab Wheel');
@@ -263,38 +261,35 @@ test.describe('Weight unit & notes', () => {
     await card.getByRole('textbox', { name: 'Notes' }).blur();
 
     await saveWorkout(page);
-    const workoutId = workoutIdFromUrl(page);
+    trackWorkout(workoutIdFromUrl(page));
 
     await page.reload();
     await expect(
       exerciseCard(page, 'Ab Wheel').getByText('Felt strong today')
     ).toBeVisible();
-
-    await deleteWorkoutViaApi(request, workoutId);
   });
 });
 
 test.describe('Saving', () => {
-  test('creating a workout succeeds', async ({ page, request }) => {
+  test('creating a workout succeeds', async ({ page, trackWorkout }) => {
     await startNewWorkout(page);
     await editWorkoutDetails(page, { title: uniqueTitle('Create') });
     await addExercise(page, 'Ab Wheel');
     await fillSet(exerciseCard(page, 'Ab Wheel'), { weight: '100', reps: '10', rpe: '8' });
 
     await saveWorkout(page);
+    trackWorkout(workoutIdFromUrl(page));
 
     await expect(page).toHaveURL(/\/workout\/(?!new-workout)[^/]+$/);
-    const workoutId = workoutIdFromUrl(page);
-    await deleteWorkoutViaApi(request, workoutId);
   });
 
-  test('editing an existing workout succeeds', async ({ page, request }) => {
+  test('editing an existing workout succeeds', async ({ page, trackWorkout }) => {
     await startNewWorkout(page);
     const originalTitle = uniqueTitle('Before Edit');
     await editWorkoutDetails(page, { title: originalTitle });
     await addExercise(page, 'Ab Wheel');
     await saveWorkout(page);
-    const workoutId = workoutIdFromUrl(page);
+    trackWorkout(workoutIdFromUrl(page));
     await waitForCreateToSettle(page, originalTitle);
 
     const newTitle = uniqueTitle('Edited');
@@ -303,15 +298,13 @@ test.describe('Saving', () => {
 
     await page.reload();
     await expect(page.getByRole('heading', { name: newTitle })).toBeVisible();
-
-    await deleteWorkoutViaApi(request, workoutId);
   });
 });
 
 test.describe('Updating a saved workout (soft-delete)', () => {
   test('removing an exercise from a saved workout persists after reload', async ({
     page,
-    request,
+    trackWorkout,
   }) => {
     await startNewWorkout(page);
     const title = uniqueTitle('Remove Exercise');
@@ -319,7 +312,7 @@ test.describe('Updating a saved workout (soft-delete)', () => {
     await addExercise(page, 'Ab Wheel');
     await addExercise(page, 'Back Extension');
     await saveWorkout(page);
-    const workoutId = workoutIdFromUrl(page);
+    trackWorkout(workoutIdFromUrl(page));
     await waitForCreateToSettle(page, title);
 
     await pressIconTrigger(
@@ -331,13 +324,11 @@ test.describe('Updating a saved workout (soft-delete)', () => {
     await page.reload();
     await expect(page.getByRole('heading', { name: 'Ab Wheel', exact: true })).toHaveCount(0);
     await expect(exerciseCard(page, 'Back Extension')).toBeVisible();
-
-    await deleteWorkoutViaApi(request, workoutId);
   });
 
   test('removing a set from a saved workout persists after reload', async ({
     page,
-    request,
+    trackWorkout,
   }) => {
     await startNewWorkout(page);
     const title = uniqueTitle('Remove Set');
@@ -350,7 +341,7 @@ test.describe('Updating a saved workout (soft-delete)', () => {
     await secondSetWeight.fill('200');
     await secondSetWeight.blur();
     await saveWorkout(page);
-    const workoutId = workoutIdFromUrl(page);
+    trackWorkout(workoutIdFromUrl(page));
     await waitForCreateToSettle(page, title);
 
     await card.getByRole('button', { name: 'delete set' }).first().click();
@@ -360,8 +351,6 @@ test.describe('Updating a saved workout (soft-delete)', () => {
     const reloadedCard = exerciseCard(page, 'Ab Wheel');
     await expect(reloadedCard.getByRole('textbox', { name: 'weight' })).toHaveCount(1);
     await expect(reloadedCard.getByRole('textbox', { name: 'weight' })).toHaveValue('200');
-
-    await deleteWorkoutViaApi(request, workoutId);
   });
 });
 
@@ -393,7 +382,7 @@ test.describe('Deleting / cancelling', () => {
 });
 
 test.describe('Authorization', () => {
-  test('cannot view another user\u2019s workout', async ({ page, browser, request }) => {
+  test('cannot view another user\u2019s workout', async ({ page, browser }) => {
     test.skip(
       !process.env.SECOND_TEST_USER_EMAIL || !process.env.SECOND_TEST_USER_PASSWORD,
       'Requires SECOND_TEST_USER_EMAIL/SECOND_TEST_USER_PASSWORD for a second test account.'
@@ -401,33 +390,38 @@ test.describe('Authorization', () => {
 
     const otherContext = await browser.newContext();
     const otherPage = await otherContext.newPage();
+    let otherWorkoutId: string | undefined;
 
-    await otherPage.goto('/login');
-    const loginForm = otherPage.locator('#password-login-form');
-    await loginForm.getByLabel('Email').fill(process.env.SECOND_TEST_USER_EMAIL!);
-    await loginForm
-      .getByLabel('Password', { exact: true })
-      .fill(process.env.SECOND_TEST_USER_PASSWORD!);
-    await otherPage.getByRole('button', { name: 'Login' }).click();
-    await expect(otherPage).toHaveURL('/');
+    try {
+      await otherPage.goto('/login');
+      const loginForm = otherPage.locator('#password-login-form');
+      await loginForm.getByLabel('Email').fill(process.env.SECOND_TEST_USER_EMAIL!);
+      await loginForm
+        .getByLabel('Password', { exact: true })
+        .fill(process.env.SECOND_TEST_USER_PASSWORD!);
+      await otherPage.getByRole('button', { name: 'Login' }).click();
+      await expect(otherPage).toHaveURL('/');
 
-    await startNewWorkout(otherPage);
-    await addExercise(otherPage, 'Ab Wheel');
-    await saveWorkout(otherPage);
-    const otherWorkoutId = workoutIdFromUrl(otherPage);
-    await otherContext.close();
+      await startNewWorkout(otherPage);
+      await addExercise(otherPage, 'Ab Wheel');
+      await saveWorkout(otherPage);
+      otherWorkoutId = workoutIdFromUrl(otherPage);
 
-    await page.goto(`/workout/${otherWorkoutId}`);
-    await expect(
-      page.getByText('Oops! This is someone else\u2019s workout!')
-    ).toBeVisible();
-
-    await deleteWorkoutViaApi(request, otherWorkoutId);
+      await page.goto(`/workout/${otherWorkoutId}`);
+      await expect(
+        page.getByText('Oops! This is someone else\u2019s workout!')
+      ).toBeVisible();
+    } finally {
+      // Must delete via the other account's own session - the primary
+      // account's request context would get a 403 (not the owner).
+      await deleteWorkoutViaApi(otherPage.request, otherWorkoutId);
+      await otherContext.close();
+    }
   });
 });
 
 test.describe('History persistence', () => {
-  test('saved workout is retrievable by ID', async ({ page, request }) => {
+  test('saved workout is retrievable by ID', async ({ page, trackWorkout }) => {
     const title = uniqueTitle('Retrievable');
     await startNewWorkout(page);
     await editWorkoutDetails(page, { title, notes: 'Retrieval check notes' });
@@ -435,28 +429,25 @@ test.describe('History persistence', () => {
     await fillSet(exerciseCard(page, 'Ab Wheel'), { weight: '135', reps: '5', rpe: '7' });
     await saveWorkout(page);
     const workoutId = workoutIdFromUrl(page);
+    trackWorkout(workoutId);
 
     await page.goto(`/workout/${workoutId}`);
 
     await expect(page.getByRole('heading', { name: title })).toBeVisible();
     await expect(page.getByText('Retrieval check notes')).toBeVisible();
     await expect(exerciseCard(page, 'Ab Wheel')).toBeVisible();
-
-    await deleteWorkoutViaApi(request, workoutId);
   });
 
-  test('saved workout appears in history', async ({ page, request }) => {
+  test('saved workout appears in history', async ({ page, trackWorkout }) => {
     const title = uniqueTitle('History Visible');
     await startNewWorkout(page);
     await editWorkoutDetails(page, { title });
     await addExercise(page, 'Ab Wheel');
     await saveWorkout(page);
-    const workoutId = workoutIdFromUrl(page);
+    trackWorkout(workoutIdFromUrl(page));
 
     await page.goto('/history');
 
     await expect(page.getByText(title)).toBeVisible();
-
-    await deleteWorkoutViaApi(request, workoutId);
   });
 });
