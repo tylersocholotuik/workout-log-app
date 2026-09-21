@@ -121,8 +121,13 @@ test.beforeAll(async ({ browser }, testInfo) => {
   await context.close();
 });
 
-test.afterAll(async () => {
-  const context = await request.newContext();
+test.afterAll(async ({}, testInfo) => {
+  // Must carry the same storageState as beforeAll's context - an
+  // unauthenticated request context can't delete anything (401), and would
+  // silently leak this file's whole fixture set every run.
+  const context = await request.newContext({
+    storageState: storageStateFor(testInfo.project.name),
+  });
   for (const fixture of fixtures) {
     await deleteWorkoutViaApi(context, fixture.id);
   }

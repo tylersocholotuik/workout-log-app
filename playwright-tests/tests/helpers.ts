@@ -1,6 +1,19 @@
 import { expect, Page, Locator, APIRequestContext } from '@playwright/test';
 
 export const API_URL = process.env.API_URL || 'http://localhost:5258';
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1)/.test(BASE_URL);
+
+// The auth cookie is only ever valid for whichever origin the app itself
+// used to log in. Locally, the frontend calls the backend directly (see
+// NEXT_PUBLIC_API_URL in lib/api/*.ts), so the cookie is scoped to API_URL.
+// On staging/production, requests are same-origin and Next.js proxies them
+// to the backend (see rewrites() in next.config.ts), so the cookie is only
+// valid for the frontend's own origin (BASE_URL) there. Calling the raw
+// backend origin directly on staging silently fails auth (401) because the
+// cookie's domain never matches - this was the root cause of test workouts
+// never getting cleaned up on staging.
+const AUTHENTICATED_API_URL = isLocal ? API_URL : BASE_URL;
 
 export function uniqueTitle(label: string) {
   return `E2E ${label} ${Date.now()}`;
@@ -16,9 +29,15 @@ export function workoutIdFromUrl(page: Page): string {
 
 export async function deleteWorkoutViaApi(request: APIRequestContext, id: string | undefined) {
   if (!id || id === 'new-workout') return;
-  await request.delete(`${API_URL}/api/workouts/${id}`, {
+  const res = await request.delete(`${AUTHENTICATED_API_URL}/api/workouts/${id}`, {
     headers: { 'X-Requested-With': 'XMLHttpRequest' },
   });
+  // Cleanup runs in test teardown/fixtures - don't throw and mask the
+  // test's real outcome, but do make failures visible instead of silently
+  // leaking data.
+  if (!res.ok()) {
+    console.warn(`deleteWorkoutViaApi: failed to delete workout ${id} (${res.status()})`);
+  }
 }
 
 export async function startNewWorkout(page: Page) {
