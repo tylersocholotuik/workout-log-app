@@ -75,6 +75,31 @@ BASE_URL=https://your-staging-url API_URL=https://your-staging-api npx playwrigh
   (`global-setup.ts` already waits on `/health-check` before tests start, but
   that only confirms the process/DB are up, not that every endpoint is warm).
 
+### Test data cleanup
+
+Every test that creates a workout registers it with the `trackWorkout` fixture
+(see [tests/fixtures.ts](tests/fixtures.ts)) instead of deleting it as the
+last line of the test body - that guarantees the delete still runs even if an
+earlier assertion fails. `history.spec.ts` uses an analogous `afterAll` for
+its shared fixture set.
+
+Authenticated cleanup calls must go through whichever origin the app itself
+used to log in (see the comment above `AUTHENTICATED_API_URL` in
+[tests/helpers.ts](tests/helpers.ts)) - locally that's the backend directly,
+but on staging/production it's the frontend's own origin (Next.js proxies
+`/api/*` to the backend there), since that's where the auth cookie is scoped.
+
+If a run is interrupted (e.g. Ctrl-C) before these mechanisms get a chance to
+run, or you just want to double-check staging is clean, run:
+
+```bash
+npm run cleanup:test-data
+```
+
+This logs in as the test account and deletes every workout whose title starts
+with `E2E ` (see `uniqueTitle()` in helpers.ts) - safe to run at any time,
+including periodically/manually, since it never touches non-test data.
+
 ### Viewing results
 
 ```bash
@@ -86,6 +111,7 @@ npx playwright show-report
 ```
 tests/
   auth.setup.ts             # logs in once per browser, saves storage state
+  fixtures.ts               # trackWorkout fixture - guaranteed workout cleanup
   helpers.ts                # shared helpers (createWorkout, saveWorkout, etc.)
   workout.spec.ts           # workout CRUD (authenticated)
   history.spec.ts           # history page filtering/grouping (authenticated)
@@ -97,6 +123,8 @@ tests/
 test-plans/
   TEMPLATE.md                # copy this for a new flow's test plan
   *.md                       # one file per flow, written before its spec
+scripts/
+  cleanup-test-data.ts       # standalone safety net, see "Test data cleanup"
 ```
 
 Shared test helpers live in `tests/helpers.ts` - add new reusable steps there
