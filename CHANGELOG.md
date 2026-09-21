@@ -16,6 +16,28 @@ change behind it.
 
 ## [Unreleased]
 
+### Added
+
+- Added `playwright-tests/scripts/cleanup-test-data.ts` (`npm run
+  cleanup:test-data`), a standalone safety net that logs in as the test
+  account and deletes any leftover `E2E `-prefixed workouts - useful after
+  an interrupted test run, or to periodically confirm staging is clean.
+
+### Fixed
+
+- Fixed Playwright E2E test workouts never getting cleaned up when run
+  against staging - every `deleteWorkoutViaApi` call was silently failing
+  with a 401. The auth cookie is scoped to whichever origin the app used to
+  log in: on staging that's the frontend's own origin (Next.js proxies
+  `/api/*` to the backend there), not the backend's raw domain, so calling
+  the backend directly never sent the cookie. Test cleanup now targets the
+  same origin the app itself would use (`tests/helpers.ts`). Also replaced
+  the "delete as the last line of the test body" pattern - which skipped
+  cleanup entirely whenever an earlier assertion failed - with a
+  `trackWorkout` fixture (`tests/fixtures.ts`) whose teardown always runs,
+  and fixed `history.spec.ts`'s `afterAll` cleanup, which used a request
+  context with no auth state at all.
+
 ## [1.1.3] - 2026-09-20
 
 ### Added
