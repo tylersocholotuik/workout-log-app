@@ -1,0 +1,84 @@
+name: CI
+
+# Reusable workflow: path-based change detection plus the two check suites
+# (backend tests, frontend build/lint). Called by pr-checks.yml on every PR
+# and deploy.yml (re-run on merge to main before anything gets deployed).
+on:
+  workflow_call:
+    outputs:
+      backend_changed:
+        description: "Whether backend/** files changed"
+        value: ${{ jobs.changes.outputs.backend }}
+      frontend_changed:
+        description: "Whether frontend/** files changed"
+        value: ${{ jobs.changes.outputs.frontend }}
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+
+  # Runs the WorkoutLogAPI.Tests suite (unit + integration).
+  backend-tests:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        working-directory: backend/WorkoutLogAPI
+        run: dotnet restore WorkoutLogAPI.sln
+
+      - name: Build
+        working-directory: backend/WorkoutLogAPI
+        run: dotnet build WorkoutLogAPI.sln --no-restore --configuration Release
+
+      - name: Test
+        working-directory: backend/WorkoutLogAPI
+        run: dotnet test WorkoutLogAPI.sln --no-build --configuration Release
+
+  # Mirrors what Vercel does at deploy time (next build) plus lint, so a
+  # broken build/lint is caught in CI instead of at deploy time.
+  # Currently no component tests for the frontend. Playwright E2E tests
+  #  run after the frontend is deployed to staging.
+  frontend-checks:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build

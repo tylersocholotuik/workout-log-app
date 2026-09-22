@@ -1,0 +1,137 @@
+name: Deploy
+
+# Runs on every push to main (i.e. every merged PR): re-runs CI, deploys
+# whichever side(s) of the app changed to staging, runs the Playwright E2E
+# suite against staging, then (after manual approval via the "production"
+# GitHub Environment) deploys the same commit to production.
+on:
+  push:
+    branches: [main]
+
+# Avoid two merges racing each other through staging/production.
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  # --- Staging -------------------------------------------------------------
+
+  deploy-staging-backend:
+    needs: ci
+    if: needs.ci.outputs.backend_changed == 'true'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/render-deploy
+        with:
+          api-key: ${{ secrets.RENDER_API_KEY }}
+          service-id: ${{ vars.RENDER_SERVICE_ID }}
+          commit-sha: ${{ github.sha }}
+          health-check-url: ${{ vars.STAGING_API_URL }}/health-check
+
+  deploy-staging-frontend:
+    needs: ci
+    if: needs.ci.outputs.frontend_changed == 'true'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/vercel-deploy
+        with:
+          token: ${{ secrets.VERCEL_TOKEN }}
+          org-id: ${{ vars.VERCEL_ORG_ID }}
+          project-id: ${{ vars.VERCEL_PROJECT_ID }}
+
+  e2e-staging:
+    needs: [ci, deploy-staging-backend, deploy-staging-frontend]
+    if: |
+      always() &&
+      needs.ci.result == 'success' &&
+      (needs.deploy-staging-backend.result == 'success' || needs.deploy-staging-backend.result == 'skipped') &&
+      (needs.deploy-staging-frontend.result == 'success' || needs.deploy-staging-frontend.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: playwright-tests/package-lock.json
+
+      - name: Install dependencies
+        working-directory: playwright-tests
+        run: npm ci
+
+      # webkit is skipped automatically against non-local BASE_URL (see
+      # playwright.config.ts) - no need to install its browser in CI.
+      - name: Install Playwright browsers
+        working-directory: playwright-tests
+        run: npx playwright install --with-deps chromium firefox
+
+      # --reporter=line overrides the config's default 'html' reporter so
+      # pass/fail results show up directly in the job log instead of only
+      # in an HTML report file.
+      - name: Run E2E tests against staging
+        working-directory: playwright-tests
+        env:
+          BASE_URL: ${{ vars.STAGING_APP_URL }}
+          API_URL: ${{ vars.STAGING_API_URL }}
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+        run: npx playwright test --reporter=line
+
+      # Traces/screenshots on failure only exist in the HTML report, never
+      # in console output - only upload it when there's actually something
+      # to investigate.
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-tests/playwright-report
+          retention-days: 7
+
+  # --- Production ------------------------------------------------------------
+  # Both jobs target the "production" GitHub Environment, which should be
+  # configured with a required reviewer - the workflow pauses here until
+  # someone approves the deployment.
+
+  # Same commit SHA deployed as what just passed e2e-staging above. Since
+  # staging/production are separate Render services and Vercel projects
+  # (free-tier constraint), this rebuilds that commit fresh in each rather
+  # than promoting staging's literal build artifact.
+  deploy-production-backend:
+    needs: [ci, e2e-staging]
+    if: needs.ci.outputs.backend_changed == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/render-deploy
+        with:
+          api-key: ${{ secrets.RENDER_API_KEY }}
+          service-id: ${{ vars.RENDER_SERVICE_ID }}
+          commit-sha: ${{ github.sha }}
+          health-check-url: ${{ vars.PRODUCTION_API_URL }}/health-check
+
+  deploy-production-frontend:
+    needs: [ci, e2e-staging]
+    if: needs.ci.outputs.frontend_changed == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/vercel-deploy
+        with:
+          token: ${{ secrets.VERCEL_TOKEN }}
+          org-id: ${{ vars.VERCEL_ORG_ID }}
+          project-id: ${{ vars.VERCEL_PROJECT_ID }}

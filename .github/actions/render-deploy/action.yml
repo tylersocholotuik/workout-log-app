@@ -1,0 +1,83 @@
+name: Render deploy
+description: Trigger a Render deploy for a specific commit, wait for it to go live, then poll its health check.
+inputs:
+  api-key:
+    description: Render API key
+    required: true
+  service-id:
+    description: Render service ID to deploy
+    required: true
+  commit-sha:
+    description: Git commit SHA to deploy
+    required: true
+  health-check-url:
+    description: Full URL to poll after the deploy goes live (e.g. https://api.example.com/health-check)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Trigger deploy
+      id: deploy
+      shell: bash
+      env:
+        RENDER_API_KEY: ${{ inputs.api-key }}
+        RENDER_SERVICE_ID: ${{ inputs.service-id }}
+        COMMIT_SHA: ${{ inputs.commit-sha }}
+      run: |
+        set -euo pipefail
+        response=$(curl -sS -w '\n%{http_code}' -X POST \
+          "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys" \
+          -H "Authorization: Bearer ${RENDER_API_KEY}" \
+          -H "Content-Type: application/json" \
+          -d "{\"commitId\": \"${COMMIT_SHA}\"}")
+        http_code=$(tail -n1 <<< "$response")
+        body=$(sed '$d' <<< "$response")
+        if [[ "$http_code" != "201" && "$http_code" != "202" ]]; then
+          echo "Render deploy trigger failed (HTTP $http_code): $body" >&2
+          exit 1
+        fi
+        deploy_id=$(jq -r '.id' <<< "$body")
+        echo "Triggered Render deploy $deploy_id for commit $COMMIT_SHA"
+        echo "deploy_id=$deploy_id" >> "$GITHUB_OUTPUT"
+
+    - name: Wait for deploy to go live
+      shell: bash
+      env:
+        RENDER_API_KEY: ${{ inputs.api-key }}
+        RENDER_SERVICE_ID: ${{ inputs.service-id }}
+        DEPLOY_ID: ${{ steps.deploy.outputs.deploy_id }}
+      run: |
+        set -euo pipefail
+        for i in $(seq 1 60); do
+          status=$(curl -sS \
+            "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys/${DEPLOY_ID}" \
+            -H "Authorization: Bearer ${RENDER_API_KEY}" | jq -r '.status')
+          echo "[$i/60] Render deploy status: $status"
+          case "$status" in
+            live) exit 0 ;;
+            build_failed|update_failed|canceled|pre_deploy_failed)
+              echo "Render deploy ended with status: $status" >&2
+              exit 1
+              ;;
+          esac
+          sleep 10
+        done
+        echo "Timed out waiting for Render deploy to go live" >&2
+        exit 1
+
+    - name: Wait for health check
+      shell: bash
+      env:
+        HEALTH_CHECK_URL: ${{ inputs.health-check-url }}
+      run: |
+        set -euo pipefail
+        deadline=$((SECONDS + 90))
+        until curl -sf "${HEALTH_CHECK_URL}" > /dev/null; do
+          if (( SECONDS > deadline )); then
+            echo "$HEALTH_CHECK_URL did not report healthy within 90s" >&2
+            exit 1
+          fi
+          sleep 3
+        done
+        echo "$HEALTH_CHECK_URL is healthy"
