@@ -22,6 +22,16 @@ change behind it.
   cleanup:test-data`), a standalone safety net that logs in as the test
   account and deletes any leftover `E2E `-prefixed workouts - useful after
   an interrupted test run, or to periodically confirm staging is clean.
+- Added a GitHub Actions CI/CD pipeline (`.github/workflows/`): `ci.yml`
+  (reusable) runs backend tests and frontend lint/build, each skipped
+  automatically when its respective `backend/**`/`frontend/**` path didn't
+  change; `pr-checks.yml` runs these on every pull request; `deploy.yml`
+  runs on merge to `main`, deploying whichever side(s) changed to the
+  staging Render service/Vercel project (pinned to the merge commit via the
+  `render-deploy`/`vercel-deploy` composite actions in `.github/actions/`),
+  running the Playwright E2E suite against staging, then deploying to
+  production behind a required reviewer approval on a `production` GitHub
+  Environment. See `docs/ci-cd.md` for full details.
 
 ### Fixed
 
