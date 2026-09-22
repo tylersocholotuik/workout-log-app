@@ -1,0 +1,17 @@
+name: PR Checks
+
+# Runs on every PR, to any base branch. Required status checks for branch
+# protection should point at "PR Checks / backend-tests" and
+# "PR Checks / frontend-checks" (see ci.yml). When a job is skipped because
+# its path filter didn't match (e.g. a frontend-only PR skips backend-tests),
+# GitHub still reports that check as passing, so branch protection isn't
+# blocked by changes that don't touch that side of the app.
+on:
+  pull_request:
+  # Lets this be re-run manually (Actions tab -> Run workflow) against any
+  # branch, e.g. after fixing a config issue without pushing a new commit.
+  workflow_dispatch:
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml

@@ -1,0 +1,53 @@
+name: Vercel deploy
+description: Build and deploy a Vercel project's production environment from a local build.
+inputs:
+  token:
+    description: Vercel API token
+    required: true
+  org-id:
+    description: Vercel org (team) ID
+    required: true
+  project-id:
+    description: Vercel project ID to deploy
+    required: true
+  working-directory:
+    description: Directory containing the Vercel project
+    required: false
+    default: frontend
+
+runs:
+  using: composite
+  steps:
+    - name: Install Vercel CLI
+      shell: bash
+      run: npm install --global vercel@latest
+
+    # Pulling/building/deploying against this project's "production"
+    # environment - for the staging project, that's its only environment,
+    # separate from the actual production Vercel project.
+    - name: Pull project settings
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        VERCEL_TOKEN: ${{ inputs.token }}
+        VERCEL_ORG_ID: ${{ inputs.org-id }}
+        VERCEL_PROJECT_ID: ${{ inputs.project-id }}
+      run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+    - name: Build
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        VERCEL_TOKEN: ${{ inputs.token }}
+        VERCEL_ORG_ID: ${{ inputs.org-id }}
+        VERCEL_PROJECT_ID: ${{ inputs.project-id }}
+      run: vercel build --prod --token="$VERCEL_TOKEN"
+
+    - name: Deploy
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        VERCEL_TOKEN: ${{ inputs.token }}
+        VERCEL_ORG_ID: ${{ inputs.org-id }}
+        VERCEL_PROJECT_ID: ${{ inputs.project-id }}
+      run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
