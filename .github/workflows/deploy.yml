@@ -54,6 +54,7 @@ jobs:
     if: |
       always() &&
       needs.ci.result == 'success' &&
+      (needs.ci.outputs.backend_changed == 'true' || needs.ci.outputs.frontend_changed == 'true') &&
       (needs.deploy-staging-backend.result == 'success' || needs.deploy-staging-backend.result == 'skipped') &&
       (needs.deploy-staging-frontend.result == 'success' || needs.deploy-staging-frontend.result == 'skipped')
     runs-on: ubuntu-latest

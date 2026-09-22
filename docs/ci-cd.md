@@ -100,12 +100,14 @@ Runs on every push to `main` (i.e. every merged PR):
    whichever side(s) changed to the staging Render service / Vercel
    project, gated by `environment: staging`.
 3. **`e2e-staging`** - runs once both staging deploys have either succeeded
-   or been skipped. Runs the full Playwright suite
-   (`playwright-tests/`) against the staging URLs with `--reporter=line`
-   for console pass/fail output; the HTML report (with failure
-   traces/screenshots) is only uploaded as an artifact `if: failure()`,
-   since that's the only place trace data exists - console text alone
-   doesn't capture it.
+   or been skipped, and only if backend or frontend actually changed (a
+   docs-only merge, where both deploy jobs are skipped, does *not* trigger
+   an E2E run against an unchanged staging environment). Runs the full
+   Playwright suite (`playwright-tests/`) against the staging URLs with
+   `--reporter=line` for console pass/fail output; the HTML report (with
+   failure traces/screenshots) is only uploaded as an artifact
+   `if: failure()`, since that's the only place trace data exists - console
+   text alone doesn't capture it.
 4. **`deploy-production-backend`** / **`deploy-production-frontend`** -
    gated by `environment: production`. A required reviewer is configured so 
    these jobs pause for manual approval after `e2e-staging`
