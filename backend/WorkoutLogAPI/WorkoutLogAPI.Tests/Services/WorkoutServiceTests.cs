@@ -91,6 +91,37 @@ public class WorkoutServiceTests
 
         Assert.Equal("A workout with this title and date already exists.", ex.Message);
     }
+    
+    [Fact]
+    public async Task CreateWorkout_WithDuplicateTitleAndDateOfDeletedWorkout_AllowsCreation()
+    {
+        var (context, service) = CreateSut();
+        const string userId = "user-1";
+        var deletedWorkout = new Workout
+        {
+            Id = Guid.NewGuid().ToString(),
+            Title = "Leg Day",
+            UserId = userId,
+            Date = new DateOnly(2026, 1, 1),
+            Deleted = true
+        };
+        context.Workouts.Add(deletedWorkout);
+        await context.SaveChangesAsync();
+
+        var dto = new WorkoutDto(
+            Id: null,
+            Title: "Leg Day",
+            UserId: userId,
+            Date: new DateOnly(2026, 1, 1),
+            Notes: null,
+            Exercises: null);
+        
+        var result = await service.CreateWorkout(dto, userId);
+        
+        Assert.Equal("Leg Day", result.Title);
+        Assert.Equal(userId, result.UserId);
+        Assert.Equal(new DateOnly(2026, 1, 1), result.Date);
+    }
 
     [Fact]
     public async Task GetWorkoutById_WhenWorkoutDoesNotBelongToUser_ThrowsUnauthorizedAccessException()
@@ -145,6 +176,45 @@ public class WorkoutServiceTests
             .IgnoreQueryFilters()
             .AnyAsync(s => s.Id == createdSetId && s.Deleted);
         Assert.True(setRowStillExists);
+    }
+    
+    [Fact]
+    public async Task UpdateWorkout_WithDuplicateTitleAndDate_ThrowsInvalidOperationException()
+    {
+        var (context, service) = CreateSut();
+        const string userId = "user-1";
+        var existingWorkout = new Workout
+        {
+            Id = Guid.NewGuid().ToString(),
+            Title = "Leg Day",
+            UserId = userId,
+            Date = new DateOnly(2026, 1, 1)
+        };
+        context.Workouts.Add(existingWorkout);
+        await context.SaveChangesAsync();
+
+        var workoutToUpdate = new Workout
+        {
+            Id = Guid.NewGuid().ToString(),
+            Title = "Push Day",
+            UserId = userId,
+            Date = new DateOnly(2026, 1, 2)
+        };
+        context.Workouts.Add(workoutToUpdate);
+        await context.SaveChangesAsync();
+
+        var updateDto = new WorkoutDto(
+            Id: workoutToUpdate.Id,
+            Title: "Leg Day",
+            UserId: userId,
+            Date: new DateOnly(2026, 1, 1),
+            Notes: null,
+            Exercises: null);
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => service.UpdateWorkout(workoutToUpdate.Id, updateDto, userId));
+
+        Assert.Equal("A workout with this title and date already exists.", ex.Message);
     }
 
     [Fact]
