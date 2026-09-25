@@ -19,9 +19,9 @@ public class WorkoutService
         return await _context.Workouts
             .Where(w => w.UserId == userId && !w.Deleted)
             .Include(w => w.Exercises.Where(e => !e.Deleted))
-                .ThenInclude(e => e.Sets.Where(s => !s.Deleted))
+            .ThenInclude(e => e.Sets.Where(s => !s.Deleted))
             .Include(w => w.Exercises.Where(e => !e.Deleted))
-                .ThenInclude(e => e.Exercise)
+            .ThenInclude(e => e.Exercise)
             .OrderByDescending(w => w.Date)
             .ToListAsync();
     }
@@ -31,9 +31,9 @@ public class WorkoutService
         var workout = await _context.Workouts
             .Where(w => w.Id == id && !w.Deleted)
             .Include(w => w.Exercises.Where(e => !e.Deleted))
-                .ThenInclude(e => e.Sets.Where(s => !s.Deleted))
+            .ThenInclude(e => e.Sets.Where(s => !s.Deleted))
             .Include(w => w.Exercises.Where(e => !e.Deleted))
-                .ThenInclude(e => e.Exercise)
+            .ThenInclude(e => e.Exercise)
             .FirstOrDefaultAsync();
 
         if (workout == null)
@@ -48,12 +48,13 @@ public class WorkoutService
 
         return workout;
     }
-    
+
     // Fetches the history of a specific exercise for a user, including all workouts and sets associated with that exercise.
     public async Task<List<WorkoutExercise>> GetExerciseHistory(int exerciseId, string userId)
     {
         return await _context.WorkoutExercises
-            .Where(we => we.ExerciseId == exerciseId && !we.Deleted && we.Workout.UserId == userId && !we.Workout.Deleted)
+            .Where(we => we.ExerciseId == exerciseId && !we.Deleted && we.Workout.UserId == userId &&
+                         !we.Workout.Deleted)
             .Include(we => we.Workout)
             .Include(we => we.Sets.Where(s => !s.Deleted))
             .OrderByDescending(we => we.Workout.Date)
@@ -63,7 +64,10 @@ public class WorkoutService
     public async Task<Workout> CreateWorkout(WorkoutDto workoutDto, string userId)
     {
         var workoutExists = await _context.Workouts.Where(w =>
-                w.Title.ToLower() == workoutDto.Title.ToLower() && w.Date == workoutDto.Date && w.UserId == userId)
+                w.Title.ToLower() == workoutDto.Title.ToLower() &&
+                w.Date == workoutDto.Date &&
+                w.UserId == userId &&
+                !w.Deleted)
             .AnyAsync();
 
         if (workoutExists)
@@ -96,16 +100,30 @@ public class WorkoutService
         await _context.SaveChangesAsync();
         return await GetWorkoutById(workout.Id, userId);
     }
-    
+
     public async Task<Workout> UpdateWorkout(string id, WorkoutDto workoutDto, string userId)
     {
         var workout = await GetWorkoutById(id, userId);
+        
+        // Check if a workout with the same title and date already exists for this user, excluding the current workout
+        var workoutExists = await _context.Workouts.Where(w =>
+                w.Title.ToLower() == workoutDto.Title.ToLower() &&
+                w.Date == workoutDto.Date && 
+                w.UserId == userId &&
+                !w.Deleted && 
+                w.Id != id)
+            .AnyAsync();
+
+        if (workoutExists)
+        {
+            throw new InvalidOperationException("A workout with this title and date already exists.");
+        }
 
         // Update the top-level properties of the workout
         workout.Title = workoutDto.Title;
         workout.Date = workoutDto.Date;
         workout.Notes = workoutDto.Notes;
-        
+
         // Add, update, or soft delete exercises and sets based on the provided DTO
         SyncExercises(workout, workoutDto.Exercises);
 
@@ -122,7 +140,7 @@ public class WorkoutService
 
         return await GetWorkoutById(workout.Id, userId);
     }
-    
+
     public async Task DeleteWorkout(string id, string userId)
     {
         var workout = await GetWorkoutById(id, userId);
