@@ -47,6 +47,14 @@ change behind it.
   `trackWorkout` fixture (`tests/fixtures.ts`) whose teardown always runs,
   and fixed `history.spec.ts`'s `afterAll` cleanup, which used a request
   context with no auth state at all.
+- Fixed `UpdateWorkout` not actually catching a renamed/redated workout that
+  collides with another workout.
+- Fixed duplicate title/date checks in `CreateWorkout` and `UpdateWorkout`
+  blocking on soft-deleted workouts, so a new or renamed workout could no
+  longer reuse the title and date of a previously deleted one.
+- Fixed `POST /api/workouts` and `PUT /api/workouts/{id}` returning a
+  generic 500 for a duplicate title/date instead of a `409 Conflict` with a
+  clear error message.
 
 ## [1.1.3] - 2026-09-20
 
