@@ -55,6 +55,16 @@ change behind it.
 - Fixed `POST /api/workouts` and `PUT /api/workouts/{id}` returning a
   generic 500 for a duplicate title/date instead of a `409 Conflict` with a
   clear error message.
+- Fixed `deploy-production-backend`/`deploy-production-frontend` in
+  `deploy.yml` being silently skipped even when their own conditions
+  (`backend_changed`/`frontend_changed`) were true. Their `if:` lacked a
+  status check function, so GitHub's implicit default `success()` check
+  walked the *entire* upstream dependency chain - including `e2e-staging`'s
+  own needs (`deploy-staging-backend`/`deploy-staging-frontend`) - and saw
+  the routine, expected skip of whichever staging side didn't change,
+  causing production deploys to skip too. Added `always()` plus an explicit
+  `needs.e2e-staging.result == 'success'` check, mirroring the pattern
+  `e2e-staging` already used for the same reason.
 
 ## [1.1.3] - 2026-09-20
 

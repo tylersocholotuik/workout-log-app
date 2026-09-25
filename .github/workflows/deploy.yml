@@ -105,14 +105,22 @@ jobs:
   # Both jobs target the "production" GitHub Environment, which should be
   # configured with a required reviewer - the workflow pauses here until
   # someone approves the deployment.
-
   # Same commit SHA deployed as what just passed e2e-staging above. Since
   # staging/production are separate Render services and Vercel projects
   # (free-tier constraint), this rebuilds that commit fresh in each rather
   # than promoting staging's literal build artifact.
   deploy-production-backend:
     needs: [ci, e2e-staging]
-    if: needs.ci.outputs.backend_changed == 'true'
+    # e2e-staging's own dependency chain includes deploy-staging-backend/
+    # -frontend, one of which is routinely skipped whenever only one side of
+    # the app changed. Without always() here, the default implicit
+    # success() check walks that whole transitive chain - not just this
+    # job's direct needs - sees the (expected, harmless) skip, and skips
+    # this job too, regardless of backend_changed.
+    if: |
+      always() &&
+      needs.e2e-staging.result == 'success' &&
+      needs.ci.outputs.backend_changed == 'true'
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -126,7 +134,10 @@ jobs:
 
   deploy-production-frontend:
     needs: [ci, e2e-staging]
-    if: needs.ci.outputs.frontend_changed == 'true'
+    if: |
+      always() &&
+      needs.e2e-staging.result == 'success' &&
+      needs.ci.outputs.frontend_changed == 'true'
     runs-on: ubuntu-latest
     environment: production
     steps:
