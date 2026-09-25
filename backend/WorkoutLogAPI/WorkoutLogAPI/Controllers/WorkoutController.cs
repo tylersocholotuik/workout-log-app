@@ -91,6 +91,11 @@ public class WorkoutController : ControllerBase
             _logger.LogInformation("Workout created successfully with ID {WorkoutId} for user {UserId}", workout.Id, userId);
             return CreatedAtAction(nameof(GetWorkoutById), new { id = workout.Id }, WorkoutDto.FromWorkout(workout));
         }
+        catch (InvalidOperationException e)
+        {
+            _logger.LogWarning(e, "Workout already exists: {Message}", e.Message);
+            return Conflict(new { error = "A workout with the same title and date already exists" });
+        }
         catch (Exception e)
         {
             _logger.LogError(e, "Error creating workout: {Message}", e.Message);
@@ -107,6 +112,11 @@ public class WorkoutController : ControllerBase
             var workout = await _workoutService.UpdateWorkout(id, workoutDto, userId);
             _logger.LogInformation("Workout updated successfully with ID {WorkoutId} for user {UserId}", workout.Id, userId);
             return Ok(WorkoutDto.FromWorkout(workout));
+        }
+        catch (InvalidOperationException e)
+        {
+            _logger.LogWarning(e, "Workout already exists: {Message}", e.Message);
+            return Conflict(new { error = "A workout with the same title and date already exists" });
         }
         catch (Exception e)
         {
