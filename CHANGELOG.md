@@ -16,6 +16,12 @@ change behind it.
 
 ## [Unreleased]
 
+### Fixed
+
+- Added a `Promote` step to the `.github/actions/vercel-deploy/action.yml` composite action to ensure 
+  the deployment is promoted to production after a successful merge to `main`. Previously, the action only deployed to 
+  production but did not promote the deployment, which caused the production URL to point to an older version of the app.
+
 ### Changed
 
 - Updated home page images in `frontend/public/img` to reflect current Select Exercise Modal and Exercise Card styling.
