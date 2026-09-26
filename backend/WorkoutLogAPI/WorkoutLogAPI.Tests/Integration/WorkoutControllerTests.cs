@@ -120,6 +120,29 @@ public class WorkoutControllerTests(PostgresContainerFixture postgres) : Integra
         Assert.Equal("Updated Title", fetched!.Title);
         Assert.Equal("Updated notes", fetched.Notes);
     }
+    
+    [Theory]
+    [InlineData(-50, 5, 8)]         // weight below min
+    [InlineData(9999.5, 5, 8)]      // weight above max
+    [InlineData(100.3, 5, 8)]       // weight not in steps of 0.5
+    [InlineData(100, -1, 8)]        // reps below min
+    [InlineData(100, 10000, 8)]     // reps above max
+    [InlineData(100, 5, 5.5)]       // rpe below min
+    [InlineData(100, 5, 10.5)]      // rpe above max
+    [InlineData(100, 5, 7.3)]       // rpe not in steps of 0.5
+    public async Task UpdateWorkout_WithInvalidSetData_ReturnsBadRequest(double weight, int reps, double rpe)
+    {
+        var authCookie = await Client.RegisterNewUserAndGetAuthCookieAsync();
+        var workout = await CreateWorkoutAsync(authCookie);
+
+        var invalidSet = new SetDto(null, weight, reps, rpe, workout.Exercises![0].ExerciseId);
+        var updatedExercise = workout.Exercises![0] with { Sets = [invalidSet] };
+        var updatedWorkout = workout with { Exercises = [updatedExercise] };
+
+        var updateResponse = await Client.PutAsJsonWithCsrfAsync($"/api/workouts/{workout.Id}", updatedWorkout, authCookie);
+
+        Assert.Equal(HttpStatusCode.BadRequest, updateResponse.StatusCode);
+    }
 
     [Fact]
     public async Task DeleteWorkout_RemovesItFromUsersWorkoutList()
