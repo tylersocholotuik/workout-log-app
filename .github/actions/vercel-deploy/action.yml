@@ -44,10 +44,25 @@ runs:
       run: vercel build --prod --token="$VERCEL_TOKEN"
 
     - name: Deploy
+      id: deploy
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       env:
         VERCEL_TOKEN: ${{ inputs.token }}
         VERCEL_ORG_ID: ${{ inputs.org-id }}
         VERCEL_PROJECT_ID: ${{ inputs.project-id }}
-      run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+      run: |
+        url=$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN")
+        echo "url=$url" >> "$GITHUB_OUTPUT"
+
+    # `vercel deploy --prod` can leave the deployment in a "staged" state
+    # awaiting manual promotion instead of immediately going live - promote
+    # it explicitly so production traffic actually gets the new deployment.
+    - name: Promote
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        VERCEL_TOKEN: ${{ inputs.token }}
+        VERCEL_ORG_ID: ${{ inputs.org-id }}
+        VERCEL_PROJECT_ID: ${{ inputs.project-id }}
+      run: vercel promote "${{ steps.deploy.outputs.url }}" --token="$VERCEL_TOKEN"
