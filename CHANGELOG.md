@@ -16,6 +16,8 @@ change behind it.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-25
+
 ### Added
 
 - Added 3 custom validation attributes: `RepsRangeAttribute`, `WeightRangeAttribute`, and `RpeRangeAttribute`
@@ -208,7 +210,8 @@ not itemized here — this entry describes the state of the app as of this tag.
   `/health` endpoint for platform health checks.
 - Database migrations and idempotent seed data for local/dev environments.
 
-[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.1.4...HEAD
+[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.2.0
 [1.1.4]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.1.4
 [1.1.3]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.1.3
 [1.1.2]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.1.2
