@@ -34,7 +34,7 @@ setup('authenticate', async ({ page }, testInfo) => {
   // signing, first-time query compilation) can still be much slower right
   // after a Render free-tier instance wakes from a cold start. Give this
   // specific check a longer allowance than the default expect timeout.
-  await expect(page).toHaveURL('/', { timeout: 60_000 });
+  await expect(page).toHaveURL('/workout/new-workout', { timeout: 60_000 });
 
   await page.context().storageState({ path: storageStateFor(browserName) });
 });
