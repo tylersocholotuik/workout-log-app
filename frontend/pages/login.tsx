@@ -56,6 +56,8 @@ export default function App() {
   const router = useRouter();
   
   const forgotPasswordModal = useDisclosure();
+  
+  const DEFAULT_PAGE = "/workout/new-workout";
 
   interface ErrorDictionary {
     field: string;
@@ -65,7 +67,7 @@ export default function App() {
   useEffect(() => {
     if (isSignedIn()) {
       // redirect to home page after sign in
-      router.push("/");
+      router.push(DEFAULT_PAGE);
     }
   }, [user, isSignedIn, router]);
 
@@ -115,7 +117,7 @@ export default function App() {
           color: "success",
         });
         resetForms();
-        router.push("/");
+        router.push(DEFAULT_PAGE);
       } catch (error: unknown) {
         const message =
           error instanceof Error ? error.message : "An unknown error occurred";
