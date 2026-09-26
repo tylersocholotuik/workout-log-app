@@ -22,17 +22,18 @@ export default function Footer() {
                         </span>
                     </p>
                     <p className="text-sm text-foreground-500 mb-4 md:mb-2">
-                        &copy; Copyright 2025 Tyler Socholotuik
+                        &copy; Copyright 2025-{new Date().getFullYear()} Tyler Socholotuik
                     </p>
                     <div className="max-w-[500px]">
                         <p className="text-md md:text-lg text-center md:text-start">
                             Disclaimer
                         </p>
                         <p className="text-sm sm:text-md text-start text-foreground-500">
-                            This application is a portfolio project and is
-                            intended for demonstration. I will not profit from
-                            any ideas that are borrowed from existing
-                            applications.
+                            This application is a personal portfolio project
+                            built for demonstration purposes only. It is not
+                            affiliated with, endorsed by, or connected to any
+                            similar commercial application, and is provided
+                            as-is without warranty of any kind.
                         </p>
                     </div>
                 </div>
