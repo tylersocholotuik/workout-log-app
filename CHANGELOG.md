@@ -16,6 +16,11 @@ change behind it.
 
 ## [Unreleased]
 
+### Added
+
+- Added 3 custom validation attributes: `RepsRangeAttribute`, `WeightRangeAttribute`, and `RpeRangeAttribute`
+  in `WorkoutLogAPI/Validation` to enforce valid ranges for reps, weight, and RPE values in workout exercises.
+
 ### Fixed
 
 - Fixed `deploy-production-backend`/`deploy-production-frontend` in
