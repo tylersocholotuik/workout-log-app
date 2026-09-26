@@ -16,6 +16,12 @@ change behind it.
 
 ## [Unreleased]
 
+### Changed
+
+- Updated home page images in `frontend/public/img` to reflect current Select Exercise Modal and Exercise Card styling.
+- Changed the login/register redirect from the home page to the new workout page (`/workout/new-workout`).
+- Updated the `auth.setup.ts` Playwright test to expect the new workout page URL after login.
+
 ## [1.2.0] - 2026-09-25
 
 ### Added
