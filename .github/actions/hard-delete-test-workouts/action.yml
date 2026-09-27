@@ -1,0 +1,65 @@
+name: Hard delete test workouts
+description: >
+  Logs in as an admin user and hard-deletes all workouts belonging to a given
+  test user, via the API's DELETE /api/admin/workouts endpoint. Used to clean
+  up Playwright E2E test data. That endpoint is gated behind an
+  AdminEndpoints:HardDeleteTestWorkoutsEnabled config flag - it must be
+  enabled in whichever environment api-url points at, or this action fails
+  with a 404.
+inputs:
+  api-url:
+    description: Base URL of the API (e.g. https://staging-api.example.com)
+    required: true
+  admin-email:
+    description: Email of a user with is_admin = true
+    required: true
+  admin-password:
+    description: Password for admin-email
+    required: true
+  test-user-email:
+    description: Email of the test user whose workouts should be hard-deleted
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Delete test workouts
+      shell: bash
+      env:
+        API_URL: ${{ inputs.api-url }}
+        ADMIN_EMAIL: ${{ inputs.admin-email }}
+        ADMIN_PASSWORD: ${{ inputs.admin-password }}
+        TEST_USER_EMAIL: ${{ inputs.test-user-email }}
+      run: |
+        set -euo pipefail
+        cookie_jar="$(mktemp)"
+        trap 'rm -f "$cookie_jar"' EXIT
+
+        login_status=$(curl -sS -o /tmp/login_response.json -w '%{http_code}' \
+          -c "$cookie_jar" \
+          -X POST "$API_URL/api/auth/login" \
+          -H "Content-Type: application/json" \
+          -H "X-Requested-With: XMLHttpRequest" \
+          -d "$(jq -n --arg email "$ADMIN_EMAIL" --arg password "$ADMIN_PASSWORD" \
+            '{email: $email, password: $password}')")
+
+        if [ "$login_status" -ne 200 ]; then
+          echo "Admin login failed with status $login_status" >&2
+          cat /tmp/login_response.json >&2
+          exit 1
+        fi
+
+        delete_status=$(curl -sS -o /tmp/delete_response.json -w '%{http_code}' \
+          -b "$cookie_jar" \
+          -X DELETE "$API_URL/api/admin/workouts" \
+          -H "Content-Type: application/json" \
+          -H "X-Requested-With: XMLHttpRequest" \
+          -d "$(jq -n --arg email "$TEST_USER_EMAIL" '{email: $email}')")
+
+        if [ "$delete_status" -ne 204 ]; then
+          echo "Deleting test workouts failed with status $delete_status" >&2
+          cat /tmp/delete_response.json >&2
+          exit 1
+        fi
+
+        echo "Hard-deleted test workouts for $TEST_USER_EMAIL"

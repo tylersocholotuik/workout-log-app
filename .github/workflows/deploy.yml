@@ -100,6 +100,15 @@ jobs:
           name: playwright-report
           path: playwright-tests/playwright-report
           retention-days: 7
+          
+      - name: Delete E2E test workouts
+        if: always()
+        uses: ./.github/actions/hard-delete-test-workouts
+        with:
+          api-url: ${{ vars.STAGING_API_URL }}
+          admin-email: ${{ secrets.ADMIN_EMAIL }}
+          admin-password: ${{ secrets.ADMIN_PASSWORD }}
+          test-user-email: ${{ secrets.TEST_USER_EMAIL }}
 
   # --- Production ------------------------------------------------------------
   # Both jobs target the "production" GitHub Environment, which should be
