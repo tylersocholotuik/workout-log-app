@@ -16,6 +16,8 @@ change behind it.
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-09-26
+
 ### Added
 
 - Added `DELETE /api/admin/workouts` (`AdminController`), which hard-deletes all
@@ -42,8 +44,8 @@ change behind it.
 
 ### Fixed
 
-- Added a `Promote` step to the `.github/actions/vercel-deploy/action.yml` composite action to ensure 
-  the deployment is promoted to production after a successful merge to `main`. Previously, the action only deployed to 
+- Added a `Promote` step to the `.github/actions/vercel-deploy/action.yml` composite action to ensure
+  the deployment is promoted to production after a successful merge to `main`. Previously, the action only deployed to
   production but did not promote the deployment, which caused the production URL to point to an older version of the app.
 
 ## [1.3.0] - 2026-09-26
@@ -248,7 +250,8 @@ not itemized here — this entry describes the state of the app as of this tag.
   `/health` endpoint for platform health checks.
 - Database migrations and idempotent seed data for local/dev environments.
 
-[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.4.0
 [1.3.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.3.0
 [1.2.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.2.0
 [1.1.4]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.1.4
