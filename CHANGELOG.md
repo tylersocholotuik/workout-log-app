@@ -16,6 +16,30 @@ change behind it.
 
 ## [Unreleased]
 
+### Added
+
+- Added `DELETE /api/admin/workouts` (`AdminController`), which hard-deletes all
+  workouts (and their exercises/sets) belonging to a user by email. Used to clean up
+  Playwright E2E test data after each staging run.
+- Added `WorkoutService.HardDeleteUserWorkouts`, to support the new admin endpoint.
+- Added an `AdminOnly` authorization policy in `Program.cs` requiring the JWT's
+  `is_admin` claim, applied to `AdminController`.
+- Gated the endpoint behind a new `AdminEndpoints:HardDeleteTestWorkoutsEnabled`
+  config flag (`false` in `appsettings.json`/production, `true` in
+  `appsettings.Development.json`) so it can be disabled in production. Returns 404
+  when disabled.
+- Added `.github/actions/hard-delete-test-workouts` composite action to clean up
+  test workouts created by the Playwright E2E tests.
+- Added integration tests (`AdminControllerTests`,
+  `AdminControllerEndpointDisabledTests`) and a `WorkoutServiceTests` unit test for
+  `HardDeleteUserWorkouts`.
+
+### Changed
+
+- Updated the `WorkoutService.DeleteWorkout` method to soft-delete exercises and sets along with the workout.
+  It previously only soft-deleted the workout itself, leaving orphaned exercises and sets behind.
+- Updated the associated `WorkoutServiceTests` to verify that exercises and sets are soft-deleted.
+
 ### Fixed
 
 - Added a `Promote` step to the `.github/actions/vercel-deploy/action.yml` composite action to ensure 

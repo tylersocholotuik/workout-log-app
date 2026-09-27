@@ -222,12 +222,26 @@ public class WorkoutServiceTests
     {
         var (context, service) = CreateSut();
         const string userId = "user-1";
+        var exercise = SeedExercise(context);
         var workout = new Workout
         {
             Id = Guid.NewGuid().ToString(),
             Title = "Old Workout",
             UserId = userId,
-            Date = new DateOnly(2026, 1, 1)
+            Date = new DateOnly(2026, 1, 1),
+            Exercises = new List<WorkoutExercise>
+            {
+                new WorkoutExercise
+                {
+                    ExerciseId = exercise.Id,
+                    WeightUnit = WeightUnit.Kg,
+                    Sets = new List<Set>
+                    {
+                        new Set { Weight = 100, Reps = 5 },
+                        new Set { Weight = 110, Reps = 3 }
+                    }
+                }
+            }
         };
         context.Workouts.Add(workout);
         await context.SaveChangesAsync();
@@ -237,8 +251,81 @@ public class WorkoutServiceTests
         // GetWorkoutById filters out Deleted = true
         await Assert.ThrowsAsync<KeyNotFoundException>(() => service.GetWorkoutById(workout.Id, userId));
         
-        var stillInDatabase = await context.Workouts.FindAsync(workout.Id);
+        var stillInDatabase = await context.Workouts
+            .Include(w => w.Exercises)
+            .ThenInclude(e => e.Sets)
+            .FirstOrDefaultAsync(w => w.Id == workout.Id);
+        
+        var exercises = stillInDatabase!.Exercises;
+        var sets = exercises.SelectMany(w => w.Sets).ToList();
+        
         Assert.NotNull(stillInDatabase);
         Assert.True(stillInDatabase!.Deleted);
+        Assert.NotEmpty(exercises);
+        Assert.True(exercises.All(e => e.Deleted));
+        Assert.NotEmpty(sets);
+        Assert.True(sets.All(s => s.Deleted));
+    }
+    
+    [Fact]
+    public async Task HardDeleteUserWorkouts_WithValidUserId_DeletesAllWorkoutsAndRelatedEntities()
+    {
+        var (context, service) = CreateSut();
+        const string userId = "user-1";
+        var exercise = SeedExercise(context);
+        var workout1 = new Workout
+        {
+            Id = Guid.NewGuid().ToString(),
+            Title = "Workout 1",
+            UserId = userId,
+            Date = new DateOnly(2026, 1, 1),
+            Exercises = new List<WorkoutExercise>
+            {
+                new WorkoutExercise
+                {
+                    ExerciseId = exercise.Id,
+                    WeightUnit = WeightUnit.Kg,
+                    Sets = new List<Set>
+                    {
+                        new Set { Weight = 100, Reps = 5 },
+                        new Set { Weight = 110, Reps = 3 }
+                    }
+                }
+            }
+        };
+        var workout2 = new Workout
+        {
+            Id = Guid.NewGuid().ToString(),
+            Title = "Workout 2",
+            UserId = userId,
+            Date = new DateOnly(2026, 1, 2),
+            Exercises = new List<WorkoutExercise>
+            {
+                new WorkoutExercise
+                {
+                    ExerciseId = exercise.Id,
+                    WeightUnit = WeightUnit.Lbs,
+                    Sets = new List<Set>
+                    {
+                        new Set { Weight = 200, Reps = 5 },
+                        new Set { Weight = 210, Reps = 3 }
+                    }
+                }
+            }
+        };
+        
+        context.Workouts.AddRange(workout1, workout2);
+        await context.SaveChangesAsync();
+
+        await service.HardDeleteUserWorkouts(userId);
+
+        var remainingWorkouts = await context.Workouts.Where(w => w.UserId == userId).ToListAsync();
+        Assert.Empty(remainingWorkouts);
+
+        var remainingExercises = await context.WorkoutExercises.ToListAsync();
+        Assert.Empty(remainingExercises);
+
+        var remainingSets = await context.Sets.ToListAsync();
+        Assert.Empty(remainingSets);
     }
 }

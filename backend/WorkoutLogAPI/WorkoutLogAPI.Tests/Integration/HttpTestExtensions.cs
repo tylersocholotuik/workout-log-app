@@ -99,6 +99,22 @@ public static class HttpTestExtensions
         return await client.SendAsync(request);
     }
 
+    public static async Task<HttpResponseMessage> DeleteAsJsonWithCsrfAsync<T>(
+        this HttpClient client, string requestUri, T body, string? authCookie = null)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Delete, requestUri)
+        {
+            Content = JsonContent.Create(body)
+        };
+        request.AddCsrfHeader();
+        if (authCookie is not null)
+        {
+            request.Headers.Add("Cookie", authCookie);
+        }
+
+        return await client.SendAsync(request);
+    }
+
     /// <summary>
     /// Registers a brand-new user (unique email each call) through the real
     /// /api/auth/register endpoint and returns the "name=value" auth cookie so

@@ -179,3 +179,12 @@ X-Requested-With: XMLHttpRequest
     "newPassword": "{{New_Password}}",
     "token": "{{Reset_Token}}"
 }
+
+### Hard delete Playwright test user workouts
+DELETE {{Base_Url}}/api/admin/workouts
+Content-Type: application/json
+X-Requested-With: XMLHttpRequest
+
+{
+    "email": "{{Playwright_User_Email}}"
+}
