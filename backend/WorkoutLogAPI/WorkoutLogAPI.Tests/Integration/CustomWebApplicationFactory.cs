@@ -39,15 +39,19 @@ namespace WorkoutLogAPI.Tests.Integration;
 public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     private readonly PostgresContainerFixture _postgres;
+    private readonly IReadOnlyDictionary<string, string?>? _additionalConfiguration;
     private readonly string _databaseName = $"test_{Guid.NewGuid():N}";
     private string? _connectionString;
 
     public Mock<EmailService> EmailServiceMock { get; } =
         new(Mock.Of<ILogger<EmailService>>(), Mock.Of<IConfiguration>());
 
-    public CustomWebApplicationFactory(PostgresContainerFixture postgres)
+    public CustomWebApplicationFactory(
+        PostgresContainerFixture postgres,
+        IReadOnlyDictionary<string, string?>? additionalConfiguration = null)
     {
         _postgres = postgres;
+        _additionalConfiguration = additionalConfiguration;
 
         EmailServiceMock
             .Setup(m => m.SendEmailAsync(It.IsAny<List<EmailAddress>>(), It.IsAny<string>(), It.IsAny<string>()))
@@ -86,6 +90,12 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
                 ["Frontend:BaseUrl"] = "http://localhost",
                 ["PasswordReset:TokenExpirationInMinutes"] = "15"
             });
+
+            // Used to flip feature flags without affecting the configuration for other tests
+            if (_additionalConfiguration is not null)
+            {
+                configBuilder.AddInMemoryCollection(_additionalConfiguration);
+            }
         });
 
         builder.ConfigureServices(services =>
