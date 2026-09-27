@@ -101,7 +101,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    // Custom policy for AdminController endpoints: only allow access if the JWT contains a claim "is_admin" with value "true"
+    options.AddPolicy("AdminOnly", policy => 
+        policy.RequireClaim("is_admin", bool.TrueString));
+});
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

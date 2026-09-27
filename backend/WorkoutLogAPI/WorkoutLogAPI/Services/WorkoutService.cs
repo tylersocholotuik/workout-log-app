@@ -104,13 +104,13 @@ public class WorkoutService
     public async Task<Workout> UpdateWorkout(string id, WorkoutDto workoutDto, string userId)
     {
         var workout = await GetWorkoutById(id, userId);
-        
+
         // Check if a workout with the same title and date already exists for this user, excluding the current workout
         var workoutExists = await _context.Workouts.Where(w =>
                 w.Title.ToLower() == workoutDto.Title.ToLower() &&
-                w.Date == workoutDto.Date && 
+                w.Date == workoutDto.Date &&
                 w.UserId == userId &&
-                !w.Deleted && 
+                !w.Deleted &&
                 w.Id != id)
             .AnyAsync();
 
@@ -145,6 +145,43 @@ public class WorkoutService
     {
         var workout = await GetWorkoutById(id, userId);
         workout.Deleted = true;
+
+        // Soft-delete all exercises and sets associated with the workout
+        foreach (var exercise in workout.Exercises)
+        {
+            exercise.Deleted = true;
+
+            foreach (var set in exercise.Sets)
+            {
+                set.Deleted = true;
+            }
+        }
+
+        await _context.SaveChangesAsync();
+    }
+    
+    // Hard delete a given user's workouts and all associated exercises and sets from the database.
+    // Primarily used for cleaning up Playwright test workouts.
+    public async Task HardDeleteUserWorkouts(string userId)
+    {
+        var workouts = await _context.Workouts
+            .Include(w => w.Exercises)
+            .ThenInclude(e => e.Sets)
+            .Where(w => w.UserId == userId).ToListAsync();
+        
+        // If there are no workouts for the user, there's nothing to delete.
+        if (workouts.Count == 0)
+        {
+            return;
+        }
+
+        var sets = workouts.SelectMany(w => w.Exercises).SelectMany(e => e.Sets).ToList();
+        var exercises = workouts.SelectMany(w => w.Exercises).ToList();
+        
+        // Due to foreign key constraints, we need to delete the sets, then workout exercises, then workouts.
+        _context.Sets.RemoveRange(sets);
+        _context.WorkoutExercises.RemoveRange(exercises);
+        _context.Workouts.RemoveRange(workouts);
         await _context.SaveChangesAsync();
     }
 
