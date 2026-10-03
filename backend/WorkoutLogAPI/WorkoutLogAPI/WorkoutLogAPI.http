@@ -188,3 +188,9 @@ X-Requested-With: XMLHttpRequest
 {
     "email": "{{Playwright_User_Email}}"
 }
+
+### Health check endpoint (returns 200 OK if the API is running)
+GET {{Base_Url}}/healthz/live
+
+### Health check endpoint (returns 200 OK if the API is ready to serve requests)
+GET {{Base_Url}}/healthz/ready
