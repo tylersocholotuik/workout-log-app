@@ -13,7 +13,7 @@ const POLL_INTERVAL_MS = 3_000;
 
 export default async function globalSetup() {
   const apiURL = process.env.API_URL || 'http://localhost:5258';
-  const healthCheckURL = `${apiURL}/health-check`;
+  const healthCheckURL = `${apiURL}/healthz/ready`;
   const context = await request.newContext();
 
   try {

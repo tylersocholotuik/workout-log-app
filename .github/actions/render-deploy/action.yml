@@ -11,7 +11,7 @@ inputs:
     description: Git commit SHA to deploy
     required: true
   health-check-url:
-    description: Full URL to poll after the deploy goes live (e.g. https://api.example.com/health-check)
+    description: Full URL to poll after the deploy goes live (e.g. https://api.example.com/healthz/live)
     required: true
 
 runs:
