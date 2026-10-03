@@ -10,7 +10,7 @@ companion that's easier to skim/link to and covers things Scalar doesn't
 
 ## Base URL & authentication
 
-- All routes are prefixed with `/api` except `/health-check`.
+- All routes are prefixed with `/api` except `/healthz/live` and `/healthz/ready`.
 - Auth is a JWT stored in an `HttpOnly` cookie (`workout_auth_token`), set
   automatically by `login`/`register`/`refresh`. There is no separate
   bearer-token flow for browser clients — just send requests with
@@ -177,17 +177,18 @@ Playwright E2E test runs against the shared Test User account.
 Request body: `{ "email": string }` → `204 No Content` on success, `404`
 if no user has that email.
 
-## Health check — `/health-check`
+## Health checks — `/healthz/live`, `/healthz/ready`
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/health-check` | — | Confirms the process is up **and** can reach Postgres. Used by Render to gate traffic to new instances. |
+| GET | `/healthz/live` | — | Confirms the process is up and responding. Runs no checks (not DB-dependent). Used by Render to gate traffic to new instances. |
+| GET | `/healthz/ready` | — | Confirms the process is up **and** can reach Postgres. Used by the Playwright E2E setup to wait for staging to be fully ready. |
 
-- `200 OK` → `{ "status": "healthy" }`
-- `503 Service Unavailable` → DB unreachable
+- `200 OK` → plain text `Healthy`
+- `503 Service Unavailable` → plain text `Unhealthy` (DB unreachable, `/healthz/ready` only)
 
 Not under `/api`, not subject to CSRF/auth middleware, and intentionally
-excluded from `MapControllers()` so it isn't versioned as part of the
+excluded from `MapControllers()` so they aren't versioned as part of the
 public API surface.
 
 ## Shared DTOs

@@ -87,9 +87,15 @@ Middleware/config is registered in this order:
    OPTIONS request that's missing the `X-Requested-With` header. See
    [CSRF protection](#csrf-protection).
 7. **`UseAuthentication()` / `UseAuthorization()`**.
-8. **`/health-check`** — a Minimal API endpoint mapped outside
-   `MapControllers()` and before auth, so Render's health checks can hit it
-   without a token. Confirms real DB connectivity via `CanConnectAsync()`.
+8. **`/healthz/live` and `/healthz/ready`** — Minimal API health check
+   endpoints (via `Microsoft.Extensions.Diagnostics.HealthChecks`) mapped
+   outside `MapControllers()` and before auth, so Render's health checks
+   can hit them without a token. `/healthz/live` runs no checks, so it's
+   only testing that the process is up and responding; `/healthz/ready`
+   runs the EF Core `DbContext` check (tagged `"ready"`) to confirm real
+   Postgres connectivity. Render polls `/healthz/live` to gate traffic to
+   new instances; the Playwright E2E setup polls `/healthz/ready` before
+   running against staging.
 9. **`MapControllers()`**.
 
 ## Authentication

@@ -34,7 +34,7 @@ jobs:
           api-key: ${{ secrets.RENDER_API_KEY }}
           service-id: ${{ vars.RENDER_SERVICE_ID }}
           commit-sha: ${{ github.sha }}
-          health-check-url: ${{ vars.STAGING_API_URL }}/health-check
+          health-check-url: ${{ vars.STAGING_API_URL }}/healthz/live
 
   deploy-staging-frontend:
     needs: ci
@@ -139,7 +139,7 @@ jobs:
           api-key: ${{ secrets.RENDER_API_KEY }}
           service-id: ${{ vars.RENDER_SERVICE_ID }}
           commit-sha: ${{ github.sha }}
-          health-check-url: ${{ vars.PRODUCTION_API_URL }}/health-check
+          health-check-url: ${{ vars.PRODUCTION_API_URL }}/healthz/ready
 
   deploy-production-frontend:
     needs: [ci, e2e-staging]

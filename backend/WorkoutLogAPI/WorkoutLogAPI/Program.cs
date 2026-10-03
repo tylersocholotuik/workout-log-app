@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using WorkoutLogAPI.Data;
 using WorkoutLogAPI.Extensions;
@@ -16,6 +17,10 @@ var builder = WebApplication.CreateBuilder(args);
 // Add DbContext
 builder.Services.AddDbContext<WorkoutDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Add health checks
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<WorkoutDbContext>(tags: new[] { "ready" });
 
 // Add Services
 builder.Services.AddScoped<JwtService>();
@@ -170,23 +175,17 @@ app.Use(async (context, next) =>
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Health check endpoint for Render to verify the instance is ready
-// to receive traffic. Confirms DB connectivity, since a running process that can't
-// reach the database isn't actually healthy. Mapped before auth so it's publicly
-// reachable without a token, and outside MapControllers so it isn't versioned as
-// part of the public API surface.
-app.MapGet("/health-check", async (WorkoutDbContext context) =>
+// Simple health check endpoint for Render to verify the instance is ready to receive traffic.
+// Excludes all tagged checks so it only confirms the process is alive.
+app.MapHealthChecks("/healthz/live", new HealthCheckOptions
 {
-    try
-    {
-        return await context.Database.CanConnectAsync()
-            ? Results.Ok(new { status = "healthy" })
-            : Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
-    }
-    catch
-    {
-        return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
-    }
+    Predicate = _ => false
+});
+
+// Includes database connectivity checks. Used for Playwright E2E setup.
+app.MapHealthChecks("/healthz/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
 });
 
 app.MapControllers();
