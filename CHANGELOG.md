@@ -16,6 +16,32 @@ change behind it.
 
 ## [Unreleased]
 
+### Added
+
+- Added `Microsoft.Extensions.Diagnostics.HealthChecks` and
+  `Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore` packages
+  and registered an EF Core `DbContext` health check (tagged `"ready"`) in
+  `Program.cs`.
+- Added `GET /healthz/live` — runs no checks, confirming only that the
+  process is up and responding. Used by Render to gate traffic to new
+  instances.
+- Added `GET /healthz/ready` — runs the tagged `DbContext` check to confirm
+  real Postgres connectivity. Used by the Playwright E2E `global-setup.ts`
+  to wait for staging to be fully ready before tests start.
+
+### Removed
+
+- Removed the `GET /health-check` endpoint, replaced by `/healthz/live` and
+  `/healthz/ready`.
+
+### Changed
+
+- Updated `global-setup.ts`, `deploy.yml`, and
+  `.github/actions/render-deploy/action.yml` to reference `/healthz/live`/
+  `/healthz/ready` instead of the removed `/health-check` endpoint.
+- Updated `docs/api-reference.md`, `docs/backend-architecture.md`, and
+  `playwright-tests/README.md` to document the new health check endpoints.
+
 ## [1.4.0] - 2026-09-26
 
 ### Added

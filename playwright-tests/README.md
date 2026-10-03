@@ -72,7 +72,7 @@ BASE_URL=https://your-staging-url API_URL=https://your-staging-api npx playwrigh
   `timeout` are both higher when `BASE_URL` isn't `localhost`. If you still
   hit timeouts against a cold Render free-tier backend, re-run - the first
   request after a period of inactivity can take a while to wake it up
-  (`global-setup.ts` already waits on `/health-check` before tests start, but
+  (`global-setup.ts` already waits on `/healthz/ready` before tests start, but
   that only confirms the process/DB are up, not that every endpoint is warm).
 
 ### Test data cleanup
