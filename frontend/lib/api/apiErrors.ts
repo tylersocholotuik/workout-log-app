@@ -28,3 +28,22 @@ export const extractErrorMessage = (errorData: unknown, fallback: string): strin
 
     return fallback;
 };
+
+// Carries the HTTP status code alongside the extracted message so callers
+// can distinguish why a request failed (e.g. 403 forbidden vs. 404 not
+// found vs. 500 server error)
+export class ApiError extends Error {
+    status: number;
+
+    constructor(message: string, status: number) {
+        super(message);
+        this.name = "ApiError";
+        this.status = status;
+    }
+}
+
+// Reads the error body from a failed Response and throws an ApiError built from it.
+export const throwApiError = async (res: Response, fallback: string): Promise<never> => {
+    const errorData = await res.json();
+    throw new ApiError(extractErrorMessage(errorData, fallback), res.status);
+};

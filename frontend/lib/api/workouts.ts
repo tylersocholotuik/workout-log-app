@@ -1,6 +1,6 @@
 import {Workout} from '@/types';
 import {apiFetch} from "./client";
-import {extractErrorMessage} from "./apiErrors";
+import {extractErrorMessage, throwApiError} from "./apiErrors";
 
 // NEXT_PUBLIC_API_URL should be left unset in Vercel (staging/production) so
 // requests are made relative to the frontend's own origin and proxied to the
@@ -27,15 +27,8 @@ export const getWorkouts = async () => {
 export const getWorkout = async (id: string | string[]) => {
     const res = await apiFetch(`${API_URL}/api/workouts/${id}`);
 
-    // Returns null if the workout belongs to another user, so callers can show
-    // an "unauthorized" state instead of a generic error.
-    if (res.status === 403) {
-        return null;
-    }
-
     if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(extractErrorMessage(errorData, "Failed to load workout"));
+        await throwApiError(res, "Failed to load workout");
     }
 
     return await res.json();
