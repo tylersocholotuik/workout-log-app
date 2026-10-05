@@ -16,6 +16,8 @@ change behind it.
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-10-04
+
 ### Added
 
 - Added `@tanstack/react-query` and a shared `QueryClient`
@@ -316,7 +318,8 @@ not itemized here — this entry describes the state of the app as of this tag.
   `/health` endpoint for platform health checks.
 - Database migrations and idempotent seed data for local/dev environments.
 
-[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.5.1
 [1.5.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.5.0
 [1.4.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.4.0
 [1.3.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.3.0
