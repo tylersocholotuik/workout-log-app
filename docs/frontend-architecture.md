@@ -20,6 +20,10 @@ and UI/styling conventions. For the backend API it talks to, see
 - **framer-motion** — peer dependency required by HeroUI's animated
   components (accordions, modals, etc.); not used directly in app code.
 - **@iconify/react** — icon set used throughout via `<Icon icon="..." />`.
+- **TanStack Query v5** (`@tanstack/react-query`) — server-state caching,
+  fetching, and mutations for all API data (see
+  [Data fetching & server state](#data-fetching--server-state-tanstack-query)
+  below).
 
 > **Version note:** HeroUI is on **v2** and Tailwind is on **v3** — each one
 > major version behind latest. When looking up docs or examples, make sure
@@ -50,7 +54,8 @@ frontend/
 │   └── *.tsx           # Shared: NavBar, Footer, DarkModeSwitch, LogoutModal
 ├── lib/
 │   ├── api/           # fetch wrappers per backend resource (auth, workouts, exercises)
-│   └── factories/     # "empty object" constructors for new Workout/Exercise/Set
+│   ├── factories/     # "empty object" constructors for new Workout/Exercise/Set
+│   └── queryClient.ts # Shared TanStack Query client + global error/retry config
 ├── types/             # Shared TypeScript interfaces, mirroring backend DTOs
 ├── utils/             # Pure helper functions (date formatting, 1RM math)
 ├── icons/             # Hand-written SVG icon components
@@ -98,40 +103,104 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL
   return: `{ error: string }` (hand-written controller errors), ASP.NET's
   automatic `ValidationProblemDetails` (`{ title, errors: { Field: [...] } }`
   from `[ApiController]` model binding), and a bare `{ title }` fallback.
+- `apiErrors.ts` also exports an `ApiError` class (`Error` + a `status`
+  field) and a `throwApiError(res, fallback)` helper, for call sites that
+  need to branch on the HTTP status rather than just the message - e.g.
+  `getWorkout` throws `ApiError` so the workout page can distinguish a
+  `403` (someone else's workout) from any other failure.
+
+## Data fetching & server state (TanStack Query)
+
+All server data (workouts, exercises, the current user) is fetched and
+cached through **TanStack Query** rather than ad hoc `useEffect` + `fetch`.
+A single shared `QueryClient` (`lib/queryClient.ts`) is provided at the
+root via `QueryClientProvider` in `_app.tsx`.
+
+**Query keys** are plain arrays matching the resource, e.g. `["workouts"]`
+(the history list), `["workout", workoutId]` (a single workout),
+`["exercises"]`, `["currentUser"]`. Reads use `useQuery`; writes use
+`useMutation`.
+
+**Global error handling** lives in `lib/queryClient.ts`:
+- `QueryCache`/`MutationCache` both have an `onError` that shows a generic
+  error toast (`addToast`) for any query/mutation failure, so individual
+  components don't need to each wire up their own failure toast.
+- A query/mutation can opt out via `meta: { skipGlobalErrorToast: true }`
+  when it already renders its own dedicated error UI (e.g.
+  `SelectExerciseModal`'s create-exercise mutation shows the error inline
+  on the name field, so the global toast would just duplicate it).
+  `QueryCache.onError` also skips the toast specifically for a `403`
+  `ApiError`, since the workout page renders a dedicated "not your
+  workout" view for that case instead.
+- `defaultOptions.queries.retry` skips TanStack's default retry-with-backoff
+  for any 4xx `ApiError` (a client error like a 403/404 won't succeed on
+  retry), while still retrying other failures up to 3 times.
+
+**Mutations and cache updates**: rather than reflexively calling
+`invalidateQueries` (which triggers a network refetch) after every
+mutation, most mutations write the response directly into the cache with
+`queryClient.setQueryData` when the response already contains the full
+updated object - e.g. creating an exercise appends it to the `["exercises"]`
+cache, saving a workout writes the updated `Workout` into
+`["workout", workoutId]`. `invalidateQueries`/`removeQueries` are used
+instead when a query's data is now wrong or gone rather than "fixed
+in-place" - e.g. deleting a workout removes its own `["workout", id]`
+cache entry (deferred until after navigating away, since removing it while
+a component is still actively observing that key triggers an immediate
+refetch of a now-404ing resource) and invalidates `["workouts"]` so the
+history list picks up the deletion next time it's viewed.
+
+**Local draft state still exists alongside the cache** where a page needs
+to let the user make in-progress edits before saving - see
+`WorkoutContext` below. The pattern is: seed local state from the query's
+`data` once it arrives (via a `useEffect`, since this is populating
+independently-mutable local state from an external source, not deriving a
+value), then keep local edits in that state until a save mutation
+succeeds, at which point both the local state and the query cache are
+updated together so they never disagree.
 
 ## Authentication (`AuthProvider`)
 
 `components/auth/AuthProvider.tsx` wraps the whole app (in `_app.tsx`,
 inside the theme provider) and exposes `useAuth()`:
 
-- On mount and on every route change, it calls `GET /api/auth/me` to
-  determine the current user. Since the auth cookie is `HttpOnly`, the
-  frontend can't read it directly — asking the backend "who am I?" is how
-  it learns whether the visitor is signed in.
-- If the check comes back with no user and the route is one of the
-  `protectedPages` (currently `/history` and `/workout/[workoutId]`), it
-  redirects to `/login`.
-- `refreshUser()` is called right after a successful login/register so the
-  navbar/UI update immediately without waiting for the next route change.
+- Fetches the current user via `useQuery(["currentUser"], fetchCurrentUser)`
+  (`GET /api/auth/me`). Since the auth cookie is `HttpOnly`, the frontend
+  can't read it directly — asking the backend "who am I?" is how it learns
+  whether the visitor is signed in.
+- On every route change, a `useEffect` calls the query's own `refetch()`
+  (re-verifying auth, e.g. after the cookie expired) and redirects to
+  `/login` if it comes back with no user and the route is one of the
+  `protectedPages` (currently `/history` and `/workout/[workoutId]`). This
+  is one of the few `useEffect`s that's still appropriate under TanStack
+  Query: it's an imperative side effect (navigation) triggered by a route
+  change, not a data-fetching concern that Query would otherwise replace.
+- `refreshUser(updatedUser?)` takes an *optional* `User | null`. Login/
+  register already return the fresh `User` in their response, so passing
+  it writes straight into the `["currentUser"]` cache via
+  `queryClient.setQueryData` - avoiding a redundant `GET /api/auth/me`
+  round trip. Called with no arguments, it falls back to
+  `invalidateQueries` so the next read refetches from the server (used
+  when there's no already-known `User` object on hand).
 - `logout()` calls the backend logout endpoint (which revokes the token
-  server-side), clears local user state, and redirects to `/login`.
+  server-side), clears the `["currentUser"]` cache to `null`, and
+  redirects to `/login`.
 
 Route protection is handled client-side inside `AuthProvider` rather than
-with a `middleware.ts` route guard. An `isLoading` flag lets consumers
-(e.g. `NavBar`) avoid flashing the wrong content (like a "Login" link)
-while the initial `/api/auth/me` check is still in flight.
+with a `middleware.ts` route guard. The query's own `isLoading` flag lets
+consumers (e.g. `NavBar`) avoid flashing the wrong content (like a "Login"
+link) while the initial `/api/auth/me` check is still in flight.
 
 ## Rendering model
 
 Pages are client-rendered: each page fetches its own data (workouts,
-exercises, current user) after mount via `useEffect` + the `lib/api/*`
-functions, showing a HeroUI `<Spinner>` via `isLoading` state while
-waiting. This keeps the data-fetching pattern consistent across every
-page. Since every data-bearing page requires authentication anyway,
-server-rendering that data ahead of time wouldn't gain much — a
-straightforward future enhancement would be adopting
-`getServerSideProps` (or the App Router) for pages that would benefit
-from a faster first paint.
+exercises, current user) via TanStack Query's `useQuery`, showing a HeroUI
+`<Spinner>` while the query's `isLoading` is `true`. This keeps the
+data-fetching pattern consistent across every page. Since every
+data-bearing page requires authentication anyway, server-rendering that
+data ahead of time wouldn't gain much — a straightforward future
+enhancement would be adopting `getServerSideProps` (or the App Router) for
+pages that would benefit from a faster first paint.
 
 The one recurring exception is theme-dependent UI (`index.tsx`,
 `DarkModeSwitch`): since `next-themes` can't know the real theme during
@@ -141,16 +210,21 @@ hydration mismatch.
 
 ## State management
 
-State is handled with plain React primitives (`useState` + Context) at
-three scopes, without a dedicated state-management library:
+State is handled with plain React primitives (`useState` + Context) for
+anything that isn't server data, alongside TanStack Query for everything
+that is, at three scopes:
 
-- **App-wide:** `AuthContext` (current user) via `AuthProvider`.
-- **Page-wide:** `WorkoutContext` in `pages/workout/[workoutId].tsx` — the
-  workout being edited is `useState` at the page level and shared with
-  every nested exercise/set component via context, since the whole
-  workout tree is saved as one unit (see
-  [backend-architecture.md](backend-architecture.md) on whole-tree
-  `PUT` updates).
+- **App-wide:** the current user lives in TanStack Query's cache
+  (`["currentUser"]`), exposed app-wide via `AuthContext`/`AuthProvider`.
+- **Page-wide:** `WorkoutContext` in `pages/workout/[workoutId].tsx` - the
+  workout being edited is `useState` at the page level (seeded from the
+  `["workout", workoutId]` query once it loads) and shared with every
+  nested exercise/set component via context, since the whole workout tree
+  is saved as one unit (see [backend-architecture.md](backend-architecture.md)
+  on whole-tree `PUT` updates). This local draft is necessary because the
+  workout is mutated in-place by the user (adding exercises/sets) before
+  being saved - it can't just be the query's `data` directly, since a
+  background refetch should never silently clobber in-progress edits.
 - **Local:** component-level `useState` for form inputs and per-field
   validation errors (e.g. `login.tsx` tracks a separate error string per
   field rather than a single form-level error object).
