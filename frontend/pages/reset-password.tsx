@@ -1,5 +1,7 @@
 import {useState} from "react";
 
+import { useMutation } from "@tanstack/react-query";
+
 import {
     Button,
     Form,
@@ -23,7 +25,6 @@ export default function ResetPassword() {
     const [passwordError, setPasswordError] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [confirmPasswordError, setConfirmPasswordError] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
 
     const router = useRouter();
 
@@ -66,43 +67,37 @@ export default function ResetPassword() {
 
         return true;
     };
+    
+    const resetPasswordMutation = useMutation({
+        mutationFn: resetPassword,
+        onSuccess: () => {
+            addToast({
+                title: "Password reset successfully",
+                color: "success"
+            });
 
-    const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+           router.push("/login");
+        },
+    });
+
+    const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (isValidForm(newPassword, confirmPassword)) {
-
-            try {
-                setIsLoading(true);
-                
-                if (!router.isReady) {
-                    return;
-                }
-                
-                if (typeof router.query.token !== "string") {
-                    addToast({
-                        title: "Invalid or missing password reset token",
-                        color: "danger"
-                    });
-                    
-                    return;
-                }
-
-                await resetPassword({token: router.query.token as string, newPassword});
-
+            
+            if (!router.isReady) {
+                return;
+            }
+            
+            if (typeof router.query.token !== "string") {
                 addToast({
-                    title: "Password reset successfully",
-                    color: "success"
-                });
-
-                await router.push("/login");
-            } catch (error) {
-                addToast({
-                    title: (error as Error).message,
+                    title: "Invalid or missing password reset token",
                     color: "danger"
                 });
-            } finally {
-                setIsLoading(false);
+                
+                return;
             }
+            
+            resetPasswordMutation.mutate({token: router.query.token as string, newPassword});
         }
     };
 
@@ -181,7 +176,7 @@ export default function ResetPassword() {
                                     variant="solid"
                                     type="submit"
                                     form="reset-password-form"
-                                    isLoading={isLoading}
+                                    isLoading={resetPasswordMutation.isPending}
                                 >
                                     Reset Password
                                 </Button>

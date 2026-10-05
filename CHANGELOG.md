@@ -16,6 +16,44 @@ change behind it.
 
 ## [Unreleased]
 
+### Added
+
+- Added `@tanstack/react-query` and a shared `QueryClient`
+  (`frontend/lib/queryClient.ts`) with a global error toast for failed
+  queries/mutations (opt-out via `meta: { skipGlobalErrorToast: true }`)
+  and a retry policy that skips retrying 4xx errors.
+- Added an `ApiError` class and `throwApiError` helper
+  (`lib/api/apiErrors.ts`) for status-aware errors. `getWorkout` now
+  throws `ApiError` (`status: 403`) for another user's workout instead of
+  returning `null`.
+
+### Changed
+
+- Migrated frontend data fetching from manual `useEffect`/`fetch` to
+  TanStack Query (`useQuery`/`useMutation`) across `AuthProvider`,
+  `history.tsx`, `login.tsx`, `SelectExerciseModal`, `ExerciseCard`,
+  `ForgotPasswordModal`/`reset-password.tsx`, and the workout editor
+  (`workout/[workoutId].tsx`).
+- `AuthProvider.refreshUser` now accepts an optional, already-known `User`
+  (e.g. from a login/register response) to write directly into the query
+  cache, avoiding a redundant `GET /api/auth/me`.
+- `WorkoutList.tsx` now derives its filtered workout list from props on
+  each render instead of copying it into state, so it no longer goes
+  stale after the underlying query refetches.
+- Updated `docs/frontend-architecture.md` to document the TanStack Query
+  migration (query-key conventions, cache-update patterns, global error
+  handling).
+
+### Fixed
+
+- Fixed a brief flash of stale/default workout content before the "not
+  your workout" (403) page appeared on `workout/[workoutId].tsx`.
+- Fixed deleting a workout showing a spurious "Workout not found" error
+  toast right after the delete success toast, caused by clearing its
+  query cache entry while still actively observed.
+- Fixed the "duplicate exercise name" error showing twice (toast + inline
+  field message) when creating an exercise with an existing name.
+
 ## [1.5.0] - 2026-10-04
 
 ### Added

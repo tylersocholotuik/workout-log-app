@@ -10,9 +10,10 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@internationalized/date": "^3.6.0",
     "@heroui/react": "2.7.8",
+    "@internationalized/date": "^3.6.0",
     "@supabase/supabase-js": "^2.47.9",
+    "@tanstack/react-query": "^5.104.1",
     "framer-motion": "^11.15.0",
     "install": "^0.13.0",
     "next": "16.3.4",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@iconify/react": "^5.1.0",
+    "@tanstack/eslint-plugin-query": "^5.104.1",
     "@types/node": "^20.17.10",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.7",

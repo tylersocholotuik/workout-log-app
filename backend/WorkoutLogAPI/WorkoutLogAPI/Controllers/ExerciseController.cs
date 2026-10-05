@@ -77,6 +77,11 @@ public class ExerciseController : ControllerBase
             
             return CreatedAtAction(nameof(GetExerciseById), new { id = exerciseEntity.Id }, ExerciseDto.FromExercise(exerciseEntity));
         }
+        catch (InvalidOperationException e)
+        {
+            _logger.LogWarning(e, "Error creating exercise for user {UserId}: {ErrorMessage}", userId, e.Message);
+            return Conflict(new { error = e.Message });
+        }
         catch (Exception e)
         {
             _logger.LogError(e, "Error creating exercise for user {UserId}: {ErrorMessage}", userId, e.Message);

@@ -1,14 +1,17 @@
-import { useState, useEffect, useMemo, createContext, useContext, ReactNode } from "react";
+import { useEffect, useMemo, createContext, useContext, ReactNode } from "react";
 import { useRouter } from "next/router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { User } from "@/types";
 import { logout as logoutAuth, fetchCurrentUser } from "@/lib/api/auth";
+
+const CURRENT_USER_QUERY_KEY = ["currentUser"];
 
 interface AuthContextType {
     user: User | null,
     isSignedIn: () => boolean,
     isLoading: boolean,
     logout: () => void,
-    refreshUser: () => void
+    refreshUser: (updatedUser?: User | null) => void
 }
 
 interface AuthProviderProps {
@@ -28,9 +31,8 @@ export const useAuth = () => {
 }
 
 export default function AuthProvider({ children }: AuthProviderProps) {
-    const [user, setUser] = useState<User | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
+    const queryClient = useQueryClient();
 
     const protectedPages = useMemo(
         () => [
@@ -39,45 +41,41 @@ export default function AuthProvider({ children }: AuthProviderProps) {
         ],
         []
     );
-
-    // Check for user on mount and route changes
+    
+    const { data: user = null, isLoading, refetch } = useQuery({
+        queryKey: CURRENT_USER_QUERY_KEY,
+        queryFn: fetchCurrentUser,
+    });
+    
     useEffect(() => {
-        const checkAuth = async () => {
-            try {
-                const currentUser = await fetchCurrentUser();
-                setUser(currentUser);
+        const verifyAuth = async () => {
+            const { data: currentUser } = await refetch();
 
-                // If not logged in and on a protected page, redirect to login
-                if (!currentUser && protectedPages.includes(router.pathname)) {
-                    await router.push("/login");
-                }
-            } finally {
-                // Runs after every call (mount + each route change), but
-                // since isLoading only ever starts at true and is never set
-                // back to true afterward, this just confirms "the check has
-                // resolved at least once" - it won't cause any flicker on
-                // later route changes.
-                setIsLoading(false);
+            if (!currentUser && protectedPages.includes(router.pathname)) {
+                await router.push("/login");
             }
         };
 
-        checkAuth();
-        // router is intentionally omitted: Next.js's Pages Router returns a
-        // new router object on every render (see makePublicRouterInstance
-        // in next/dist/client/router.js), so including it here would cause
-        // setUser to run on every render, triggering an infinite render loop.
-        // Only router.pathname (a primitive) should trigger this effect.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [router.pathname, protectedPages]);
+        verifyAuth();
 
-    const refreshUser = async () => {
-        const currentUser = await fetchCurrentUser();
-        setUser(currentUser);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [router.pathname, protectedPages, refetch]);
+
+    // Accepts an optional, already-known User (e.g. the response from
+    // login/register) to write straight into the cache - avoiding a
+    // redundant GET /api/auth/me. Called with no arguments, it falls back
+    // to invalidating so the next read refetches from the server.
+    const refreshUser = async (updatedUser?: User | null) => {
+        if (updatedUser !== undefined) {
+            queryClient.setQueryData(CURRENT_USER_QUERY_KEY, updatedUser);
+            return;
+        }
+        await queryClient.invalidateQueries({ queryKey: CURRENT_USER_QUERY_KEY });
     };
 
     const logout = async () => {
         await logoutAuth();
-        setUser(null);
+        queryClient.setQueryData(CURRENT_USER_QUERY_KEY, null);
         await router.push("/login");
     };
 

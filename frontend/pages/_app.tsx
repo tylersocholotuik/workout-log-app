@@ -1,9 +1,11 @@
 import "@/styles/globals.css";
 import type { AppProps } from "next/app";
 import Head from "next/head";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { HeroUIProvider } from "@heroui/react";
 import { ToastProvider } from "@heroui/react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { queryClient } from "@/lib/queryClient";
 import AuthProvider from "@/components/auth/AuthProvider";
 
 import NavBar from "@/components/NavBar";
@@ -12,16 +14,23 @@ export default function App({ Component, pageProps }: AppProps) {
 
   return (
     <HeroUIProvider>
+      <QueryClientProvider client={queryClient}>
       <Head>
         <meta name="viewport" content="initial-scale=1, maximum-scale=1" />
       </Head>
-      <ToastProvider placement="bottom-center" />
+      <ToastProvider 
+          placement="bottom-center"
+          toastProps={{
+              variant: "bordered"
+          }}
+      />
       <NextThemesProvider attribute="class" defaultTheme="dark">
         <AuthProvider>
           <NavBar />
           <Component {...pageProps} />
         </AuthProvider>
       </NextThemesProvider>
+    </QueryClientProvider>
     </HeroUIProvider>
   );
 }
