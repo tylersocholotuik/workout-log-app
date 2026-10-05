@@ -135,7 +135,7 @@ test.describe('Exercises', () => {
     await page.getByRole('button', { name: 'Create', exact: true }).click();
 
     await expect(
-      page.getByText("Exercise name 'Ab Wheel' already exists.")
+      page.getByText("An exercise with this name already exists.")
     ).toBeVisible();
   });
 
