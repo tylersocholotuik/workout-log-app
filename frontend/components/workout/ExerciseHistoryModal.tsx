@@ -5,6 +5,7 @@ import {
     ModalBody,
     ModalFooter,
     Button,
+    Spinner,
 } from "@heroui/react";
 
 import { ExerciseHistory } from "@/types";
@@ -14,6 +15,7 @@ interface ExerciseHistoryModalProps {
     isOpen: boolean;
     onOpenChange: () => void;
     exerciseHistory: ExerciseHistory[];
+    isLoading: boolean;
     exerciseName: string;
 }
 
@@ -21,6 +23,7 @@ export default function ExerciseHistoryModal({
     isOpen,
     onOpenChange,
     exerciseHistory,
+    isLoading,
     exerciseName
 }: ExerciseHistoryModalProps) {
 
@@ -34,7 +37,11 @@ export default function ExerciseHistoryModal({
                             {exerciseName} History
                         </ModalHeader>
                         <ModalBody>
-                            {exerciseHistory.length > 0 ? (
+                            {isLoading ? (
+                                <div className="flex justify-center py-4">
+                                    <Spinner />
+                                </div>
+                            ) : exerciseHistory.length > 0 ? (
                                 <>
                                     {exerciseHistory.map((exercise, eIndex) => (
                                         <div key={`exercise-history-${eIndex}`} className="mb-2">

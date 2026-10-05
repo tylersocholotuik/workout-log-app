@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 
 import { useRouter } from "next/router";
 
+import { useMutation } from "@tanstack/react-query";
+
 import { register, login } from "@/lib/api/auth";
 
 import {
@@ -23,7 +25,6 @@ import Head from "next/head";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 import ForgotPasswordModal from "@/components/auth/ForgotPasswordModal";
-import WorkoutDetailsModal from "@/components/workout/WorkoutDetailsModal";
 
 export default function App() {
   // bound to inputs for email and password login
@@ -49,7 +50,6 @@ export default function App() {
   const [lastNameError, setLastNameError] = useState("");
   const [displayNameError, setDisplayNameError] = useState("");
   const [selected, setSelected] = useState<number | string>("login");
-  const [isLoading, setIsLoading] = useState(false);
 
   const { user, isSignedIn, refreshUser } = useAuth();
 
@@ -67,11 +67,47 @@ export default function App() {
   useEffect(() => {
     if (isSignedIn()) {
       // redirect to home page after sign in
-      router.push(DEFAULT_PAGE);
+      void router.push(DEFAULT_PAGE);
     }
   }, [user, isSignedIn, router]);
+  
+  const loginMutation = useMutation({
+    mutationFn: login,
+    onSuccess: (data) => {
+      refreshUser(data.user); // Update user state immediately, no extra fetch needed
 
-  const loginWithPassword = async (e: React.FormEvent<HTMLFormElement>) => {
+      addToast({
+        description: `Welcome ${data.user.displayName || data.user.firstName}!`,
+        color: "success",
+      });
+      resetForms();
+    },
+    onError: (error) => {
+      setLoginError(
+        error instanceof Error ? error.message : "An unknown error occurred"
+      );
+    },
+  });
+  
+  const registerMutation = useMutation({
+    mutationFn: register,
+    onSuccess: (data) => {
+      refreshUser(data.user); // Update user state immediately, no extra fetch needed
+
+      addToast({
+        description: `Welcome ${data.user.displayName || data.user.firstName}!`,
+        color: "success",
+      });
+      resetForms();
+    },
+    onError: (error) => {
+      setSignupError(
+        error instanceof Error ? error.message : "An unknown error occurred"
+      );
+    },
+  });
+
+  const loginWithPassword = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     clearErrors();
@@ -98,38 +134,7 @@ export default function App() {
         }
       });
     } else {
-      try {
-        
-        setIsLoading(true);
-        
-        const response = await login({
-          email: loginEmail,
-          password: loginPassword,
-        });
-
-        refreshUser(); // Update user state immediately
-        
-        addToast({
-          description: `Welcome ${
-            response.user.displayName ||
-            response.user.firstName
-          }!`,
-          color: "success",
-        });
-        resetForms();
-        router.push(DEFAULT_PAGE);
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error ? error.message : "An unknown error occurred";
-        setLoginError(message);
-        addToast({
-          title: "Error",
-          description: message,
-          color: "danger",
-        });
-      } finally {
-        setIsLoading(false);
-      }
+      loginMutation.mutate({ email: loginEmail, password: loginPassword });
     }
   };
 
@@ -209,41 +214,13 @@ export default function App() {
         }
       });
     } else {
-      try {
-        
-        setIsLoading(true);
-        
-        const response = await register({
-          email: signupEmail,
-          firstName,
-          lastName,
-          displayName: displayName || undefined,
-          password: signupPassword,
-        });
-
-        refreshUser(); // Update user state immediately
-
-        addToast({
-          description: `Welcome ${
-            response.user.displayName ||
-            response.user.firstName
-          }!`,
-          color: "success",
-        });
-        resetForms();
-        router.push("/");
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error ? error.message : "An unknown error occurred";
-        setSignupError(message);
-        addToast({
-          title: "Error",
-          description: message,
-          color: "danger",
-        });
-      } finally {
-        setIsLoading(false);
-      }
+      registerMutation.mutate({
+        email: signupEmail,
+        firstName,
+        lastName,
+        displayName: displayName || undefined,
+        password: signupPassword,
+      });
     }
   };
 
@@ -360,7 +337,7 @@ export default function App() {
                       color="primary"
                       type="submit"
                       form="password-login-form"
-                      isLoading={isLoading}
+                      isLoading={loginMutation.isPending}
                     >
                       Login
                     </Button>
@@ -501,7 +478,7 @@ export default function App() {
                       color="primary"
                       type="submit"
                       form="signup-form"
-                        isLoading={isLoading}
+                        isLoading={registerMutation.isPending}
                     >
                       Sign up
                     </Button>

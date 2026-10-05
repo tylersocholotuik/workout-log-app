@@ -1,12 +1,13 @@
 import {
     useEffect,
     useState,
-    useCallback,
     createContext,
     useContext,
     Dispatch,
     SetStateAction,
 } from "react";
+
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { useRouter } from "next/router";
 
@@ -37,6 +38,7 @@ import {
     updateWorkout,
     deleteWorkout,
 } from "@/lib/api/workouts";
+import { ApiError } from "@/lib/api/apiErrors";
 import { formatWorkoutDate } from "@/utils/workoutDate";
 
 import {
@@ -72,14 +74,10 @@ export const useWorkoutContext = () => {
 };
 
 export default function WorkoutLog() {
-    const [workout, setWorkout] = useState<Workout>(createEmptyWorkout());
-    const [isLoading, setIsLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
     const [startNewWorkout, setStartNewWorkout] = useState(false);
-    const [isUnauthorized, setIsUnauthorized] = useState(false);
+    const [workout, setWorkout] = useState<Workout>(createEmptyWorkout());
 
-    const { user } = useAuth();
+    const { user, isLoading: isAuthLoading } = useAuth();
     const userId = user?.id ?? "";
 
     const detailsModal = useDisclosure();
@@ -88,45 +86,25 @@ export default function WorkoutLog() {
     const calculatorModal = useDisclosure();
 
     const router = useRouter();
+    const queryClient = useQueryClient();
 
     const { workoutId } = router.query;
 
-    const loadWorkout = useCallback(
-        async (workoutId: string | string[]) => {
-            // id is greater than 0 if navigating from workout history page
-            // load the selected workout. Otherwise, it's a new workout.
-            if (user && workoutId !== "new-workout") {
-                try {
-                    const data = await getWorkout(workoutId);
-                    // getWorkout returns null when the workout belongs to
-                    // another user (403 from the API).
-                    if (data === null) {
-                        setIsUnauthorized(true);
-                    } else {
-                        setWorkout(data);
-                    }
-                } catch (error) {
-                    addToast({
-                        title: "Error",
-                        description: error instanceof Error ? error.message : "An unknown error occurred",
-                        color: "danger",
-                    });
-                }
-            }
+    const { data: fetchedWorkout, isLoading: isWorkoutLoading, error: workoutError } = useQuery({
+        queryKey: ["workout", workoutId],
+        queryFn: () => getWorkout(workoutId as string),
+        enabled: !!workoutId && workoutId !== "new-workout" && !!user,
+    });
 
-            setIsLoading(false);
-        },
-        [user]
-    );
+    // getWorkout throws an ApiError with status 403 when the workout belongs to another user.
+    const isUnauthorized = workoutError instanceof ApiError && workoutError.status === 403;
 
     useEffect(() => {
-        if (router.isReady && workoutId && user) {
-            // Fetching data on mount is an intentional synchronization with an
-            // external system (the API), not a derived-state calculation.
+        if (fetchedWorkout) {
             // eslint-disable-next-line react-hooks/set-state-in-effect
-            loadWorkout(workoutId);
+            setWorkout(fetchedWorkout);
         }
-    }, [router.isReady, workoutId, user, loadWorkout]);
+    }, [fetchedWorkout]);
 
     const addExercise = (exercise: Exercise) => {
         const updatedWorkout = { ...workout };
@@ -141,38 +119,70 @@ export default function WorkoutLog() {
 
         setWorkout(updatedWorkout);
     };
-
-    const saveWorkout = async (
-        workoutData: Workout
-    ) => {
-        try {
-            setIsSaving(true);
-
-            let newWorkout: Workout;
-
-            if (workoutId === "new-workout") {
-                newWorkout = await addWorkout(workoutData);
-                // reload the page with the new workoutId
-                await router.push(`/workout/${newWorkout.id}`);
-            } else {
-                newWorkout = await updateWorkout(workoutId, workoutData);
-                setWorkout(newWorkout);
-            }
-
+    
+    const addWorkoutMutation = useMutation({
+        mutationFn: addWorkout,
+        onSuccess: (newWorkout) => {
             addToast({
                 description: "Workout saved!",
                 color: "success",
             });
-        } catch (error) {
+            // Prime the cache for the new workoutId so navigating to it
+            // doesn't trigger a redundant GET.
+            queryClient.setQueryData(["workout", newWorkout.id], newWorkout);
+            // Mark the workouts list (history.tsx) as stale so it refetches on next visit.
+            void queryClient.invalidateQueries({ queryKey: ["workouts"] });
+            // reload the page with the new workoutId
+            void router.push(`/workout/${newWorkout.id}`);
+        }
+    });
+    
+    const updateWorkoutMutation = useMutation({
+        mutationFn: (workoutData: Workout) => updateWorkout(workoutId, workoutData),
+        onSuccess: (updatedWorkout) => {
+            setWorkout(updatedWorkout);
+            // Keep the query cache in sync so a later refetch doesn't briefly serve stale data.
+            queryClient.setQueryData(["workout", workoutId], updatedWorkout);
+            // Mark the workouts list (history.tsx) as stale so it refetches on next visit.
+            void queryClient.invalidateQueries({ queryKey: ["workouts"] });
             addToast({
-                    title: "Error",
-                    description: error instanceof Error ? error.message : "An unknown error occurred",
-                    color: "danger",
-                });
-        } finally {
-            setIsSaving(false);
+                description: "Workout saved!",
+                color: "success",
+            });
+        }
+    });
+
+    const saveWorkout = (
+        workoutData: Workout
+    ) => {
+        if (workoutId === "new-workout") {
+            addWorkoutMutation.mutate(workoutData);
+        } else {
+            updateWorkoutMutation.mutate(workoutData);
         }
     };
+    
+    const deleteWorkoutMutation = useMutation({
+        mutationFn: deleteWorkout,
+        onSuccess: (_data, deletedWorkoutId) => {
+            addToast({
+                description: `'${workout.title}' was deleted`,
+                color: "success",
+            });
+            // The workouts list (history.tsx) may still have this workout
+            // cached - mark it stale so it refetches on next visit.
+            void queryClient.invalidateQueries({ queryKey: ["workouts"] });
+            setWorkout(createEmptyWorkout());
+            setStartNewWorkout(false);
+            router.push(`/workout/new-workout`).then(() => {
+                // Wait until after navigation so this component's useQuery
+                // is no longer observing the deleted workout's key - removing
+                // it while still observed would trigger an immediate refetch
+                // of a workout that no longer exists.
+                queryClient.removeQueries({ queryKey: ["workout", deletedWorkoutId] });
+            });
+        },
+    });
 
     const discardWorkout = async (
         workoutId: string | string[] | undefined
@@ -181,43 +191,16 @@ export default function WorkoutLog() {
             throw new Error("Invalid workoutId.");
         }
 
-        let success = false;
-
         if (workoutId === "new-workout") {
-            // if it is a new unsaved workout, simply initialize a
-            // new workout
+            // if it is a new unsaved workout, simply initialize a new workout
             setWorkout(createEmptyWorkout());
             setStartNewWorkout(false);
         } else {
-            try {
-                setIsDeleting(true);
-
-                await deleteWorkout(workoutId);
-
-                addToast({
-                    description: `'${workout.title}' was deleted`,
-                    color: "success",
-                });
-
-                success = true;
-            } catch (error) {
-                addToast({
-                    title: "Error",
-                    description: error instanceof Error ? error.message : "An unknown error occurred",
-                    color: "danger",
-                });
-            } finally {
-                setIsDeleting(false);
-                if (success) {
-                    setWorkout(createEmptyWorkout());
-                    setStartNewWorkout(false);
-                    router.push(`/workout/new-workout`);
-                }
-            }
+            deleteWorkoutMutation.mutate(workoutId);
         }
     };
 
-    if (isLoading) {
+    if (!router.isReady || isAuthLoading || isWorkoutLoading) {
         return (
             <>
                 <Head>
@@ -399,7 +382,7 @@ export default function WorkoutLog() {
                         <div className="flex justify-center gap-4 mb-8">
                             <div>
                                 <Button
-                                    isLoading={isSaving}
+                                    isLoading={addWorkoutMutation.isPending || updateWorkoutMutation.isPending}
                                     color="default"
                                     variant="flat"
                                     radius="full"
@@ -418,7 +401,7 @@ export default function WorkoutLog() {
                             </div>
                             <div>
                                 <Button
-                                    isLoading={isDeleting}
+                                    isLoading={deleteWorkoutMutation.isPending}
                                     color="danger"
                                     variant="flat"
                                     radius="full"

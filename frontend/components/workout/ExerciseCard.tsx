@@ -1,5 +1,7 @@
 import { useState, useMemo } from "react";
 
+import { useQuery } from "@tanstack/react-query";
+
 import {
     Button,
     Card,
@@ -30,7 +32,6 @@ import SetsTable from "./SetsTable";
 import {
     Exercise,
     WorkoutExercise,
-    ExerciseHistory,
 } from "@/types";
 
 import { createEmptySet } from "@/lib/factories";
@@ -59,9 +60,6 @@ export default function ExerciseCard({
     const [notes, setNotes] = useState(exercise.notes);
     const [weightUnit, setWeightUnit] = useState(exercise.weightUnit.toString());
     const [showOneRepMax, setShowOneRepMax] = useState(true);
-    const [exerciseHistory, setExerciseHistory] = useState<ExerciseHistory[]>(
-        []
-    );
 
     const changeExerciseModal = useDisclosure();
     const exerciseHistoryModal = useDisclosure();
@@ -172,16 +170,11 @@ export default function ExerciseCard({
 
     // gets a list including the date, notes, and sets for the selected exercise
     // for each time the user performed that exercise.
-    const fetchExerciseHistory = async (
-        exerciseId: number | undefined
-    ) => {
-        const data = await getExerciseHistory(exerciseId);
-
-        setExerciseHistory(data);
-
-        exerciseHistoryModal.onOpen();
-    };
-
+    const { data: exerciseHistory = [], isLoading: isLoadingExerciseHistory } = useQuery({
+        queryKey: ["exerciseHistory", exercise.exerciseId],
+        queryFn: () => getExerciseHistory(exercise.exerciseId),
+    });
+    
     return (
         <>
             <Card classNames={{ footer: "justify-center py-2" }}>
@@ -224,9 +217,7 @@ export default function ExerciseCard({
                                     </DropdownItem>
                                     <DropdownItem
                                         key="history"
-                                        onPress={() =>
-                                            fetchExerciseHistory(exercise.exercise.id)
-                                        }
+                                        onPress={exerciseHistoryModal.onOpen}
                                         startContent={
                                             <Icon
                                                 icon="material-symbols:history"
@@ -367,6 +358,7 @@ export default function ExerciseCard({
                 isOpen={exerciseHistoryModal.isOpen}
                 onOpenChange={exerciseHistoryModal.onOpenChange}
                 exerciseHistory={exerciseHistory}
+                isLoading={isLoadingExerciseHistory}
                 exerciseName={
                     exercise.exercise.name
                 }

@@ -1,4 +1,6 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useState, useMemo } from "react";
+
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import {
   Modal,
@@ -15,6 +17,7 @@ import {
   TableCell,
   Selection,
   Input,
+  Form,
   addToast,
   Spinner,
 } from "@heroui/react";
@@ -42,116 +45,87 @@ export default function SelectExerciseModal({
   exerciseIndex,
   update,
 }: SelectExerciseModalProps) {
-  const [exercises, setExercises] = useState<Exercise[]>([]);
   const [selectedKey, setSelectedKey] = useState<Selection>(new Set());
   const [filterValue, setFilterValue] = useState("");
   const [exerciseName, setExerciseName] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
 
+  const { data: exercises = [], isLoading: isLoadingExercises } = useQuery({ queryKey: ["exercises"], queryFn: getExercises });
+  
   const filteredExercises = useMemo(
     () =>
       filterValue
-        ? exercises.filter((exercise) =>
+        ? exercises.filter((exercise: Exercise) =>
             exercise.name.toLowerCase().includes(filterValue.toLowerCase())
           )
         : exercises,
     [exercises, filterValue]
   );
 
-  const loadExercises = useCallback(async () => {
-    try {
-      const data = await getExercises();
-      setExercises(data);
-    } catch (error) {
-      addToast({
-        title: "Error loading exercises",
-        description: error instanceof Error ? error.message : "Unknown error",
-        color: "danger",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Fetching data on mount is an intentional synchronization with an
-    // external system (the API), not a derived-state calculation.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadExercises();
-  }, [loadExercises]);
-
   // gets the selected exercise id, and returns the exercise that matches the id
   const getSelectedExercise = () => {
     const selectedExercise = Array.from(selectedKey).pop();
 
     return selectedExercise
-      ? exercises.find((exercise) => exercise.name === selectedExercise)
+      ? exercises.find((exercise: Exercise) => exercise.name === selectedExercise)
       : null;
   };
+  
+  const queryClient = useQueryClient();
 
-  const createNewExercise = async (
-    name: string
-  ) => {
-    setError("");
-    setIsSaving(true);
-
-    try {
-      if (name.trim() === "") {
-        throw new Error(`Please enter an exercise name.`);
-      }
-
-      const nameIsTaken =
-        exercises.some(
-          (exercise) =>
-            name.trim().toLowerCase() === exercise.name.toLowerCase()
-        ) ||
-        exercises.some(
-          (exercise) =>
-            name.trim().toLowerCase() === exercise.name.toLowerCase()
-        );
-
-      if (nameIsTaken) {
-        throw new Error(`Exercise name '${name}' already exists.`);
-      }
-
-      const newExerciseData = await addUserExercise(
-        exerciseName.trim()
-      );
-
-      // reload exercises to have access to new exercise
-      await loadExercises();
-
+  const newExerciseMutation = useMutation({
+    mutationFn: addUserExercise,
+    // This mutation already shows its own inline field error on failure -
+    // skip the global error toast to avoid showing the same message twice.
+    meta: { skipGlobalErrorToast: true },
+    onSuccess: (newExercise) => {
+      // Append new exercise to the existing exercises in the query cache
+      // instead of refetching the entire list of exercises
+      queryClient.setQueryData(["exercises"], (oldExercises: Exercise[] = []) => [
+        ...oldExercises,
+        newExercise,
+      ]);
 
       addToast({
-        description: `Exercise '${exerciseName}' was created!`,
+        description: `Exercise '${newExercise.name}' was created!`,
         color: "success",
         timeout: 5000,
         endContent: (
-          <Button
-            color="success"
-            size="sm"
-            variant="flat"
-            onPress={() => {
-              addCreatedExerciseToWorkout(newExerciseData);
-              setIsCreating(false);
-              onOpenChange();
-            }}
-          >
-            Add
-          </Button>
+            <Button
+                color="success"
+                size="sm"
+                variant="flat"
+                onPress={() => {
+                  addCreatedExerciseToWorkout(newExercise);
+                  setIsCreating(false);
+                  onOpenChange();
+                }}
+            >
+              Add
+            </Button>
         ),
       });
-    } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      }
-    } finally {
-      setExerciseName("");
-      setIsSaving(false);
+      
+    },
+    onError: (error) => {
+      setError(error instanceof Error ? error.message : "An unknown error occurred");
     }
+    });
+  
+  const createNewExercise = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    setError("");
+
+    if (exerciseName.trim() === "") {
+      setError("Please enter an exercise name.");
+      return;
+    }
+
+    newExerciseMutation.mutate(exerciseName.trim());
+
+    setExerciseName("");
   };
 
   const clearState = () => {
@@ -222,33 +196,44 @@ export default function SelectExerciseModal({
                   <h3 className="text-md text-center mb-4">
                     Create new exercise
                   </h3>
-                  <div className="mb-4">
+                  <Form
+                    id="create-exercise-form"
+                    onSubmit={createNewExercise}
+                    className="mb-4"
+                    validationBehavior="aria"
+                  >
                     <Input
+                      isRequired
                       id="exercise-name"
+                      name="exerciseName"
                       label="Exercise Name"
                       variant="bordered"
                       size="sm"
                       description="Can not have the same name as a stock exercise."
-                      isInvalid={error !== ""}
-                      errorMessage={error}
+                      validate={() => error || undefined}
                       value={exerciseName}
                       onValueChange={setExerciseName}
                       onChange={() => setError("")}
                     />
-                  </div>
+                  </Form>
                   <div className="flex justify-center gap-2">
                     <Button
                       variant="flat"
                       size="sm"
-                      onPress={() => setIsCreating(false)}
+                      onPress={() => {
+                        setIsCreating(false);
+                        setExerciseName("");
+                        setError("");
+                      }}
                     >
                       Back
                     </Button>
                     <Button
                       color="primary"
                       size="sm"
-                      isLoading={isSaving}
-                      onPress={() => createNewExercise(exerciseName)}
+                      type="submit"
+                      form="create-exercise-form"
+                      isLoading={newExerciseMutation.isPending}
                     >
                       Create
                     </Button>
@@ -266,7 +251,7 @@ export default function SelectExerciseModal({
                       onValueChange={setFilterValue}
                     />
                   </div>
-                  {isLoading ? (
+                  {isLoadingExercises ? (
                     <Spinner />
                   ) : (
                     <Table
@@ -290,7 +275,7 @@ export default function SelectExerciseModal({
                         )}
                       </TableHeader>
                       <TableBody emptyContent={"No exercises found."}>
-                        {filteredExercises.map((exercise) => (
+                        {filteredExercises.map((exercise: Exercise) => (
                           <TableRow key={exercise.name}>
                             <TableCell>{exercise.name}</TableCell>
                           </TableRow>

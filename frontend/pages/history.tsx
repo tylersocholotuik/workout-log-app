@@ -1,46 +1,15 @@
-import { useEffect, useState, useCallback } from "react";
-
 import Head from "next/head";
 
-import { Spinner, addToast } from "@heroui/react";
-import WorkoutList from "@/components/history/WorkoutList";
+import { useQuery } from "@tanstack/react-query";
 
-import { Workout } from "@/types";
+import { Spinner } from "@heroui/react";
+import WorkoutList from "@/components/history/WorkoutList";
 
 import { getWorkouts } from "@/lib/api/workouts";
 
-import { useAuth } from "@/components/auth/AuthProvider";
-
 export default function History() {
-  const [workouts, setWorkouts] = useState<Workout[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const { user } = useAuth();
-
-  const loadWorkouts = useCallback(async () => {
-    try {
-      const data = await getWorkouts();
-      setWorkouts(data);
-    } catch (error) {
-      addToast({
-        title: "Error",
-        description:
-          error instanceof Error ? error.message : "An unknown error occurred",
-        color: "danger",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (user) {
-      // Fetching data on mount is an intentional synchronization with an
-      // external system (the API), not a derived-state calculation.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      loadWorkouts();
-    }
-  }, [user, loadWorkouts]);
+  
+  const { data: workouts, isLoading } = useQuery({ queryKey: ["workouts"], queryFn: getWorkouts });
 
   if (isLoading) {
     return (

@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+import { useMutation } from "@tanstack/react-query";
+
 import {
     Modal,
     ModalContent,
@@ -23,7 +25,6 @@ export default function ForgotPasswordModal({ isOpen, onOpenChange }: ForgotPass
 
     const [email, setEmail] = useState("");
     const [emailError, setEmailError] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
     
     const isValidEmail = (email: string) => {
         setEmailError("");
@@ -47,34 +48,27 @@ export default function ForgotPasswordModal({ isOpen, onOpenChange }: ForgotPass
 
         return true;
     };
+
+    const sendPasswordResetEmailMutation = useMutation({
+        mutationFn: sendPasswordResetEmail,
+        onSuccess: () => {
+            setEmailError("");
+            setEmail("");
+            addToast({
+                description: `A password reset link has been sent to ${email}.`,
+                color: "success",
+            });
+            onOpenChange();
+        },
+        onError: (error) => {
+            setEmailError(error instanceof Error ? error.message : "An unknown error occurred");
+        },
+    });
     
-    const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (isValidEmail(email)) {
-            try {
-                setIsLoading(true);
-                
-                await sendPasswordResetEmail(email);
-                
-                setEmailError("");
-                setEmail("");
-                
-                addToast({
-                    description: `A password reset link has been sent to ${email}.`,
-                    color: "success",
-                });
-                
-                onOpenChange();
-            } catch (error) {
-                setEmailError((error as Error).message);
-                addToast({
-                    title: "Error",
-                    description: error instanceof Error ? error.message : "An unknown error occurred",
-                    color: "danger",
-                });
-            } finally {
-                setIsLoading(false);
-            }
+            sendPasswordResetEmailMutation.mutate(email);
         }
     };
     
@@ -138,7 +132,7 @@ export default function ForgotPasswordModal({ isOpen, onOpenChange }: ForgotPass
                                 variant="solid"
                                 type="submit"
                                 form="forgot-password-form"
-                                isLoading={isLoading}
+                                isLoading={sendPasswordResetEmailMutation.isPending}
                             >
                                 Send Reset Link
                             </Button>
