@@ -40,10 +40,16 @@ export default function WorkoutList({ workouts }: WorkoutListProps) {
   );
 
   const [groupByOption, setGroupByOption] = useState("none");
-  const [dateRange, setDateRange] = useState<RangeValue<DateValue> | null>({
-    start: firstWorkoutDate,
-    end: lastWorkoutDate,
-  } as RangeValue<DateValue>);
+  
+  // customDateRange tracks whether a user has entered a date range so dateRange can be overriden
+  const [customDateRange, setCustomDateRange] = useState<RangeValue<DateValue> | null>(null);
+  const [hasCustomDateRange, setHasCustomDateRange] = useState(false);
+  
+  // Date range defaults to first workout - last workout, and this is updated on every render
+  // This prevents newly created workouts from being filtered out
+  const dateRange = hasCustomDateRange
+    ? customDateRange
+    : { start: firstWorkoutDate, end: lastWorkoutDate };
 
   // Derived from the current `workouts` prop and `dateRange` on every render,
   // rather than copied into its own state - this way it always reflects the
@@ -113,12 +119,11 @@ export default function WorkoutList({ workouts }: WorkoutListProps) {
     return workouts;
   };
 
-  // sets date range back to the range of the first workout to last workout
+  // Goes back to auto-tracking the full span of `workouts` instead of a
+  // fixed, user-picked range.
   const resetDateRange = () => {
-    setDateRange({
-      start: firstWorkoutDate,
-      end: lastWorkoutDate,
-    });
+    setHasCustomDateRange(false);
+    setCustomDateRange(null);
   };
 
   const groupedWorkouts = groupWorkoutsBy(filteredWorkouts, groupByOption);
@@ -153,7 +158,10 @@ export default function WorkoutList({ workouts }: WorkoutListProps) {
                     size="md"
                     color="primary"
                     value={dateRange}
-                    onChange={setDateRange}
+                    onChange={(newValue) => {
+                      setCustomDateRange(newValue);
+                      setHasCustomDateRange(true);
+                    }}
                   />
                 </div>
                 <div>
