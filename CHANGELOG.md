@@ -16,6 +16,8 @@ change behind it.
 
 ## [Unreleased]
 
+## [1.5.2] - 2026-10-05
+
 ### Changed
 
 - Updated the `<HeroUIProvider>` to use the Next.js router for navigation. The default 
@@ -326,7 +328,8 @@ not itemized here — this entry describes the state of the app as of this tag.
   `/health` endpoint for platform health checks.
 - Database migrations and idempotent seed data for local/dev environments.
 
-[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.5.1...HEAD
+[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.5.2...HEAD
+[1.5.2]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.5.2
 [1.5.1]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.5.1
 [1.5.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.5.0
 [1.4.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.4.0
