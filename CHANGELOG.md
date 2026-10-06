@@ -16,6 +16,14 @@ change behind it.
 
 ## [Unreleased]
 
+### Changed
+
+- Updated the `<HeroUIProvider>` to use the Next.js router for navigation. The default 
+  `<Link>` behaviour uses plain anchor tags, which caused full page reloads and lost the 
+  TanStack Query cache on navigation.
+- Updated `WorkoutList.tsx` to compute the default date range on every render instead of only once on mount, 
+  so new workouts are not filtered out of the list now that the page doesn't reload on navigation.
+
 ## [1.5.1] - 2026-10-04
 
 ### Added
