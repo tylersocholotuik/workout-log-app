@@ -16,6 +16,13 @@ change behind it.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed mobile menu not closing when clicking a link in `NavBar.tsx`. This started after 
+  using the Next.js router for navigation in `<HeroUIProvider>` instead of plain anchor tags.
+  Plain anchor tags caused a full page reload, which reset the mobile menu state. Now that the Next.js router is used, 
+  the mobile menu state persists across navigation, so it needs to be closed manually when a link is clicked.
+
 ## [1.5.2] - 2026-10-05
 
 ### Changed

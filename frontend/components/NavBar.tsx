@@ -248,6 +248,7 @@ export default function NavBar() {
                             color={isActive("/") ? undefined : "foreground"}
                             aria-current={isActive("/") ? "page" : undefined}
                             href="/"
+                            onPress={() => setIsMenuOpen(false)}
                             size="sm"
                         >
                             Home
@@ -269,6 +270,7 @@ export default function NavBar() {
                                     "[workoutId]",
                                     "new-workout"
                                 )}
+                                onPress={() => setIsMenuOpen(false)}
                                 size="sm"
                             >
                                 {item.name}
@@ -277,7 +279,11 @@ export default function NavBar() {
                     ))}
                     {isLoading ? null : !isSignedIn() ? (
                         <NavbarMenuItem>
-                            <Link color="foreground" href="/login">
+                            <Link 
+                                color="foreground" 
+                                href="/login"
+                                onPress={() => setIsMenuOpen(false)}
+                            >
                                 Login
                             </Link>
                         </NavbarMenuItem>
@@ -302,6 +308,7 @@ export default function NavBar() {
                                     color="foreground"
                                     size="sm"
                                     isDisabled
+                                    onPress={() => setIsMenuOpen(false)}
                                 >
                                     Manage account
                                 </Link>
@@ -311,7 +318,10 @@ export default function NavBar() {
                                     className="hover:cursor-pointer"
                                     color="danger"
                                     size="sm"
-                                    onPress={logoutModal.onOpen}
+                                    onPress={() => {
+                                        setIsMenuOpen(false);
+                                        logoutModal.onOpen();
+                                    }}
                                 >
                                     Logout
                                 </Link>
