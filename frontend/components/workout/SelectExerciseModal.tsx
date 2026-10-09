@@ -85,7 +85,7 @@ export default function SelectExerciseModal({
       queryClient.setQueryData(["exercises"], (oldExercises: Exercise[] = []) => [
         ...oldExercises,
         newExercise,
-      ]);
+      ].sort((a, b) => a.name.localeCompare(b.name)));
 
       addToast({
         description: `Exercise '${newExercise.name}' was created!`,

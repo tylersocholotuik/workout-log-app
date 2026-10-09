@@ -130,8 +130,13 @@ export default function WorkoutLog() {
             // Prime the cache for the new workoutId so navigating to it
             // doesn't trigger a redundant GET.
             queryClient.setQueryData(["workout", newWorkout.id], newWorkout);
-            // Mark the workouts list (history.tsx) as stale so it refetches on next visit.
-            void queryClient.invalidateQueries({ queryKey: ["workouts"] });
+            // Append the new workout to the workouts list in the query cache so it appears immediately in the history list without needing to refetch.
+            // Sort the workouts by date in descending order so the most recent workout appears first.
+            queryClient.setQueryData(["workouts"], (oldWorkouts: Workout[] | undefined) => {
+                if (!oldWorkouts) return;
+                return [...oldWorkouts, newWorkout].sort((a, b) =>
+                    new Date(b.date).getTime() - new Date(a.date).getTime());
+            });
             // reload the page with the new workoutId
             void router.push(`/workout/${newWorkout.id}`);
         }
@@ -143,8 +148,11 @@ export default function WorkoutLog() {
             setWorkout(updatedWorkout);
             // Keep the query cache in sync so a later refetch doesn't briefly serve stale data.
             queryClient.setQueryData(["workout", workoutId], updatedWorkout);
-            // Mark the workouts list (history.tsx) as stale so it refetches on next visit.
-            void queryClient.invalidateQueries({ queryKey: ["workouts"] });
+            // Update the workouts list in the query cache so it reflects the updated workout without needing to refetch.
+            queryClient.setQueryData(["workouts"], (oldWorkouts: Workout[] | undefined) => {
+                if (!oldWorkouts) return;
+                return oldWorkouts.map((workout) => workout.id === updatedWorkout.id ? updatedWorkout : workout);
+            });
             addToast({
                 description: "Workout saved!",
                 color: "success",
@@ -169,9 +177,11 @@ export default function WorkoutLog() {
                 description: `'${workout.title}' was deleted`,
                 color: "success",
             });
-            // The workouts list (history.tsx) may still have this workout
-            // cached - mark it stale so it refetches on next visit.
-            void queryClient.invalidateQueries({ queryKey: ["workouts"] });
+            // Remove the deleted workout from the workouts list in the query cache so it disappears immediately from the history list without needing to refetch.
+            queryClient.setQueryData(["workouts"], (oldWorkouts: Workout[] | undefined) => {
+                if (!oldWorkouts) return;
+                return oldWorkouts.filter((workout) => workout.id !== deletedWorkoutId);
+            });
             setWorkout(createEmptyWorkout());
             setStartNewWorkout(false);
             router.push(`/workout/new-workout`).then(() => {
