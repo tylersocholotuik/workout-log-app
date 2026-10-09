@@ -16,6 +16,8 @@ change behind it.
 
 ## [Unreleased]
 
+## [1.5.3] - 2026-10-08
+
 ### Fixed
 
 - Fixed mobile menu not closing when clicking a link in `NavBar.tsx`. This started after 
@@ -335,7 +337,8 @@ not itemized here — this entry describes the state of the app as of this tag.
   `/health` endpoint for platform health checks.
 - Database migrations and idempotent seed data for local/dev environments.
 
-[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.5.2...HEAD
+[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.5.3...HEAD
+[1.5.3]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.5.3
 [1.5.2]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.5.2
 [1.5.1]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.5.1
 [1.5.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.5.0
