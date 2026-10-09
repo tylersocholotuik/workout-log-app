@@ -16,6 +16,15 @@ change behind it.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed flashing of stale workout data on the History page when navigating back to it after adding,
+  editing, or deleting a workout. The mutations in `[workoutId].tsx` previous invalidated the `workouts` query cache,
+  but this would not take effect until the next render of the History page, so the old data would flash briefly before the query refetched.
+  Now, the `workouts` query is updated directly with `queryClient.setQueryData` after a successful mutation, so the History page sees the new data immediately.
+- Sorted the exercises in the Select Exercise Modal after creating a new exercise, 
+  so the newly created exercise appears in the list in alphabetical order instead of at the bottom.
+
 ## [1.5.3] - 2026-10-08
 
 ### Fixed
