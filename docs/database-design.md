@@ -76,6 +76,7 @@ erDiagram
         bool deleted
         datetime created_at
         datetime updated_at
+        datetime finished_at "null = in progress"
     }
 
     WORKOUT_EXERCISE {
@@ -156,6 +157,16 @@ A single logged workout session for a user.
   (see the `UseDateOnlyForWorkoutDate` migration)
 - `user_id` (FK to `users.id`, `ON DELETE RESTRICT`)
 - `deleted`, `created_at`, `updated_at`
+- `finished_at` (nullable) — `null` while the workout is in progress; set
+  to the current UTC time by `WorkoutService.FinishWorkout` (`PATCH
+  /api/workouts/{id}/finish`). A user can have at most one in-progress
+  (`finished_at IS NULL`, not deleted) workout at a time —
+  `WorkoutService.CreateWorkout` enforces this in application code rather
+  than a DB constraint. Powers autosave: the frontend creates a workout
+  immediately with top-level fields only, persists exercise/set edits via
+  `PUT`, and the `GET /api/workouts/active` endpoint lets the UI resume an
+  in-progress workout (e.g. after navigating away and back) by querying for
+  `finished_at IS NULL`.
 
 ### `workout_exercises`
 
@@ -257,3 +268,6 @@ Notable migrations beyond the initial schema:
 - `MergeExerciseTables` — consolidated what were originally separate system
   and custom exercise tables into the single `exercises` table described
   above.
+- `AddFinishedAtToWorkouts` — added the `finished_at` column and backfilled
+  existing rows with `COALESCE(updated_at, created_at)` so historical
+  workouts aren't retroactively treated as in-progress.

@@ -100,10 +100,12 @@ another user is never returned (`404`/`403`, never another user's data).
 | Method | Path | Description |
 |---|---|---|
 | GET | `/` | List the current user's workouts (not deleted), newest date first, with exercises and sets included. |
+| GET | `/active` | Get the current user's in-progress workout (`finishedAt` is `null`), if any — powers resuming an autosaved workout. |
 | GET | `/{id}` | Get one workout by ID, including its exercises and sets. |
 | GET | `/exercise-history/{exerciseId}` | All past logged instances of one exercise across the user's workouts, newest first — powers the "exercise history" view. |
-| POST | `/` | Create a workout (with nested exercises/sets in one request). |
+| POST | `/` | Create a workout (with nested exercises/sets in one request). Blocked if the user already has an in-progress workout. |
 | PUT | `/{id}` | Replace a workout's fields and reconcile its exercises/sets against the payload (missing ones are soft-deleted). |
+| PATCH | `/{id}/finish` | Mark a workout as finished (sets `finishedAt`), allowing a new workout to be created. |
 | DELETE | `/{id}` | Soft-delete a workout and all of its exercises/sets. |
 
 #### `GET /`, `GET /{id}`
@@ -112,6 +114,15 @@ another user is never returned (`404`/`403`, never another user's data).
 - `GET /{id}`: `404 Not Found` if missing/deleted;
   `403 Forbidden` → `{ "error": "You do not have access to this workout" }`
   if it belongs to another user
+
+#### `GET /active`
+
+Used by the frontend to resume an in-progress (autosaved) workout, e.g. on
+loading `[workoutId].tsx` or app startup.
+
+- `200 OK` → `WorkoutDto` if the user has an unfinished workout
+  (`finishedAt` is `null` and not deleted)
+- `204 No Content` → the user has no in-progress workout
 
 #### `GET /exercise-history/{exerciseId}`
 
@@ -134,9 +145,27 @@ Request body: `WorkoutDto` (see [Shared DTOs](#shared-dtos)). On create,
 without an `id` are treated as new, and any exercise/set from the current
 workout missing from the payload is soft-deleted.
 
-- `200 OK` (`PUT`) / `200 OK` with `Location` header (`POST`) → `WorkoutDto`
-- `409 Conflict` → `{ "error": "A workout with the same title and date already exists" }`
+- `200 OK` (`PUT`) / `201 Created` with `Location` header (`POST`) → `WorkoutDto`
+- `409 Conflict` →
+  `{ "error": "A workout with the same title and date already exists" }`
   (title + date must be unique per user among non-deleted workouts)
+- `409 Conflict` (`POST` only) →
+  `{ "error": "You already have an unfinished workout. Please finish it before creating a new one." }`
+  — a user can only have one in-progress (`finishedAt == null`) workout at
+  a time; finish or delete it before creating another
+
+#### `PATCH /{id}/finish`
+
+Marks a workout as finished by setting `finishedAt` to the current UTC
+time. Intended to be called once, after the frontend's autosave flow has
+already persisted all exercise/set changes via `PUT /{id}` — this endpoint
+only flips the `finishedAt` timestamp and doesn't accept a body.
+
+- `200 OK` → empty body
+- `404 Not Found` → `{ "error": "Workout not found" }`
+- `403 Forbidden` → `{ "error": "You do not have access to this workout" }`
+  if it belongs to another user
+- `409 Conflict` → `{ "error": "Workout is already finished" }`
 
 #### `DELETE /{id}`
 

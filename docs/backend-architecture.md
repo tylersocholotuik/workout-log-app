@@ -29,6 +29,7 @@ WorkoutLogAPI/
 ├── Models/          # EF Core entities (see database-design.md)
 ├── Data/            # WorkoutDbContext + seed data
 ├── Migrations/      # EF Core migrations
+├── Exceptions/      # Custom domain exceptions (business-rule violations)
 ├── Validation/      # Custom [ValidationAttribute]s (weight/reps/RPE ranges)
 ├── Constants/       # Shared string/config constants (AppConstants)
 ├── Enums/           # Shared enums (e.g. WeightUnit)
@@ -47,9 +48,15 @@ WorkoutLogAPI/
   and take the DbContext (and other services) via constructor injection.
   They **throw exceptions** rather than returning result objects/error
   codes — `KeyNotFoundException` for "not found", `InvalidOperationException`
-  for business-rule violations (duplicate workout, locked account, etc.),
-  `UnauthorizedAccessException` for ownership violations. Controllers catch
-  these specific types and map each to the appropriate HTTP status.
+  (or a custom subclass in `Exceptions/`, e.g. `DuplicateWorkoutException`,
+  `ActiveWorkoutExistsException`) for business-rule violations, and
+  `UnauthorizedAccessException` for ownership violations. Custom exceptions
+  derive from the standard type they most resemble (rather than
+  implementing a new hierarchy) so they can still be caught generically
+  where that's sufficient, while letting controllers catch the specific
+  subclass first when they need to return a distinct error message per
+  case. Controllers catch these types and map each to the appropriate HTTP
+  status.
 - **DTOs** (`DTOs/`) are C# `record`s, one subfolder per feature area
   (`Auth`, `Users`, `Exercises`, `Workouts`, `Admin`, `Email`). Each response
   DTO exposes a static `FromX(entity)` factory method that maps from the EF
@@ -199,9 +206,21 @@ cookie as first-party — avoiding Safari/WebKit's blocking of third-party
   individual fields or exposing separate endpoints per nested resource.
   `WorkoutService.UpdateWorkout` reconciles the payload against the
   existing entity graph (`SyncExercises`), soft-deleting anything missing
-  from it. There's no partial-update (`PATCH`) support yet — adding it
-  would mean either a `JsonPatch` document or an explicit "diff" DTO, plus
-  more granular ownership/validation checks per nested field.
+  from it. The one `PATCH` endpoint that does exist
+  (`PATCH /api/workouts/{id}/finish`) is narrow by design — it only flips
+  the `finished_at` timestamp and takes no body — rather than a general
+  `JsonPatch`/partial-update mechanism for arbitrary fields.
+- **Autosave / in-progress workouts:** `workouts.finished_at` (nullable)
+  tracks whether a workout is still in progress. The frontend creates a
+  workout immediately with only its top-level fields, autosaves
+  exercise/set edits via repeated `PUT` calls as the user works out, and
+  calls `PATCH /{id}/finish` once done. `WorkoutService.CreateWorkout`
+  rejects creating a new workout while the user already has one
+  in-progress (`ActiveWorkoutExistsException`), and
+  `GET /api/workouts/active` lets the frontend resume an in-progress
+  workout after navigating away and back. See
+  [database-design.md](database-design.md#table-reference) for the column
+  details.
 - **`AdminController`** is gated both by the `AdminOnly` authorization
   policy and by an `AdminEndpoints:HardDeleteTestWorkoutsEnabled`
   configuration flag (disabled in production), since its one endpoint hard
