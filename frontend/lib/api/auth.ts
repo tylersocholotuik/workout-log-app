@@ -1,5 +1,5 @@
 import {User, RegisterData, LoginData, ResetPasswordData, AuthResponse} from '@/types';
-import {extractErrorMessage} from './apiErrors';
+import {throwApiError} from './apiErrors';
 import {apiFetch} from './client';
 
 // NEXT_PUBLIC_API_URL should be left unset in Vercel (staging/production) so
@@ -24,8 +24,7 @@ export const register = async (data: RegisterData): Promise<AuthResponse> => {
     });
 
     if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(extractErrorMessage(errorData, 'Failed to register'));
+        await throwApiError(res, 'Failed to register');
     }
     
     return await res.json();
@@ -41,8 +40,7 @@ export const login = async (data: LoginData): Promise<AuthResponse> => {
     });
 
     if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(extractErrorMessage(errorData, 'Failed to login'));
+        await throwApiError(res, 'Failed to login');
     }
     
     return await res.json();
@@ -62,8 +60,7 @@ export const sendPasswordResetEmail = async (email: string): Promise<void> => {
     });
 
     if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(extractErrorMessage(errorData, 'Failed to send password reset email'));
+        await throwApiError(res, 'Failed to send password reset email');
     }
 };
 
@@ -77,8 +74,7 @@ export const resetPassword = async (data: ResetPasswordData): Promise<void> => {
     });
 
     if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(extractErrorMessage(errorData, 'Failed to reset password'));
+        await throwApiError(res, 'Failed to reset password');
     }
 };
 
@@ -90,7 +86,7 @@ export const fetchCurrentUser = async (): Promise<User | null> => {
     } else if (res.status === 401) {
         return null;
     } else {
-        throw new Error('Failed to fetch current user');
+        return await throwApiError(res, 'Failed to fetch current user');
     }
 };
 
