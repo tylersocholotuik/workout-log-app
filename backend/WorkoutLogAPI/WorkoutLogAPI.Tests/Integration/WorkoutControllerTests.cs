@@ -171,4 +171,132 @@ public class WorkoutControllerTests(PostgresContainerFixture postgres) : Integra
         var history = await response.Content.ReadFromJsonAsync<List<ExerciseHistoryDto>>(JsonOptions);
         Assert.NotEmpty(history!);
     }
+
+    [Fact]
+    public async Task GetActiveWorkout_WhenUserHasAnUnfinishedWorkout_ReturnsIt()
+    {
+        var authCookie = await Client.RegisterNewUserAndGetAuthCookieAsync();
+        var workout = await CreateWorkoutAsync(authCookie);
+
+        var response = await Client.GetWithCookieAsync("/api/workouts/active", authCookie);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var active = await response.Content.ReadFromJsonAsync<WorkoutDto>(JsonOptions);
+        Assert.Equal(workout.Id, active!.Id);
+    }
+
+    [Fact]
+    public async Task GetActiveWorkout_WhenUserHasNoUnfinishedWorkout_ReturnsNoContent()
+    {
+        var authCookie = await Client.RegisterNewUserAndGetAuthCookieAsync();
+        var workout = await CreateWorkoutAsync(authCookie);
+        await Client.PatchWithCsrfAsync($"/api/workouts/{workout.Id}/finish", authCookie);
+
+        var response = await Client.GetWithCookieAsync("/api/workouts/active", authCookie);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetActiveWorkout_WithoutAuth_ReturnsUnauthorized()
+    {
+        var response = await Client.GetWithCookieAsync("/api/workouts/active");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreateWorkout_WhenUserHasAnUnfinishedWorkout_ReturnsConflict()
+    {
+        var authCookie = await Client.RegisterNewUserAndGetAuthCookieAsync();
+        await CreateWorkoutAsync(authCookie, "First Workout");
+
+        var secondWorkoutDto = new WorkoutDto(
+            null, "Second Workout", null, DateOnly.FromDateTime(DateTime.UtcNow), null, null);
+
+        var response = await Client.PostAsJsonWithCsrfAsync("/api/workouts", secondWorkoutDto, authCookie);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreateWorkout_AfterFinishingPriorWorkout_Succeeds()
+    {
+        var authCookie = await Client.RegisterNewUserAndGetAuthCookieAsync();
+        var firstWorkout = await CreateWorkoutAsync(authCookie, "First Workout");
+        await Client.PatchWithCsrfAsync($"/api/workouts/{firstWorkout.Id}/finish", authCookie);
+
+        var secondWorkoutDto = new WorkoutDto(
+            null, "Second Workout", null, DateOnly.FromDateTime(DateTime.UtcNow), null, null);
+
+        var response = await Client.PostAsJsonWithCsrfAsync("/api/workouts", secondWorkoutDto, authCookie);
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task FinishWorkout_WithValidId_ReturnsOkAndAllowsNewWorkoutCreation()
+    {
+        var authCookie = await Client.RegisterNewUserAndGetAuthCookieAsync();
+        var workout = await CreateWorkoutAsync(authCookie);
+
+        var response = await Client.PatchWithCsrfAsync($"/api/workouts/{workout.Id}/finish", authCookie);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task FinishWorkout_WhenAlreadyFinished_ReturnsConflict()
+    {
+        var authCookie = await Client.RegisterNewUserAndGetAuthCookieAsync();
+        var workout = await CreateWorkoutAsync(authCookie);
+        await Client.PatchWithCsrfAsync($"/api/workouts/{workout.Id}/finish", authCookie);
+
+        var response = await Client.PatchWithCsrfAsync($"/api/workouts/{workout.Id}/finish", authCookie);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task FinishWorkout_ForAnotherUsersWorkout_ReturnsForbidden()
+    {
+        var ownerCookie = await Client.RegisterNewUserAndGetAuthCookieAsync();
+        var otherUserCookie = await Client.RegisterNewUserAndGetAuthCookieAsync();
+        var workout = await CreateWorkoutAsync(ownerCookie);
+
+        var response = await Client.PatchWithCsrfAsync($"/api/workouts/{workout.Id}/finish", otherUserCookie);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task FinishWorkout_WithNonexistentId_ReturnsNotFound()
+    {
+        var authCookie = await Client.RegisterNewUserAndGetAuthCookieAsync();
+
+        var response = await Client.PatchWithCsrfAsync($"/api/workouts/{Guid.NewGuid()}/finish", authCookie);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task FinishWorkout_WithoutCsrfHeader_ReturnsForbidden()
+    {
+        var authCookie = await Client.RegisterNewUserAndGetAuthCookieAsync();
+        var workout = await CreateWorkoutAsync(authCookie);
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/workouts/{workout.Id}/finish");
+        request.Headers.Add("Cookie", authCookie);
+
+        var response = await Client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task FinishWorkout_WithoutAuth_ReturnsUnauthorized()
+    {
+        var response = await Client.PatchWithCsrfAsync($"/api/workouts/{Guid.NewGuid()}/finish");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
 }
