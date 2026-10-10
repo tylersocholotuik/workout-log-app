@@ -1,6 +1,7 @@
 using WorkoutLogAPI.Data;
 using WorkoutLogAPI.Models;
 using WorkoutLogAPI.DTOs.Workouts;
+using WorkoutLogAPI.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
 namespace WorkoutLogAPI.Services;
@@ -48,6 +49,18 @@ public class WorkoutService
 
         return workout;
     }
+    
+    // Fetches the active workout for a user, which is defined as a workout that has not been marked as finished
+    public async Task<Workout?> GetActiveWorkout(string userId)
+    {
+        return await _context.Workouts
+            .Where(w => w.UserId == userId && !w.Deleted && w.FinishedAt == null)
+            .Include(w => w.Exercises.Where(e => !e.Deleted))
+            .ThenInclude(e => e.Sets.Where(s => !s.Deleted))
+            .Include(w => w.Exercises.Where(e => !e.Deleted))
+            .ThenInclude(e => e.Exercise)
+            .FirstOrDefaultAsync();
+    }
 
     // Fetches the history of a specific exercise for a user, including all workouts and sets associated with that exercise.
     public async Task<List<WorkoutExercise>> GetExerciseHistory(int exerciseId, string userId)
@@ -63,6 +76,14 @@ public class WorkoutService
 
     public async Task<Workout> CreateWorkout(WorkoutDto workoutDto, string userId)
     {
+        var hasUnfinishedWorkout =
+            await _context.Workouts.AnyAsync(w => w.UserId == userId && !w.Deleted && w.FinishedAt == null);
+        
+        if (hasUnfinishedWorkout)
+        {
+            throw new ActiveWorkoutExistsException("You already have an unfinished workout. Please finish it before creating a new one.");
+        }
+        
         var workoutExists = await _context.Workouts.Where(w =>
                 w.Title.ToLower() == workoutDto.Title.ToLower() &&
                 w.Date == workoutDto.Date &&
@@ -72,7 +93,7 @@ public class WorkoutService
 
         if (workoutExists)
         {
-            throw new InvalidOperationException("A workout with this title and date already exists.");
+            throw new DuplicateWorkoutException("A workout with this title and date already exists.");
         }
 
         var workout = new Workout
@@ -116,7 +137,7 @@ public class WorkoutService
 
         if (workoutExists)
         {
-            throw new InvalidOperationException("A workout with this title and date already exists.");
+            throw new DuplicateWorkoutException("A workout with this title and date already exists.");
         }
 
         // Update the top-level properties of the workout
@@ -139,6 +160,19 @@ public class WorkoutService
         _context.ChangeTracker.Clear();
 
         return await GetWorkoutById(workout.Id, userId);
+    }
+    
+    public async Task FinishWorkout(string id, string userId)
+    {
+        var workout = await GetWorkoutById(id, userId);
+        
+        if (workout.FinishedAt != null)
+        {
+            throw new InvalidOperationException("This workout has already been finished.");
+        }
+        
+        workout.FinishedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
     }
 
     public async Task DeleteWorkout(string id, string userId)
