@@ -1,6 +1,6 @@
 import {Workout} from '@/types';
 import {apiFetch} from "./client";
-import {extractErrorMessage, throwApiError} from "./apiErrors";
+import {throwApiError} from "./apiErrors";
 
 // NEXT_PUBLIC_API_URL should be left unset in Vercel (staging/production) so
 // requests are made relative to the frontend's own origin and proxied to the
@@ -17,8 +17,7 @@ export const getWorkouts = async () => {
     const res = await apiFetch(`${API_URL}/api/workouts`);
 
     if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(extractErrorMessage(errorData, "Failed to load workouts"));
+        await throwApiError(res, "Failed to load workouts");
     }
 
     return await res.json();
@@ -34,6 +33,20 @@ export const getWorkout = async (id: string | string[]) => {
     return await res.json();
 };
 
+export const getActiveWorkout = async () => {
+    const res = await apiFetch(`${API_URL}/api/workouts/active`);
+    
+    if (res.status === 204) {
+        return null; // No active workout
+    }
+    
+    if (!res.ok) {
+        await throwApiError(res, "Failed to load active workout");
+    }
+    
+    return await res.json();
+};
+
 export const addWorkout = async (workoutData: Workout) => {
     const res = await apiFetch(`${API_URL}/api/workouts`, {
         method: "POST",
@@ -44,8 +57,7 @@ export const addWorkout = async (workoutData: Workout) => {
     });
 
     if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(extractErrorMessage(errorData, "Failed to add workout"));
+        await throwApiError(res, "Failed to add workout");
     }
 
     return await res.json();
@@ -61,11 +73,20 @@ export const updateWorkout = async (id: string | string [] | undefined, workoutD
     });
 
     if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(extractErrorMessage(errorData, "Failed to update workout"));
+        await throwApiError(res, "Failed to update workout");
     }
 
     return await res.json();
+};
+
+export const finishWorkout = async (id: string)=> {
+    const res = await apiFetch(`${API_URL}/api/workouts/${id}/finish`, {
+        method: "PATCH",
+    });
+    
+    if (!res.ok) {
+        await throwApiError(res, "Failed to finish workout");
+    }
 };
 
 export const deleteWorkout = async (id: string | string[]) => {
@@ -74,8 +95,7 @@ export const deleteWorkout = async (id: string | string[]) => {
     });
 
     if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(extractErrorMessage(errorData, "Failed to delete workout"));
+        await throwApiError(res, "Failed to delete workout");
     }
 };
 
@@ -83,8 +103,7 @@ export const getExerciseHistory = async (exerciseId: number | undefined) => {
     const res = await apiFetch(`${API_URL}/api/workouts/exercise-history/${exerciseId}`);
 
     if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(extractErrorMessage(errorData, "Failed to fetch exercise history"));
+        await throwApiError(res, "Failed to fetch exercise history");
     }
 
     return await res.json();
