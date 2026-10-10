@@ -88,6 +88,11 @@ GET {{Base_Url}}/api/workouts
 Accept: application/json
 Authorization: Bearer {{Access_Token}}
 
+### Get active workout for the logged-in user (unfinished)
+GET {{Base_Url}}/api/workouts/active
+Accept: application/json
+Authorization: Bearer {{Access_Token}}
+
 ### Get a single workout by id
 GET {{Base_Url}}/api/workouts/{{Workout_Id}}
 Accept: application/json
@@ -106,7 +111,7 @@ X-Requested-With: XMLHttpRequest
 
 {
     "title": "Push Day",
-    "date": "2026-09-06",
+    "date": "2026-10-11",
     "notes": "Felt strong today",
     "exercises": [
         {
@@ -144,6 +149,11 @@ X-Requested-With: XMLHttpRequest
         }
     ]
 }
+
+### Finish a workout (sets "finished_at" to the current time)
+PATCH {{Base_Url}}/api/workouts/{{Workout_Id}}/finish
+Authorization: Bearer {{Access_Token}}
+X-Requested-With: XMLHttpRequest
 
 ### Soft-delete a workout
 DELETE {{Base_Url}}/api/workouts/{{Workout_Id}}
