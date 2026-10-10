@@ -141,8 +141,12 @@ export default function WorkoutLog() {
             // Sort the workouts by date in descending order so the most recent workout appears first.
             queryClient.setQueryData(["workouts"], (oldWorkouts: Workout[] | undefined) => {
                 if (!oldWorkouts) return;
-                return [...oldWorkouts, newWorkout].sort((a, b) =>
-                    new Date(b.date).getTime() - new Date(a.date).getTime());
+                return [...oldWorkouts, newWorkout].sort((a, b) => {
+                    // An in-progress workout should always appear first
+                    if (!a.finishedAt && b.finishedAt) return -1;
+                    if (a.finishedAt && !b.finishedAt) return 1;
+                    return new Date(b.date).getTime() - new Date(a.date).getTime();
+                });
             });
             // reload the page with the new workoutId
             void router.push(`/workout/${newWorkout.id}`);

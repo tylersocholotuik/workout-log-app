@@ -23,7 +23,8 @@ public class WorkoutService
             .ThenInclude(e => e.Sets.Where(s => !s.Deleted))
             .Include(w => w.Exercises.Where(e => !e.Deleted))
             .ThenInclude(e => e.Exercise)
-            .OrderByDescending(w => w.Date)
+            .OrderBy(w => w.FinishedAt == null ? 0 : 1) // Unfinished workouts first
+            .ThenByDescending(w => w.Date)
             .ToListAsync();
     }
 
