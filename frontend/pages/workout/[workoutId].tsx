@@ -196,8 +196,12 @@ export default function WorkoutLog() {
     
     // Use a ref to store the flushPendingSave function so that it can be called from the route change handler 
     // without needing to include it in the dependency array of the useEffect below.
+    // Updating it inside an effect (rather than directly in the component body) keeps this
+    // assignment out of render, which is what the react-hooks/refs lint rule requires.
     const flushPendingSaveRef = useRef(flushPendingSave);
-    flushPendingSaveRef.current = flushPendingSave;
+    useEffect(() => {
+        flushPendingSaveRef.current = flushPendingSave;
+    });
     
     // Load the workout data when the component mounts or when the workoutId changes. 
     // If the user is starting a new workout and has an active workout, load that instead.
