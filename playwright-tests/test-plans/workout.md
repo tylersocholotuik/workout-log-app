@@ -51,7 +51,7 @@ persistence into workout history.
 
 ### Exercises
 
-- **exercise list loads** — click "Add Exercise" → modal opens with a
+- **exercise list loads** — click "Add Exercise" → drawer opens with a
   non-empty exercise list.
 - **search filters the exercise list** — type "bench press" in the search
   box → only matching exercises (case-insensitive) remain.
@@ -59,7 +59,7 @@ persistence into workout history.
   exercise, click Add → a card with that exercise's name appears, containing
   exactly one set row.
 - **creating a brand-new exercise adds it to the list and workout** — in the
-  Select Exercise modal, switch to "create new," enter a unique name, Create
+  Select Exercise drawer, switch to "create new," enter a unique name, Create
   → success toast with an "Add" action; clicking it adds the new exercise to
   the workout.
 - **duplicate exercise names are rejected** — try to create a new exercise

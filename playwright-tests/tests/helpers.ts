@@ -181,7 +181,7 @@ export async function addExercise(page: Page, exerciseName: string) {
   await page.getByPlaceholder('Search exercises...').fill(exerciseName);
   await page.getByRole('row', { name: exerciseName, exact: true }).click();
   await page.getByRole('button', { name: 'Add', exact: true }).click();
-  // Wait out the modal's close animation - interacting with the page while
+  // Wait out the drawer's close animation - interacting with the page while
   // it's still closing can race with React and silently drop input.
   await expect(page.getByRole('dialog')).toHaveCount(0);
 }

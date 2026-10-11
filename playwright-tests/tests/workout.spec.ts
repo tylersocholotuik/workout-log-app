@@ -148,23 +148,23 @@ test.describe('Exercises', () => {
     await startNewWorkout(page, trackWorkout);
 
     await page.getByRole('button', { name: 'Add Exercise' }).click();
-    await page.getByRole('button', { name: 'Create New' }).click();
-    await page.getByLabel('Exercise Name').fill(exerciseName);
-    await page.getByRole('button', { name: 'Create', exact: true }).click();
+    const drawer = page.getByRole('dialog');
+    await drawer.getByRole('button', { name: 'Create New' }).click();
+    await drawer.getByLabel('Exercise Name').fill(exerciseName);
+    await drawer.getByRole('button', { name: 'Create', exact: true }).click();
 
     await expect(page.getByText(`Exercise '${exerciseName}' was created!`)).toBeVisible();
-    // Dismiss it and wait for it to fully leave the DOM - its own inline
-    // "Add" action otherwise collides with the Select Exercise modal's "Add"
-    // button below, even mid-close-animation.
-    await page.getByRole('button', { name: 'closeButton' }).first().click();
-    await expect(page.getByText(`Exercise '${exerciseName}' was created!`)).toHaveCount(0);
 
     // Verify it through the normal select flow rather than the toast's inline
-    // action, which is harder to scope reliably.
-    await page.getByRole('button', { name: 'Back' }).click();
-    await page.getByPlaceholder('Search exercises...').fill(exerciseName);
-    await page.getByRole('row', { name: exerciseName, exact: true }).click();
-    await page.getByRole('button', { name: 'Add', exact: true }).click();
+    // action, which is harder to scope reliably. Scope to the Select
+    // Exercise drawer so its "Add" button isn't ambiguous with the
+    // still-open creation toast's own inline "Add" action (the toast is an
+    // alertdialog, not a dialog, so this scoping also lets us skip dismissing
+    // it first).
+    await drawer.getByRole('button', { name: 'Back' }).click();
+    await drawer.getByPlaceholder('Search exercises...').fill(exerciseName);
+    await drawer.getByRole('row', { name: exerciseName, exact: true }).click();
+    await drawer.getByRole('button', { name: 'Add', exact: true }).click();
 
     await expect(exerciseCard(page, exerciseName)).toBeVisible();
   });
@@ -216,20 +216,19 @@ test.describe('Exercises', () => {
     const exerciseName = uniqueTitle('History Exercise');
     await startNewWorkout(page, trackWorkout);
     await page.getByRole('button', { name: 'Add Exercise' }).click();
-    await page.getByRole('button', { name: 'Create New' }).click();
-    await page.getByLabel('Exercise Name').fill(exerciseName);
-    await page.getByRole('button', { name: 'Create', exact: true }).click();
-    // Dismiss the creation toast and wait for it to fully leave the DOM - its
-    // inline "Add" action otherwise collides with the Select Exercise
-    // modal's "Add" button below, even mid-close-animation.
+    const drawer = page.getByRole('dialog');
+    await drawer.getByRole('button', { name: 'Create New' }).click();
+    await drawer.getByLabel('Exercise Name').fill(exerciseName);
+    await drawer.getByRole('button', { name: 'Create', exact: true }).click();
     await expect(page.getByText(`Exercise '${exerciseName}' was created!`)).toBeVisible();
-    await page.getByRole('button', { name: 'closeButton' }).first().click();
-    await expect(page.getByText(`Exercise '${exerciseName}' was created!`)).toHaveCount(0);
-    await page.getByRole('button', { name: 'Back' }).click();
-    await page.getByPlaceholder('Search exercises...').fill(exerciseName);
-    await page.getByRole('row', { name: exerciseName, exact: true }).click();
-    await page.getByRole('button', { name: 'Add', exact: true }).click();
-    // Wait out the modal's close animation - opening the Actions dropdown
+    // Scope to the Select Exercise drawer so its "Add" button isn't ambiguous
+    // with the still-open creation toast's own inline "Add" action - lets us
+    // skip dismissing the toast first.
+    await drawer.getByRole('button', { name: 'Back' }).click();
+    await drawer.getByPlaceholder('Search exercises...').fill(exerciseName);
+    await drawer.getByRole('row', { name: exerciseName, exact: true }).click();
+    await drawer.getByRole('button', { name: 'Add', exact: true }).click();
+    // Wait out the drawer's close animation - opening the Actions dropdown
     // underneath while it's still closing can make the dropdown unstable to
     // click (Firefox in particular).
     await expect(page.getByRole('dialog')).toHaveCount(0);
