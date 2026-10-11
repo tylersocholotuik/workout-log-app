@@ -109,6 +109,7 @@ public class WorkoutService
                 {
                     Notes = e.Notes,
                     WeightUnit = e.WeightUnit,
+                    EffortType = e.EffortType,
                     ExerciseId = e.ExerciseId,
                     Sets = e.Sets?.Select(s => new Set
                     {
@@ -251,6 +252,7 @@ public class WorkoutService
                 existingExercise.ExerciseId = exerciseDto.ExerciseId;
                 existingExercise.Notes = exerciseDto.Notes;
                 existingExercise.WeightUnit = exerciseDto.WeightUnit;
+                existingExercise.EffortType = exerciseDto.EffortType;
 
                 SyncSets(existingExercise, exerciseDto.Sets);
             }
@@ -260,6 +262,7 @@ public class WorkoutService
                 {
                     Notes = exerciseDto.Notes,
                     WeightUnit = exerciseDto.WeightUnit,
+                    EffortType = exerciseDto.EffortType,
                     ExerciseId = exerciseDto.ExerciseId,
                     Sets = exerciseDto.Sets?
                         .Select(s => new Set
