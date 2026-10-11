@@ -32,7 +32,7 @@ public class WorkoutControllerTests(PostgresContainerFixture postgres) : Integra
         var workoutDto = new WorkoutDto(
             null, title, null, DateOnly.FromDateTime(DateTime.UtcNow), "Some notes",
             [
-                new WorkoutExerciseDto(null, "3x5", Enums.WeightUnit.Lbs, exerciseId, null, null,
+                new WorkoutExerciseDto(null, "3x5", Enums.WeightUnit.Lbs, Enums.EffortRatingType.Rpe, exerciseId, null, null,
                     [new SetDto(null, 100, 5, 8, exerciseId)])
             ]);
 
@@ -127,7 +127,7 @@ public class WorkoutControllerTests(PostgresContainerFixture postgres) : Integra
     [InlineData(100.3, 5, 8)]       // weight not in steps of 0.5
     [InlineData(100, -1, 8)]        // reps below min
     [InlineData(100, 10000, 8)]     // reps above max
-    [InlineData(100, 5, 5.5)]       // rpe below min
+    [InlineData(100, 5, -0.5)]       // rpe below min
     [InlineData(100, 5, 10.5)]      // rpe above max
     [InlineData(100, 5, 7.3)]       // rpe not in steps of 0.5
     public async Task UpdateWorkout_WithInvalidSetData_ReturnsBadRequest(double weight, int reps, double rpe)

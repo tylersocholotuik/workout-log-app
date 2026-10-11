@@ -45,6 +45,7 @@ public class WorkoutServiceTests
                     Id: null,
                     Notes: null,
                     WeightUnit: WeightUnit.Lbs,
+                    EffortType: EffortRatingType.Rpe,
                     ExerciseId: exercise.Id,
                     WorkoutId: null,
                     Exercise: null,
@@ -242,7 +243,7 @@ public class WorkoutServiceTests
         var created = await service.CreateWorkout(
             new WorkoutDto(null, "Push Day", userId, new DateOnly(2026, 1, 1), null,
             [
-                new WorkoutExerciseDto(null, null, WeightUnit.Lbs, exercise.Id, null, null,
+                new WorkoutExerciseDto(null, null, WeightUnit.Lbs,  EffortRatingType.Rpe, exercise.Id, null, null,
                     [new SetDto(null, 100, 10, null, ExerciseId: 0)])
             ]),
             userId);

@@ -25,9 +25,9 @@ public class WorkoutSeedData
                         WeightUnit = WeightUnit.Lbs,
                         Sets =
                         [
-                            new Set { Reps = 8, Weight = 315, Rpe = 8 },
-                            new Set { Reps = 7, Weight = 315, Rpe = 8.5 },
-                            new Set { Reps = 6, Weight = 315, Rpe = 9 },
+                            new Set { Reps = 8, Weight = 315, EffortRating = 8 },
+                            new Set { Reps = 7, Weight = 315, EffortRating = 8.5 },
+                            new Set { Reps = 6, Weight = 315, EffortRating = 9 },
                         ]
                     },
                     new WorkoutExercise
@@ -37,9 +37,9 @@ public class WorkoutSeedData
                         WeightUnit = WeightUnit.Lbs,
                         Sets =
                         [
-                            new Set { Reps = 8, Weight = 245, Rpe = 8 },
-                            new Set { Reps = 7, Weight = 245, Rpe = 8.5 },
-                            new Set { Reps = 6, Weight = 245, Rpe = 9 },
+                            new Set { Reps = 8, Weight = 245, EffortRating = 8 },
+                            new Set { Reps = 7, Weight = 245, EffortRating = 8.5 },
+                            new Set { Reps = 6, Weight = 245, EffortRating = 9 },
                         ]
                     },
                     new WorkoutExercise
@@ -49,9 +49,9 @@ public class WorkoutSeedData
                         WeightUnit = WeightUnit.Lbs,
                         Sets =
                         [
-                            new Set { Reps = 8, Weight = 405, Rpe = 8 },
-                            new Set { Reps = 7, Weight = 405, Rpe = 8.5 },
-                            new Set { Reps = 6, Weight = 405, Rpe = 9 },
+                            new Set { Reps = 8, Weight = 405, EffortRating = 8 },
+                            new Set { Reps = 7, Weight = 405, EffortRating = 8.5 },
+                            new Set { Reps = 6, Weight = 405, EffortRating = 9 },
                         ]
                     }
                 ]
@@ -72,9 +72,9 @@ public class WorkoutSeedData
                         WeightUnit = WeightUnit.Lbs,
                         Sets =
                         [
-                            new Set { Reps = 8, Weight = 495, Rpe = 8 },
-                            new Set { Reps = 7, Weight = 495, Rpe = 8.5 },
-                            new Set { Reps = 6, Weight = 495, Rpe = 9 },
+                            new Set { Reps = 8, Weight = 495, EffortRating = 8 },
+                            new Set { Reps = 7, Weight = 495, EffortRating = 8.5 },
+                            new Set { Reps = 6, Weight = 495, EffortRating = 9 },
                         ]
                     },
                     new WorkoutExercise
@@ -84,9 +84,9 @@ public class WorkoutSeedData
                         WeightUnit = WeightUnit.Lbs,
                         Sets =
                         [
-                            new Set { Reps = 8, Weight = 135, Rpe = 8 },
-                            new Set { Reps = 7, Weight = 135, Rpe = 8.5 },
-                            new Set { Reps = 6, Weight = 135, Rpe = 9 },
+                            new Set { Reps = 8, Weight = 135, EffortRating = 8 },
+                            new Set { Reps = 7, Weight = 135, EffortRating = 8.5 },
+                            new Set { Reps = 6, Weight = 135, EffortRating = 9 },
                         ]
                     },
                     new WorkoutExercise
@@ -96,9 +96,9 @@ public class WorkoutSeedData
                         WeightUnit = WeightUnit.Lbs,
                         Sets =
                         [
-                            new Set { Reps = 8, Weight = 225, Rpe = 8 },
-                            new Set { Reps = 7, Weight = 225, Rpe = 8.5 },
-                            new Set { Reps = 6, Weight = 225, Rpe = 9 },
+                            new Set { Reps = 8, Weight = 225, EffortRating = 8 },
+                            new Set { Reps = 7, Weight = 225, EffortRating = 8.5 },
+                            new Set { Reps = 6, Weight = 225, EffortRating = 9 },
                         ]
                     }
                 ]

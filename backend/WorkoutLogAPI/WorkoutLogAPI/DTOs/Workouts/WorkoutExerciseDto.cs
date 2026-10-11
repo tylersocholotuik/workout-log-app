@@ -10,6 +10,7 @@ public record WorkoutExerciseDto(
     [param: StringLength(100, ErrorMessage = "Notes must be less than 100 characters")]
     string? Notes,
     WeightUnit WeightUnit,
+    EffortRatingType EffortType,
     int ExerciseId,
     string? WorkoutId,
     ExerciseDto? Exercise,
@@ -20,6 +21,7 @@ public record WorkoutExerciseDto(
             workoutExercise.Id,
             workoutExercise.Notes,
             workoutExercise.WeightUnit,
+            workoutExercise.EffortType,
             workoutExercise.ExerciseId,
             workoutExercise.WorkoutId,
             ExerciseDto.FromExercise(workoutExercise.Exercise),

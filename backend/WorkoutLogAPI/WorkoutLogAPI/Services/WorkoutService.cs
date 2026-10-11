@@ -114,7 +114,7 @@ public class WorkoutService
                     {
                         Weight = s.Weight,
                         Reps = s.Reps,
-                        Rpe = s.Rpe,
+                        EffortRating = s.EffortRating,
                     }).ToList() ?? new List<Set>(),
                 }).ToList() ?? new List<WorkoutExercise>(),
         };
@@ -266,7 +266,7 @@ public class WorkoutService
                         {
                             Weight = s.Weight,
                             Reps = s.Reps,
-                            Rpe = s.Rpe,
+                            EffortRating = s.EffortRating,
                         }).ToList() ?? new List<Set>(),
                 });
             }
@@ -296,7 +296,7 @@ public class WorkoutService
             {
                 existingSet.Weight = setDto.Weight;
                 existingSet.Reps = setDto.Reps;
-                existingSet.Rpe = setDto.Rpe;
+                existingSet.EffortRating = setDto.EffortRating;
             }
             else
             {
@@ -304,7 +304,7 @@ public class WorkoutService
                 {
                     Weight = setDto.Weight,
                     Reps = setDto.Reps,
-                    Rpe = setDto.Rpe,
+                    EffortRating = setDto.EffortRating,
                 });
             }
         }

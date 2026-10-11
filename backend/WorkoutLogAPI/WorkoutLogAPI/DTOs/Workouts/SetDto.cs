@@ -9,10 +9,10 @@ public record SetDto(
     double? Weight,
     [param: RepsRange]
     int? Reps,
-    [param: RpeRange]
-    double? Rpe,
+    [param: EffortRatingRange]
+    double? EffortRating,
     int ExerciseId)
 {
     public static SetDto FromSet(Set set) =>
-        new(set.Id, set.Weight, set.Reps, set.Rpe, set.ExerciseId);
+        new(set.Id, set.Weight, set.Reps, set.EffortRating, set.ExerciseId);
 }
