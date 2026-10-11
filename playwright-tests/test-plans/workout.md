@@ -15,13 +15,23 @@ persistence into workout history.
 ### Entry point
 
 - **shows create/load options for a brand-new workout** — navigate to
-  `/workout/new-workout` via the "Workout" nav link → "Create New Workout"
-  and "Load Existing Workout" buttons are shown, no workout form yet.
+  `/workout/new-workout` via the "Workout" nav link, with no in-progress
+  workout already active → "Create New Workout" and "Load Existing
+  Workout" buttons are shown, no workout form yet.
 - **"Load Existing Workout" navigates to history** — click "Load Existing
   Workout" → redirected to `/history`.
-- **new workout loads with sensible defaults** — click "Create New Workout"
-  → title defaults to "[yyyy-mm-dd] Workout", date defaults to today, no
-  exercises are present.
+- **new workout loads with sensible defaults and is saved immediately** —
+  click "Create New Workout" → title defaults to "[yyyy-mm-dd] Workout",
+  date defaults to today, no exercises are present, and the URL updates
+  from `/workout/new-workout` to `/workout/<GUID>` once the workout is
+  autosaved - there's no explicit "Save" step for this, the backend record
+  is created as soon as the button is clicked.
+- **returning to `/workout/new-workout` with an in-progress workout
+  resumes it** — with an unfinished workout already created (e.g. left
+  over from a previous visit that never clicked "Finish Workout"),
+  navigate to `/workout/new-workout` → automatically redirected to
+  `/workout/<that workout's id>` with its data loaded, skipping the
+  create/load prompt entirely.
 
 ### Workout details
 
@@ -29,7 +39,10 @@ persistence into workout history.
   click Save → "Title is required." shown, modal stays open.
 - **valid details are applied to the page** — set title, date (e.g.
   yesterday), and notes, Save → page header/date/notes reflect the new
-  values, modal closes.
+  values, modal closes. This "Save" only closes the details modal and
+  commits the change to local workout state; persisting it to the backend
+  happens via autosave (see **Autosave & finishing** below), not an
+  explicit top-level save action.
 
   > The title/notes over-length errors ("Title must be 50 characters or
   > less.", "Notes must be 250 characters or less.") aren't included here —
@@ -80,17 +93,31 @@ persistence into workout history.
 - **weight unit can be switched between lbs and kg** — open the exercise's
   Options popover, toggle the unit → the selected unit persists after
   saving.
-- **exercise notes are saved** — type in the exercise's Notes field, blur,
-  save → notes persist after reload.
+- **exercise notes are saved** — type in the exercise's Notes field, blur
+  → autosave persists the change; notes are still present after reload.
 
-### Saving
+### Autosave & finishing
 
-- **creating a workout succeeds** — fill in details plus at least one
-  exercise/set, click "Save Workout" → "Workout saved!" toast, URL changes
-  from `/workout/new-workout` to `/workout/<GUID>`.
-- **editing an existing workout succeeds** — load a previously saved
-  workout, change a field, Save → "Workout saved!" toast, change is
-  persisted on reload.
+There's no explicit "Save Workout" button - edits persist automatically.
+See [frontend-architecture.md](../../docs/frontend-architecture.md) for the
+full debounce/flush design; these scenarios only need to check the
+observable behavior.
+
+- **edits are autosaved** — add an exercise/set, or change an exercise's
+  notes/weight unit → a brief "Saving..." indicator appears, and the
+  change is still present after a page reload (no toast is shown for a
+  routine autosave).
+- **an edit made right before navigating away is not lost** — make an
+  edit, then immediately click a nav link (before the autosave debounce
+  would normally fire) → navigating away flushes the pending save, so the
+  edit is persisted (verified by reloading or revisiting the workout).
+- **finishing a workout** — click "Finish Workout" → "Workout finished!"
+  toast, redirected to `/history`, and the workout no longer shows an "In
+  Progress" chip there.
+- **finishing an already-finished workout just navigates away** — load a
+  previously finished workout, the action button reads "Finish Editing";
+  click it → redirected to `/history` with no "Workout finished!" toast
+  (it was already finished).
 
 ### Updating a saved workout (soft-delete)
 
@@ -100,23 +127,27 @@ confirm the frontend doesn't keep showing (or resurrect) something the user
 removed.
 
 - **removing an exercise from a saved workout persists after reload** — load
-  a saved workout with 2+ exercises, delete one via the actions menu, Save,
+  a saved workout with 2+ exercises, delete one via the actions menu, wait
+  for the autosave to complete (or navigate away to flush it immediately),
   then reload the page → the deleted exercise's card is gone, the remaining
   exercise(s) and their sets are unchanged.
-- **removing a set from a saved workout persists after reload** — load a
-  saved workout where an exercise has 2+ sets, delete one set row, Save,
+- **removing a set from a saved workout persists after reload** — load
+  a saved workout where an exercise has 2+ sets, delete one set row, wait
+  for the autosave to complete (or navigate away to flush it immediately),
   then reload the page → the deleted set is gone, the remaining set's
   weight/reps/RPE are unchanged.
 
-### Deleting / cancelling
+### Deleting
 
-- **cancelling an unsaved workout resets the page** — on a new, unsaved
-  workout, click "Cancel Workout", confirm in the modal → form resets to a
-  fresh new-workout state.
-- **deleting a saved workout removes it** — load a saved workout, click
-  "Delete Workout", confirm in the modal → "'<title>' was deleted" toast,
-  redirected to `/workout/new-workout`, workout no longer appears in
-  history.
+Every workout - including one just created via "Create New Workout" - is
+persisted to the backend immediately (see **Entry point** above), so there
+is no separate "cancel an unsaved workout" flow anymore; the action button
+is always labeled "Delete Workout".
+
+- **deleting a workout removes it** — click "Delete Workout", confirm in
+  the modal → "'<title>' was deleted" toast, redirected to
+  `/workout/new-workout`, workout no longer appears in history. This
+  applies whether the workout is still in progress or already finished.
 
 ### Authorization
 
@@ -144,4 +175,14 @@ removed.
 - Any test that creates a workout should delete it afterward
   (`test.afterEach`, via the UI's delete flow or a direct
   `DELETE /api/workouts/{id}` call) to avoid polluting the shared test
-  account's history across runs.
+  account's history across runs. This now applies even to tests that only
+  click "Create New Workout" and never click "Finish Workout" - the
+  backend record is created immediately via autosave, not just on an
+  explicit save/finish action.
+- The backend only allows one in-progress (unfinished) workout per user at
+  a time, and visiting `/workout/new-workout` doesn't create a second one
+  if an unfinished workout already exists - it loads the existing one
+  instead (see **Entry point**). Each test must finish or delete any
+  workout it leaves in progress before the next test runs, which is part
+  of why this suite runs with Playwright's `serial` mode (contrast with
+  the read-only suite in [history.md](history.md)).

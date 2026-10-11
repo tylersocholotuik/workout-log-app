@@ -16,12 +16,21 @@ cleanup** below.
 ### Viewing history
 
 - **history page loads existing workouts** — go to `/history` → a card is
-  shown for each fixture workout, newest first.
+  shown for each fixture workout, newest first. All fixture workouts used
+  by this spec are finished (see **Test data & cleanup** below), so this
+  assumes none of them are sorted ahead of the others by in-progress
+  status.
 - **workout card shows correct summary info** — a known fixture workout's
   card shows its title, full formatted date, notes (if any were set), and a
   list item for each of its exercises.
 - **"View/Edit" navigates to the workout** — click "View/Edit" on a known
-  workout's card → navigates to `/workout/<id>` showing that workout.
+  (finished) workout's card → navigates to `/workout/<id>` showing that
+  workout.
+- **an in-progress workout shows an "In Progress" chip and sorts first** —
+  a workout whose `finishedAt` is still unset (e.g. one created but never
+  finished) shows an "In Progress" chip on its card, its footer link reads
+  "Continue Workout" instead of "View/Edit", and it appears ahead of every
+  other workout in the list regardless of its date.
 
 ### Filtering by date range
 
@@ -63,9 +72,16 @@ of workouts in a `test.beforeAll` and deletes them all in a `test.afterAll`:
   `E2E History <label> <timestamp>`) and at least one distinct exercise, so
   scenarios can assert on a *specific* known workout rather than just a
   count.
+- Every fixture workout must be explicitly finished (click "Finish
+  Workout") as part of setup, not just saved - a workout is auto-created
+  and autosaved as soon as it's started (see [workout.md](workout.md)), but
+  it stays "in progress" (and sorts first, with an "In Progress" chip)
+  until finished. Leaving a fixture unfinished would break the
+  date-ordering assumptions the viewing/filtering/grouping scenarios rely
+  on.
 - Since these tests only read data, they can run in parallel with each other
   (no need for the `serial` mode used in `workout.spec.ts`) as long as the
-  fixture is fully created before any test starts.
+  fixture is fully created (and finished) before any test starts.
 - Dates are set via the workout details modal's date picker (same
   `setWorkoutDate` pattern already used in `workout.spec.ts`), not crafted
   via a raw API payload, to stay consistent with how the rest of the suite
