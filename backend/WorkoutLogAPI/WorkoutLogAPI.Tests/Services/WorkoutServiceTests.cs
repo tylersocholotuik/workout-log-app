@@ -64,6 +64,42 @@ public class WorkoutServiceTests
     }
 
     [Fact]
+    public async Task CreateWorkout_WithRirEffortType_PersistsWorkoutWithExercisesAndSets()
+    {
+        var (context, service) = CreateSut();
+        var exercise = SeedExercise(context);
+        const string userId = "user-1";
+
+        var dto = new WorkoutDto(
+            Id: null,
+            Title: "Push Day",
+            UserId: userId,
+            Date: new DateOnly(2026, 1, 1),
+            Notes: "Felt strong",
+            Exercises:
+            [
+                new WorkoutExerciseDto(
+                    Id: null,
+                    Notes: null,
+                    WeightUnit: WeightUnit.Lbs,
+                    EffortType: EffortRatingType.Rir,
+                    ExerciseId: exercise.Id,
+                    WorkoutId: null,
+                    Exercise: null,
+                    // Note: Set ExerciseId refers to WorkoutExercise Id which is not created yet
+                    Sets: [new SetDto(null, 135, 5, 2, ExerciseId: 0)])
+            ]);
+
+        var result = await service.CreateWorkout(dto, userId);
+
+        Assert.Equal(EffortRatingType.Rir, result.Exercises.First().EffortType);
+        Assert.Equal(2, result.Exercises.First().Sets.First().EffortRating);
+
+        var savedWorkout = await context.Workouts.FindAsync(result.Id);
+        Assert.NotNull(savedWorkout);
+    }
+
+    [Fact]
     public async Task CreateWorkout_WithDuplicateTitleAndDate_ThrowsDuplicateWorkoutException()
     {
         var (context, service) = CreateSut();
