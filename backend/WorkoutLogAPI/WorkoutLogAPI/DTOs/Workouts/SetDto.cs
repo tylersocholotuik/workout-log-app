@@ -9,7 +9,9 @@ public record SetDto(
     double? Weight,
     [param: RepsRange]
     int? Reps,
-    [param: EffortRatingRange]
+    // Range/step validation depends on the parent WorkoutExerciseDto's
+    // EffortType (RPE vs RIR), so it's enforced in
+    // WorkoutExerciseDto.Validate instead of an attribute here.
     double? EffortRating,
     int ExerciseId)
 {
