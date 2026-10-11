@@ -329,10 +329,19 @@ test.describe('Autosave & finishing', () => {
     await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
     const card = exerciseCard(page, 'Ab Wheel');
 
-    // Use a near-instant edit (no modal) so the brief "Saving..." indicator
-    // is reliably still visible when we check for it.
-    await waitForAutosave(page, () => card.getByRole('button', { name: 'Add Set' }).click());
+    // The "Saving..." indicator shows for a fixed 500ms regardless of how
+    // long the save itself takes, and the autosave request doesn't even fire
+    // until a 300ms debounce elapses - against staging's real network
+    // latency the response can arrive well after that 500ms window already
+    // closed, so check for the indicator right after triggering the edit
+    // instead of after awaiting its response (which reliably passed locally
+    // but failed every time in CI/staging for exactly this reason).
+    const saveResponse = page.waitForResponse(
+      (res) => /\/api\/workouts\/[^/?]+$/.test(res.url()) && res.request().method() === 'PUT'
+    );
+    await card.getByRole('button', { name: 'Add Set' }).click();
     await expect(page.getByText('Saving...')).toBeVisible();
+    expect((await saveResponse).ok()).toBeTruthy();
 
     await page.reload();
     await expect(exerciseCard(page, 'Ab Wheel').getByRole('textbox', { name: 'weight' })).toHaveCount(2);
