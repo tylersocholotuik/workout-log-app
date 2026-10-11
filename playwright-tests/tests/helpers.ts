@@ -162,6 +162,11 @@ export async function pressIconTrigger(locator: Locator) {
   await locator.hover();
   await locator.page().mouse.down();
   await locator.page().waitForTimeout(50);
+  // Re-hover before releasing - a layout shift during the wait (e.g. a
+  // sibling card's autosave re-render) can move this button, and a mouseup
+  // at the stale down-position lands on whatever is there now instead,
+  // silently dropping the click rather than opening the dropdown.
+  await locator.hover();
   await locator.page().mouse.up();
 }
 
