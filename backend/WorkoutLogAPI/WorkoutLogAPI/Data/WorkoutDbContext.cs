@@ -98,6 +98,12 @@ public class WorkoutDbContext : DbContext
                 .HasConversion(
                     unit => unit.ToString().ToLowerInvariant(),
                     value => Enum.Parse<WeightUnit>(value, ignoreCase: true));
+
+            entity.Property(we => we.EffortType)
+                .HasConversion(
+                    type => type.ToString().ToLowerInvariant(),
+                    value => Enum.Parse<EffortRatingType>(value, ignoreCase: true))
+                .HasDefaultValue(EffortRatingType.Rpe);
         });
 
         modelBuilder.Entity<Set>(entity =>

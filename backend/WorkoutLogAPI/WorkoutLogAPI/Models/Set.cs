@@ -16,8 +16,8 @@ public class Set : IAuditableEntity
     [Column("reps")]
     public int? Reps { get; set; }
 
-    [Column("rpe")]
-    public double? Rpe { get; set; }
+    [Column("effort_rating")]
+    public double? EffortRating { get; set; }
 
     [Column("exercise_id")]
     public int ExerciseId { get; set; }

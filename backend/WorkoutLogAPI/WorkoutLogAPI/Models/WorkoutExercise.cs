@@ -17,6 +17,9 @@ public class WorkoutExercise : IAuditableEntity
     [Column("weight_unit")]
     public WeightUnit WeightUnit { get; set; }
 
+    [Column("effort_type")] 
+    public EffortRatingType EffortType { get; set; } = EffortRatingType.Rpe;
+
     [Column("exercise_id")]
     public int ExerciseId { get; set; }
 
