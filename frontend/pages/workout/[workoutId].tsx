@@ -14,7 +14,7 @@ import Head from "next/head";
 
 import DeleteWorkoutModal from "@/components/workout/DeleteWorkoutModal";
 import ExerciseCard from "@/components/workout/ExerciseCard";
-import SelectExerciseModal from "@/components/workout/SelectExerciseModal";
+import SelectExerciseDrawer from "@/components/workout/SelectExerciseDrawer";
 import WorkoutDetailsModal from "@/components/workout/WorkoutDetailsModal";
 
 import {
@@ -94,7 +94,7 @@ export default function WorkoutLog() {
 
     const detailsModal = useDisclosure();
     const deleteModal = useDisclosure();
-    const addExerciseModal = useDisclosure();
+    const addExerciseDrawer = useDisclosure();
 
     const router = useRouter();
     const queryClient = useQueryClient();
@@ -528,7 +528,7 @@ export default function WorkoutLog() {
                                 variant="solid"
                                 radius="full"
                                 size="md"
-                                onPress={addExerciseModal.onOpen}
+                                onPress={addExerciseDrawer.onOpen}
                             >
                                 Add Exercise
                             </Button>
@@ -582,9 +582,9 @@ export default function WorkoutLog() {
                     onOpenChange={detailsModal.onOpenChange}
                 />
 
-                {userId && <SelectExerciseModal
-                    isOpen={addExerciseModal.isOpen}
-                    onOpenChange={addExerciseModal.onOpenChange}
+                {userId && <SelectExerciseDrawer
+                    isOpen={addExerciseDrawer.isOpen}
+                    onOpenChange={addExerciseDrawer.onOpenChange}
                     callbackFunction={addExercise}
                     update={false}
                 />}
