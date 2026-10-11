@@ -16,6 +16,34 @@ change behind it.
 
 ## [Unreleased]
 
+### Added
+
+- Added a nullable `FinishedAt` column to `Workouts` (with a backfill
+  migration), marking whether a workout is finished or still in progress.
+- Added `GET /api/workouts/active` and `PATCH /api/workouts/{id}/finish`
+  endpoints, `WorkoutService.GetActiveWorkout`/`FinishWorkout`, and
+  `ActiveWorkoutExistsException`/`DuplicateWorkoutException` to prevent
+  starting a second workout while one is already in progress.
+- Added `finishedAt` to `WorkoutDto` and the frontend `Workout` type/factory.
+- Added `getActiveWorkout`/`finishWorkout` API calls.
+- Added autosave to the workout editor: edits are debounced and saved
+  automatically, in-progress workouts resume automatically when returning
+  to `/workout/new-workout`, and a "Saving..." indicator shows while a save
+  is pending.
+- Added an "In Progress" chip to `WorkoutCard` for unfinished workouts.
+
+### Changed
+
+- `GetUserWorkouts` and the `["workouts"]` query cache now sort in-progress
+  workouts first, ahead of the date-based sort.
+- Replaced ad hoc error handling in `lib/api/auth.ts`/`exercises.ts` with
+  `throwApiError`.
+- Refactored integration test HTTP helpers to share a single `SendAsync`
+  method.
+- Documented the active/finish workout endpoints and the frontend autosave
+  architecture across `api-reference.md`, `backend-architecture.md`,
+  `database-design.md`, and `frontend-architecture.md`.
+
 ## [1.5.4] - 2026-10-08
 
 ### Fixed
