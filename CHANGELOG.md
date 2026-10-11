@@ -44,6 +44,12 @@ change behind it.
   architecture across `api-reference.md`, `backend-architecture.md`,
   `database-design.md`, and `frontend-architecture.md`.
 
+### Removed
+
+- Removed the `CaculatorModal.tsx` component as it is no longer required on the workout page.
+  Now that the workout editor is autosaving, the one-rep max calculator can be used directly on the Calculator page without losing any unsaved edits.
+- Removed the 1RM Calculator button from the `[workoutId].tsx` page.
+
 ## [1.5.4] - 2026-10-08
 
 ### Fixed

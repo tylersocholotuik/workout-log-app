@@ -12,7 +12,6 @@ import { useRouter } from "next/router";
 
 import Head from "next/head";
 
-import CalculatorModal from "@/components/workout/CalculatorModal";
 import DeleteWorkoutModal from "@/components/workout/DeleteWorkoutModal";
 import ExerciseCard from "@/components/workout/ExerciseCard";
 import SelectExerciseModal from "@/components/workout/SelectExerciseModal";
@@ -96,7 +95,6 @@ export default function WorkoutLog() {
     const detailsModal = useDisclosure();
     const deleteModal = useDisclosure();
     const addExerciseModal = useDisclosure();
-    const calculatorModal = useDisclosure();
 
     const router = useRouter();
     const queryClient = useQueryClient();
@@ -507,25 +505,7 @@ export default function WorkoutLog() {
                                 </Button>
                             </div>
                         </div>
-                        <Divider />
-                        <div className="flex justify-center my-8">
-                            <Button
-                                aria-label="one-rep max calculator"
-                                color="primary"
-                                variant="light"
-                                radius="full"
-                                onPress={calculatorModal.onOpen}
-                                startContent={
-                                    <Icon
-                                        icon="mdi:calculator"
-                                        width="24"
-                                        height="24"
-                                    />
-                                }
-                            >
-                                1RM Calculator
-                            </Button>
-                        </div>
+                        <Divider className="mb-8"/>
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
                             {workout.exercises.length > 0 &&
                                 workout.exercises.map((exercise, index) => {
@@ -609,11 +589,6 @@ export default function WorkoutLog() {
                     isOpen={deleteModal.isOpen}
                     onOpenChange={deleteModal.onOpenChange}
                     callbackFunction={() => discardWorkout(workoutId)}
-                />
-
-                <CalculatorModal
-                    isOpen={calculatorModal.isOpen}
-                    onOpenChange={calculatorModal.onOpenChange}
                 />
             </WorkoutContext.Provider>
         </>
