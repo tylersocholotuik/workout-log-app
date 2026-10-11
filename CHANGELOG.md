@@ -16,6 +16,8 @@ change behind it.
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-10-10
+
 ### Added
 
 - Added a nullable `FinishedAt` column to `Workouts` (with a backfill
@@ -49,6 +51,7 @@ change behind it.
 - Removed the `CaculatorModal.tsx` component as it is no longer required on the workout page.
   Now that the workout editor is autosaving, the one-rep max calculator can be used directly on the Calculator page without losing any unsaved edits.
 - Removed the 1RM Calculator button from the `[workoutId].tsx` page.
+
 
 ## [1.5.4] - 2026-10-08
 
@@ -382,7 +385,8 @@ not itemized here — this entry describes the state of the app as of this tag.
   `/health` endpoint for platform health checks.
 - Database migrations and idempotent seed data for local/dev environments.
 
-[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.5.4...HEAD
+[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.6.0
 [1.5.4]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.5.4
 [1.5.3]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.5.3
 [1.5.2]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.5.2
