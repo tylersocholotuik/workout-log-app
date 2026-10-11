@@ -3,17 +3,18 @@ using System.ComponentModel.DataAnnotations;
 namespace WorkoutLogAPI.Validation;
 
 /// <summary>
-/// Validates that a nullable RPE value matches the rules enforced on the
-/// frontend (SetsTableRow.tsx handleRPEChange): min 6, max 10, and in steps
-/// of 0.5. Null values are considered valid since RPE is optional.
+/// Validates that a nullable effort rating value matches the rules enforced on the
+/// frontend (SetsTableRow.tsx): min 0, max 10, and in steps of 0.5.
+/// Null values are considered valid since effort rating is optional.
+/// Note that RIR has additional validation rules not enforced here (must be an integer between 0 and 10).
 /// </summary>
-public class RpeRangeAttribute : ValidationAttribute
+public class EffortRatingRangeAttribute : ValidationAttribute
 {
-    private const double Min = 6;
+    private const double Min = 0;
     private const double Max = 10;
 
-    public RpeRangeAttribute()
-        : base("RPE must be between 6 and 10 in steps of 0.5") { }
+    public EffortRatingRangeAttribute()
+        : base("Effort rating must be between 0 and 10 in steps of 0.5") { }
 
     public override bool IsValid(object? value)
     {
