@@ -88,8 +88,8 @@ Users have the option to login or sign up with an email address and password. Th
 ### Frontend
 
 -   Next.js
--   React
 -   Typescript
+-   TanStack Query
 -   HeroUI
 -   Tailwind CSS
 
@@ -108,9 +108,7 @@ Users have the option to login or sign up with an email address and password. Th
 -   Add an analytics page with charts to monitor exercise progress over time (one-rep max, tonnage, total reps, volume, etc.)
 -   Add a user dashboard showing recent workouts and options to show progress charts for selected exercises.
 -   Add an option to export workouts to an Excel file.
--   Autosave workouts as they are being created or updated.
 
 ## Known Bugs/Issues
 
--   Some components do not have a great user experience on mobile. The virtual keyboard pushes up the exercise selection modal making it difficult to see your search results while typing.
 -   The one-rep max calculation sometimes differs by 1 lbs/kg due to floating point precision. This is not a huge issue since this is an estimate, and 1 lbs/kg is almost negligible since most weights in commercial gyms are not precise.
