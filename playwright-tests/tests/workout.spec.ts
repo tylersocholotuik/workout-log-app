@@ -249,7 +249,7 @@ test.describe('Exercises', () => {
 test.describe('Sets', () => {
   test('sets can be added', async ({ page, trackWorkout }) => {
     await startNewWorkout(page, trackWorkout);
-    await addExercise(page, 'Ab Wheel');
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
     const card = exerciseCard(page, 'Ab Wheel');
 
     await card.getByRole('button', { name: 'Add Set' }).click();
@@ -259,7 +259,7 @@ test.describe('Sets', () => {
 
   test('sets can be removed', async ({ page, trackWorkout }) => {
     await startNewWorkout(page, trackWorkout);
-    await addExercise(page, 'Ab Wheel');
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
     const card = exerciseCard(page, 'Ab Wheel');
     await card.getByRole('button', { name: 'Add Set' }).click();
 
@@ -270,7 +270,7 @@ test.describe('Sets', () => {
 
   test('invalid characters are rejected in Weight/Reps/RPE', async ({ page, trackWorkout }) => {
     await startNewWorkout(page, trackWorkout);
-    await addExercise(page, 'Ab Wheel');
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
     const card = exerciseCard(page, 'Ab Wheel');
 
     await card.getByRole('textbox', { name: 'weight' }).pressSequentially('abc');
@@ -279,7 +279,7 @@ test.describe('Sets', () => {
 
   test('estimated one-rep max is calculated and displayed', async ({ page, trackWorkout }) => {
     await startNewWorkout(page, trackWorkout);
-    await addExercise(page, 'Ab Wheel');
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
     const card = exerciseCard(page, 'Ab Wheel');
 
     await fillSet(card, { weight: '250', reps: '8', rpe: '9' });
@@ -291,7 +291,7 @@ test.describe('Sets', () => {
 test.describe('Weight unit & notes', () => {
   test('weight unit can be switched between lbs and kg', async ({ page, trackWorkout }) => {
     await startNewWorkout(page, trackWorkout);
-    await addExercise(page, 'Ab Wheel');
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
     const card = exerciseCard(page, 'Ab Wheel');
 
     await pressIconTrigger(card.getByRole('button', { name: 'exercise options' }));
@@ -304,7 +304,7 @@ test.describe('Weight unit & notes', () => {
 
   test('exercise notes are saved', async ({ page, trackWorkout }) => {
     await startNewWorkout(page, trackWorkout);
-    await addExercise(page, 'Ab Wheel');
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
     const card = exerciseCard(page, 'Ab Wheel');
 
     await waitForAutosave(page, async () => {
