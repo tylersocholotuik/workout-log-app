@@ -7,6 +7,21 @@ name: Deploy
 on:
   push:
     branches: [main]
+  # Lets a commit already on main (e.g. one whose e2e-staging run only
+  # failed due to test flakiness, not a real bug) be deployed without
+  # needing a new push. `force_deploy` is needed because re-running a
+  # failed job/workflow only re-runs it against the commit that originally
+  # triggered it - it can't pick up a later commit - and because paths-filter
+  # (in ci.yml) only diffs the single commit that triggered this run, so a
+  # manual run would otherwise still see "nothing changed" and skip
+  # everything below.
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: "Deploy regardless of which paths changed"
+        type: choice
+        options: [none, frontend, backend, both]
+        default: none
 
 # Avoid two merges racing each other through staging/production.
 concurrency:
@@ -20,11 +35,38 @@ jobs:
   ci:
     uses: ./.github/workflows/ci.yml
 
+  # Combines ci's path-based change detection with the manual force_deploy
+  # override, so every job below can keep checking a single pair of
+  # booleans regardless of how this run was triggered.
+  deploy-decision:
+    needs: ci
+    runs-on: ubuntu-latest
+    outputs:
+      backend_changed: ${{ steps.decide.outputs.backend }}
+      frontend_changed: ${{ steps.decide.outputs.frontend }}
+    steps:
+      - id: decide
+        env:
+          FORCE_DEPLOY: ${{ github.event_name == 'workflow_dispatch' && inputs.force_deploy || 'none' }}
+        run: |
+          backend="${{ needs.ci.outputs.backend_changed }}"
+          frontend="${{ needs.ci.outputs.frontend_changed }}"
+
+          if [[ "$FORCE_DEPLOY" == "backend" || "$FORCE_DEPLOY" == "both" ]]; then
+            backend=true
+          fi
+          if [[ "$FORCE_DEPLOY" == "frontend" || "$FORCE_DEPLOY" == "both" ]]; then
+            frontend=true
+          fi
+
+          echo "backend=$backend" >> "$GITHUB_OUTPUT"
+          echo "frontend=$frontend" >> "$GITHUB_OUTPUT"
+
   # --- Staging -------------------------------------------------------------
 
   deploy-staging-backend:
-    needs: ci
-    if: needs.ci.outputs.backend_changed == 'true'
+    needs: deploy-decision
+    if: needs.deploy-decision.outputs.backend_changed == 'true'
     runs-on: ubuntu-latest
     environment: staging
     steps:
@@ -37,8 +79,8 @@ jobs:
           health-check-url: ${{ vars.STAGING_API_URL }}/healthz/live
 
   deploy-staging-frontend:
-    needs: ci
-    if: needs.ci.outputs.frontend_changed == 'true'
+    needs: deploy-decision
+    if: needs.deploy-decision.outputs.frontend_changed == 'true'
     runs-on: ubuntu-latest
     environment: staging
     steps:
@@ -50,11 +92,11 @@ jobs:
           project-id: ${{ vars.VERCEL_PROJECT_ID }}
 
   e2e-staging:
-    needs: [ci, deploy-staging-backend, deploy-staging-frontend]
+    needs: [deploy-decision, deploy-staging-backend, deploy-staging-frontend]
     if: |
       always() &&
-      needs.ci.result == 'success' &&
-      (needs.ci.outputs.backend_changed == 'true' || needs.ci.outputs.frontend_changed == 'true') &&
+      needs.deploy-decision.result == 'success' &&
+      (needs.deploy-decision.outputs.backend_changed == 'true' || needs.deploy-decision.outputs.frontend_changed == 'true') &&
       (needs.deploy-staging-backend.result == 'success' || needs.deploy-staging-backend.result == 'skipped') &&
       (needs.deploy-staging-frontend.result == 'success' || needs.deploy-staging-frontend.result == 'skipped')
     runs-on: ubuntu-latest
@@ -119,7 +161,7 @@ jobs:
   # (free-tier constraint), this rebuilds that commit fresh in each rather
   # than promoting staging's literal build artifact.
   deploy-production-backend:
-    needs: [ci, e2e-staging]
+    needs: [deploy-decision, e2e-staging]
     # e2e-staging's own dependency chain includes deploy-staging-backend/
     # -frontend, one of which is routinely skipped whenever only one side of
     # the app changed. Without always() here, the default implicit
@@ -129,7 +171,7 @@ jobs:
     if: |
       always() &&
       needs.e2e-staging.result == 'success' &&
-      needs.ci.outputs.backend_changed == 'true'
+      needs.deploy-decision.outputs.backend_changed == 'true'
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -142,11 +184,11 @@ jobs:
           health-check-url: ${{ vars.PRODUCTION_API_URL }}/healthz/ready
 
   deploy-production-frontend:
-    needs: [ci, e2e-staging]
+    needs: [deploy-decision, e2e-staging]
     if: |
       always() &&
       needs.e2e-staging.result == 'success' &&
-      needs.ci.outputs.frontend_changed == 'true'
+      needs.deploy-decision.outputs.frontend_changed == 'true'
     runs-on: ubuntu-latest
     environment: production
     steps:

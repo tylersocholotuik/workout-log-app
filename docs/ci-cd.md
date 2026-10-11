@@ -36,7 +36,7 @@ flowchart TD
 | --- | --- | --- |
 | [`ci.yml`](../.github/workflows/ci.yml) | `workflow_call` (reusable) | Detects which side(s) of the app changed and runs the relevant checks. |
 | [`pr-checks.yml`](../.github/workflows/pr-checks.yml) | `pull_request` (any branch) | Calls `ci.yml` for every PR. |
-| [`deploy.yml`](../.github/workflows/deploy.yml) | `push` to `main` | Re-runs `ci.yml`, then deploys to staging, runs E2E tests, then deploys to production behind manual approval. |
+| [`deploy.yml`](../.github/workflows/deploy.yml) | `push` to `main`, or manual `workflow_dispatch` | Re-runs `ci.yml`, then deploys to staging, runs E2E tests, then deploys to production behind manual approval. |
 
 ### `ci.yml`
 
@@ -96,10 +96,14 @@ Runs on every push to `main` (i.e. every merged PR):
 
 1. **`ci`** - re-runs the same checks from `ci.yml` against the merge
    commit.
-2. **`deploy-staging-backend`** / **`deploy-staging-frontend`** - deploy
+2. **`deploy-decision`** - combines `ci`'s `backend_changed`/`frontend_changed`
+   outputs with the manual `force_deploy` override (see below) into a single
+   pair of booleans that every job below checks, regardless of how the run
+   was triggered.
+3. **`deploy-staging-backend`** / **`deploy-staging-frontend`** - deploy
    whichever side(s) changed to the staging Render service / Vercel
    project, gated by `environment: staging`.
-3. **`e2e-staging`** - runs once both staging deploys have either succeeded
+4. **`e2e-staging`** - runs once both staging deploys have either succeeded
    or been skipped, and only if backend or frontend actually changed (a
    docs-only merge, where both deploy jobs are skipped, does *not* trigger
    an E2E run against an unchanged staging environment). Runs the full
@@ -108,10 +112,34 @@ Runs on every push to `main` (i.e. every merged PR):
    failure traces/screenshots) is only uploaded as an artifact
    `if: failure()`, since that's the only place trace data exists - console
    text alone doesn't capture it.
-4. **`deploy-production-backend`** / **`deploy-production-frontend`** -
+5. **`deploy-production-backend`** / **`deploy-production-frontend`** -
    gated by `environment: production`. A required reviewer is configured so 
    these jobs pause for manual approval after `e2e-staging`
    succeeds.
+
+#### Manually triggering a deploy (`workflow_dispatch`)
+
+`deploy.yml` also accepts `workflow_dispatch` (**Actions tab → Deploy → Run
+workflow**), with one input: **`force_deploy`** (choice: `none` / `frontend`
+/ `backend` / `both`, default `none`). This exists for a specific
+situation: a commit already on `main` whose `e2e-staging` run failed only
+because of test flakiness (not a real bug), and you've since pushed a fix
+to the flaky test itself.
+
+Re-running the failed job/workflow doesn't help here - a re-run always
+re-executes against the exact commit SHA that originally triggered it, so
+it can't pick up a later commit's test fix. And since `ci.yml`'s
+`paths-filter` only diffs the single commit that triggered a given run,
+simply dispatching `deploy.yml` manually (at the latest commit on `main`)
+without `force_deploy` would likely still compute `backend_changed`/
+`frontend_changed` as `false` if that latest commit only touched
+`playwright-tests/**` - skipping every job below just like the original
+push did.
+
+Choosing `frontend`, `backend`, or `both` when dispatching bypasses that
+path check entirely via `deploy-decision` for the selected side(s),
+deploying it/them and running `e2e-staging` against the latest commit on
+`main` regardless of which paths actually changed since the last deploy.
 
 ## Composite actions
 
