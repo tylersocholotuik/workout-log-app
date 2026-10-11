@@ -16,7 +16,7 @@ change behind it.
 
 ## [Unreleased]
 
-## [1.6.0] - 2026-10-10
+## [1.7.0] - 2026-10-11
 
 ### Added
 
@@ -32,6 +32,8 @@ change behind it.
 ### Removed
 
 - Removed the `SelectExerciseModal.tsx` component.
+
+## [1.6.0] - 2026-10-10
 
 ### Added
 
@@ -400,7 +402,8 @@ not itemized here — this entry describes the state of the app as of this tag.
   `/health` endpoint for platform health checks.
 - Database migrations and idempotent seed data for local/dev environments.
 
-[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.7.0
 [1.6.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.6.0
 [1.5.4]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.5.4
 [1.5.3]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.5.3
