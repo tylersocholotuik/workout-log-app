@@ -21,6 +21,7 @@ export const createEmptyWorkoutExercise = (): WorkoutExercise => ({
     id: 0,
     notes: "",
     weightUnit: "lbs",
+    effortType: "rpe",
     exerciseId: 0,
     exercise: { id: 0, name: "", userId: null },
     workoutId: "",
@@ -31,6 +32,6 @@ export const createEmptySet = (): Set => ({
     id: 0,
     weight: null,
     reps: null,
-    rpe: null,
+    effortRating: null,
     exerciseId: 0
 });

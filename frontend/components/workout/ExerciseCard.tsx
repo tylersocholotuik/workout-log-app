@@ -69,15 +69,15 @@ export default function ExerciseCard({
     // see utils/calc-functions/rpeData.ts
     const oneRepMax = useMemo(() => {
         const eligibleSets = exercise.sets.filter((set) => {
-            if (set.weight && set.reps && set.rpe) {
-                return set.reps >= 1 && set.reps <= 10 && set.rpe >= 6;
+            if (set.weight && set.reps && set.effortRating) {
+                return set.reps >= 1 && set.reps <= 10 && set.effortRating >= 6;
             }
         });
 
         if (eligibleSets.length > 0) {
             // calculate e1RM for each set and use the highest value
             const maxList = eligibleSets.map((set) => {
-                return calculateOneRepMax(set.weight!, set.reps!, set.rpe!);
+                return calculateOneRepMax(set.weight!, set.reps!, set.effortRating!);
             });
 
             return Math.max(...maxList);

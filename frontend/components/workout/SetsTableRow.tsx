@@ -23,7 +23,7 @@ export default function SetsTableRow({
     // ensuring "null" does not appear in inputs, set to empty string instead
     const weightString = set.weight !== null ? String(set.weight) : "";
     const repsString = set.reps !== null ? String(set.reps) : "";
-    const rpeString = set.rpe !== null ? String(set.rpe) : "";
+    const rpeString = set.effortRating !== null ? String(set.effortRating) : "";
 
     const [weight, setWeight] = useState(weightString);
     const [reps, setReps] = useState(repsString);
