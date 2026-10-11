@@ -1,10 +1,9 @@
 import {
     useEffect,
     useState,
+    useRef,
     createContext,
     useContext,
-    Dispatch,
-    SetStateAction,
 } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -13,7 +12,6 @@ import { useRouter } from "next/router";
 
 import Head from "next/head";
 
-import CalculatorModal from "@/components/workout/CalculatorModal";
 import DeleteWorkoutModal from "@/components/workout/DeleteWorkoutModal";
 import ExerciseCard from "@/components/workout/ExerciseCard";
 import SelectExerciseModal from "@/components/workout/SelectExerciseModal";
@@ -34,8 +32,10 @@ import { DeleteIcon } from "@/icons/DeleteIcon";
 
 import {
     getWorkout,
+    getActiveWorkout,
     addWorkout,
     updateWorkout,
+    finishWorkout,
     deleteWorkout,
 } from "@/lib/api/workouts";
 import { ApiError } from "@/lib/api/apiErrors";
@@ -56,7 +56,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 
 interface WorkoutContextType {
     workout: Workout;
-    setWorkout: Dispatch<SetStateAction<Workout>>;
+    setWorkout: (updatedWorkout: Workout) => void;
 }
 
 export const WorkoutContext = createContext<WorkoutContextType | undefined>(
@@ -75,7 +75,19 @@ export const useWorkoutContext = () => {
 
 export default function WorkoutLog() {
     const [startNewWorkout, setStartNewWorkout] = useState(false);
-    const [workout, setWorkout] = useState<Workout>(createEmptyWorkout());
+    const [workout, setWorkoutState] = useState<Workout>(createEmptyWorkout());
+    const [showSaving, setShowSaving] = useState(false);
+    const workoutRef = useRef(workout);
+    const isDirtyRef = useRef(false);
+    const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const savingIndicatorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    
+    // Wrap setWorkout to mark the workout as dirty whenever it is updated.
+    const setWorkout = (updatedWorkout: Workout) => {
+        isDirtyRef.current = true;
+        workoutRef.current = updatedWorkout;
+        setWorkoutState(updatedWorkout);
+    }
 
     const { user, isLoading: isAuthLoading } = useAuth();
     const userId = user?.id ?? "";
@@ -83,28 +95,199 @@ export default function WorkoutLog() {
     const detailsModal = useDisclosure();
     const deleteModal = useDisclosure();
     const addExerciseModal = useDisclosure();
-    const calculatorModal = useDisclosure();
 
     const router = useRouter();
     const queryClient = useQueryClient();
 
     const { workoutId } = router.query;
-
-    const { data: fetchedWorkout, isLoading: isWorkoutLoading, error: workoutError } = useQuery({
+    
+    const isActiveWorkoutQueryEnabled = !!workoutId && workoutId === "new-workout" && !!user;
+    
+    // Fetch the active workout if the user is starting a new workout and has an active workout.
+    const { data: activeWorkout, isPending: isActiveWorkoutPending } = useQuery({
+        queryKey: ["activeWorkout"],
+        queryFn: getActiveWorkout,
+        enabled: isActiveWorkoutQueryEnabled,
+    });
+    
+    const isActiveWorkoutLoading = isActiveWorkoutQueryEnabled && isActiveWorkoutPending;
+    
+    const isWorkoutQueryEnabled = !!workoutId && workoutId !== "new-workout" && !!user;
+    
+    const { data: fetchedWorkout, isPending: isWorkoutPending, error: workoutError } = useQuery({
         queryKey: ["workout", workoutId],
         queryFn: () => getWorkout(workoutId as string),
-        enabled: !!workoutId && workoutId !== "new-workout" && !!user,
+        enabled: isWorkoutQueryEnabled,
     });
+
+    const isWorkoutLoading = isWorkoutQueryEnabled && isWorkoutPending;
 
     // getWorkout throws an ApiError with status 403 when the workout belongs to another user.
     const isUnauthorized = workoutError instanceof ApiError && workoutError.status === 403;
 
-    useEffect(() => {
-        if (fetchedWorkout) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setWorkout(fetchedWorkout);
+    const addWorkoutMutation = useMutation({
+        mutationFn: addWorkout,
+        onSuccess: (newWorkout) => {
+            addToast({
+                description: "Workout saved!",
+                color: "success",
+            });
+            // Prime the cache for the new workoutId so navigating to it
+            // doesn't trigger a redundant GET.
+            queryClient.setQueryData(["workout", newWorkout.id], newWorkout);
+            // Append the new workout to the workouts list in the query cache so it appears immediately in the history list without needing to refetch.
+            // Sort the workouts by date in descending order so the most recent workout appears first.
+            queryClient.setQueryData(["workouts"], (oldWorkouts: Workout[] | undefined) => {
+                if (!oldWorkouts) return;
+                return [...oldWorkouts, newWorkout].sort((a, b) => {
+                    // An in-progress workout should always appear first
+                    if (!a.finishedAt && b.finishedAt) return -1;
+                    if (a.finishedAt && !b.finishedAt) return 1;
+                    return new Date(b.date).getTime() - new Date(a.date).getTime();
+                });
+            });
+            // reload the page with the new workoutId
+            void router.push(`/workout/${newWorkout.id}`);
         }
-    }, [fetchedWorkout]);
+    });
+
+    const updateWorkoutMutation = useMutation({
+        mutationFn: (workoutData: Workout) => updateWorkout(workoutId, workoutData),
+        onSuccess: (updatedWorkout) => {
+            setWorkoutState(updatedWorkout);
+            // Keep the query cache in sync so a later refetch doesn't briefly serve stale data.
+            queryClient.setQueryData(["workout", workoutId], updatedWorkout);
+            queryClient.setQueryData(["activeWorkout"], (oldActiveWorkout: Workout | null | undefined) => {
+                return oldActiveWorkout?.id === updatedWorkout.id ? updatedWorkout : oldActiveWorkout;
+            });
+            // Update the workouts list in the query cache so it reflects the updated workout without needing to refetch.
+            queryClient.setQueryData(["workouts"], (oldWorkouts: Workout[] | undefined) => {
+                if (!oldWorkouts) return;
+                return oldWorkouts.map((workout) => workout.id === updatedWorkout.id ? updatedWorkout : workout);
+            });
+        }
+    });
+
+    const saveWorkout = (
+        workoutData: Workout
+    ): Promise<Workout> => {
+        if (workoutId === "new-workout") {
+            return addWorkoutMutation.mutateAsync(workoutData);
+        } else {
+            return updateWorkoutMutation.mutateAsync(workoutData);
+        }
+    };
+    
+    // Flush any pending save immediately, without waiting for the autosave delay.
+    // This is used when a workout is finished, deleted, or when the user navigates away from the page.
+    const flushPendingSave = async () => {
+        const hasPendingTimer = saveTimeoutRef.current !== null;
+        
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+            saveTimeoutRef.current = null;
+        }
+        
+        if (isDirtyRef.current || hasPendingTimer) {
+            isDirtyRef.current = false;
+            await saveWorkout(workoutRef.current);
+        }
+    };
+    
+    // Use a ref to store the flushPendingSave function so that it can be called from the route change handler 
+    // without needing to include it in the dependency array of the useEffect below.
+    // Updating it inside an effect (rather than directly in the component body) keeps this
+    // assignment out of render, which is what the react-hooks/refs lint rule requires.
+    const flushPendingSaveRef = useRef(flushPendingSave);
+    useEffect(() => {
+        flushPendingSaveRef.current = flushPendingSave;
+    });
+    
+    // Load the workout data when the component mounts or when the workoutId changes. 
+    // If the user is starting a new workout and has an active workout, load that instead.
+    useEffect(() => {
+        if (!router.isReady || isActiveWorkoutLoading || isWorkoutLoading) return;
+
+        if (workoutId === "new-workout") {
+            if (activeWorkout) {
+                // eslint-disable-next-line react-hooks/set-state-in-effect
+                setWorkoutState(activeWorkout);
+                void router.replace(`/workout/${activeWorkout.id}`);
+            } else if (startNewWorkout) {
+                // The user explicitly chose to start a new workout and has no active
+                // workout, so save the new workout immediately with the default title
+                // and date.
+                // No-op catch because the global error handler will display an error toast if the save fails, 
+                // and we don't want to throw an unhandled promise rejection here.
+                saveWorkout(workout).catch(() => {});
+            }
+        } else if (fetchedWorkout) {
+            setWorkoutState(fetchedWorkout);
+        }
+        // `workout`/`saveWorkout`/`router` are intentionally excluded below so this
+        // only re-runs when the loaded data itself changes, not on every local edit.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [
+        router.isReady,
+        workoutId,
+        activeWorkout,
+        isActiveWorkoutLoading,
+        fetchedWorkout,
+        isWorkoutLoading,
+        startNewWorkout,
+    ]);
+
+    const showSavingIndicator = () => {
+        setShowSaving(true);
+        if (savingIndicatorTimeoutRef.current) {
+            clearTimeout(savingIndicatorTimeoutRef.current);
+        }
+        savingIndicatorTimeoutRef.current = setTimeout(() => {
+            setShowSaving(false);
+        }, 500);
+    };
+
+    const AUTOSAVE_DELAY_MS = 300;
+    
+    // Autosave the workout after a delay whenever it is updated.
+    useEffect(() => {
+        // Skip if the workout was changed by the server rather than the user.
+        if (!isDirtyRef.current) return;
+
+        // Reset the dirty flag so that if the user makes further changes, they will trigger another autosave.
+        isDirtyRef.current = false;
+
+        showSavingIndicator();
+
+        saveTimeoutRef.current = setTimeout(() => {
+            // No-op catch because the global error handler will display an error toast if the save fails, 
+            // and we don't want to throw an unhandled promise rejection here.
+            saveWorkout(workoutRef.current).catch(() => {});
+            // Clear the timeout so other code can check whether an autosave is currently pending.
+            saveTimeoutRef.current = null;
+        }, AUTOSAVE_DELAY_MS);
+
+        // Clear the timeout if the component unmounts or if the workout changes again before the timeout completes.
+        return () => clearTimeout(saveTimeoutRef.current ?? undefined);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [workout]);
+    
+    // Flush any pending save when the user navigates away from the page, so that the workout is saved before the user leaves.
+    useEffect(() => {
+        const handleRouteChangeStart = () => {
+            // Force blur the active element so any changes in an input field are committed to the workout state before the save is flushed.
+            // Notes, Weight, Reps, and RPE changes only update workout state on blur.
+            (document.activeElement as HTMLElement | null)?.blur();
+            flushPendingSaveRef.current().catch(() => {});
+        };
+        
+        router.events.on("routeChangeStart", handleRouteChangeStart);
+        
+        return () => {
+            router.events.off("routeChangeStart", handleRouteChangeStart);
+        };
+    },[router.events]);
+    
 
     const addExercise = (exercise: Exercise) => {
         const updatedWorkout = { ...workout };
@@ -120,54 +303,39 @@ export default function WorkoutLog() {
         setWorkout(updatedWorkout);
     };
     
-    const addWorkoutMutation = useMutation({
-        mutationFn: addWorkout,
-        onSuccess: (newWorkout) => {
+    const finishWorkoutMutation = useMutation({
+        mutationFn: finishWorkout,
+        onSuccess: () => {
             addToast({
-                description: "Workout saved!",
+                description: "Workout finished!",
                 color: "success",
             });
-            // Prime the cache for the new workoutId so navigating to it
-            // doesn't trigger a redundant GET.
-            queryClient.setQueryData(["workout", newWorkout.id], newWorkout);
-            // Append the new workout to the workouts list in the query cache so it appears immediately in the history list without needing to refetch.
-            // Sort the workouts by date in descending order so the most recent workout appears first.
-            queryClient.setQueryData(["workouts"], (oldWorkouts: Workout[] | undefined) => {
-                if (!oldWorkouts) return;
-                return [...oldWorkouts, newWorkout].sort((a, b) =>
-                    new Date(b.date).getTime() - new Date(a.date).getTime());
-            });
-            // reload the page with the new workoutId
-            void router.push(`/workout/${newWorkout.id}`);
-        }
+            
+            // Set the active workout to null in the query cache so that if the user navigates back to the workout page,
+            // it will not load the finished workout as the active workout.
+            queryClient.setQueryData(["activeWorkout"], null);
+            
+            void router.push(`/history`);
+        },
     });
     
-    const updateWorkoutMutation = useMutation({
-        mutationFn: (workoutData: Workout) => updateWorkout(workoutId, workoutData),
-        onSuccess: (updatedWorkout) => {
-            setWorkout(updatedWorkout);
-            // Keep the query cache in sync so a later refetch doesn't briefly serve stale data.
-            queryClient.setQueryData(["workout", workoutId], updatedWorkout);
-            // Update the workouts list in the query cache so it reflects the updated workout without needing to refetch.
-            queryClient.setQueryData(["workouts"], (oldWorkouts: Workout[] | undefined) => {
-                if (!oldWorkouts) return;
-                return oldWorkouts.map((workout) => workout.id === updatedWorkout.id ? updatedWorkout : workout);
-            });
-            addToast({
-                description: "Workout saved!",
-                color: "success",
-            });
-        }
-    });
+    const completeWorkout = () => {
+        void (async () => {
+            try {
+                // Flush any pending save immediately so that the workout is saved before it is finished.
+                await flushPendingSave();
 
-    const saveWorkout = (
-        workoutData: Workout
-    ) => {
-        if (workoutId === "new-workout") {
-            addWorkoutMutation.mutate(workoutData);
-        } else {
-            updateWorkoutMutation.mutate(workoutData);
-        }
+                if (!workout.finishedAt) {
+                    await finishWorkoutMutation.mutateAsync(workout.id);
+                } else {
+                    // If the workout is already finished, just navigate to the history page.
+                    // Changes are autosaved, so the user can finish editing and return to history without needing to explicitly save.
+                    void router.push(`/history`);
+                }
+            } catch {
+                // No-op catch because the global error handler will display an error toast if the save fails.
+            }
+        })();
     };
     
     const deleteWorkoutMutation = useMutation({
@@ -182,7 +350,7 @@ export default function WorkoutLog() {
                 if (!oldWorkouts) return;
                 return oldWorkouts.filter((workout) => workout.id !== deletedWorkoutId);
             });
-            setWorkout(createEmptyWorkout());
+            setWorkoutState(createEmptyWorkout());
             setStartNewWorkout(false);
             router.push(`/workout/new-workout`).then(() => {
                 // Wait until after navigation so this component's useQuery
@@ -201,16 +369,10 @@ export default function WorkoutLog() {
             throw new Error("Invalid workoutId.");
         }
 
-        if (workoutId === "new-workout") {
-            // if it is a new unsaved workout, simply initialize a new workout
-            setWorkout(createEmptyWorkout());
-            setStartNewWorkout(false);
-        } else {
-            deleteWorkoutMutation.mutate(workoutId);
-        }
+        deleteWorkoutMutation.mutate(workoutId);
     };
 
-    if (!router.isReady || isAuthLoading || isWorkoutLoading) {
+    if (!router.isReady || isAuthLoading || isWorkoutLoading || isActiveWorkoutLoading) {
         return (
             <>
                 <Head>
@@ -251,8 +413,8 @@ export default function WorkoutLog() {
     }
 
     // if navigating directly to workout page, prompt user to either start a new workout
-    // or load an existing workout
-    if (workoutId === "new-workout" && !startNewWorkout) {
+    // or load an existing workout. If the user has an active workout, it will be loaded automatically.
+    if (workoutId === "new-workout" && !startNewWorkout && !activeWorkout) {
         return (
             <>
                 <Head>
@@ -347,25 +509,7 @@ export default function WorkoutLog() {
                                 </Button>
                             </div>
                         </div>
-                        <Divider />
-                        <div className="flex justify-center my-8">
-                            <Button
-                                aria-label="one-rep max calculator"
-                                color="primary"
-                                variant="light"
-                                radius="full"
-                                onPress={calculatorModal.onOpen}
-                                startContent={
-                                    <Icon
-                                        icon="mdi:calculator"
-                                        width="24"
-                                        height="24"
-                                    />
-                                }
-                            >
-                                1RM Calculator
-                            </Button>
-                        </div>
+                        <Divider className="mb-8"/>
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
                             {workout.exercises.length > 0 &&
                                 workout.exercises.map((exercise, index) => {
@@ -392,21 +536,21 @@ export default function WorkoutLog() {
                         <div className="flex justify-center gap-4 mb-8">
                             <div>
                                 <Button
-                                    isLoading={addWorkoutMutation.isPending || updateWorkoutMutation.isPending}
-                                    color="default"
+                                    isLoading={finishWorkoutMutation.isPending}
+                                    color="success"
                                     variant="flat"
                                     radius="full"
                                     fullWidth
                                     startContent={
                                         <Icon
-                                            icon="material-symbols:save-outline"
+                                            icon="material-symbols:check-circle-outline"
                                             width="24"
                                             height="24"
                                         />
                                     }
-                                    onPress={() => saveWorkout(workout)}
+                                    onPress={completeWorkout}
                                 >
-                                    Save Workout
+                                    {workout.finishedAt ? "Finish Editing" : "Finish Workout"}
                                 </Button>
                             </div>
                             <div>
@@ -421,13 +565,15 @@ export default function WorkoutLog() {
                                     }
                                     onPress={deleteModal.onOpen}
                                 >
-                                    {workout.id === "" ||
-                                    workout.id === "new-workout"
-                                        ? "Cancel Workout"
-                                        : "Delete Workout"}
+                                    Delete Workout
                                 </Button>
                             </div>
                         </div>
+                        {showSaving && 
+                            <div className="flex justify-center">
+                                Saving...
+                            </div>
+                        }
                     </div>
                 </main>
 
@@ -447,11 +593,6 @@ export default function WorkoutLog() {
                     isOpen={deleteModal.isOpen}
                     onOpenChange={deleteModal.onOpenChange}
                     callbackFunction={() => discardWorkout(workoutId)}
-                />
-
-                <CalculatorModal
-                    isOpen={calculatorModal.isOpen}
-                    onOpenChange={calculatorModal.onOpenChange}
                 />
             </WorkoutContext.Provider>
         </>

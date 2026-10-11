@@ -42,14 +42,27 @@ public static class HttpTestExtensions
         return null;
     }
 
-    public static async Task<HttpResponseMessage> PostAsJsonWithCsrfAsync<T>(
-        this HttpClient client, string requestUri, T body, string? authCookie = null)
+    /// <summary>
+    /// Core request builder shared by all the method-specific helpers below. Attaches
+    /// the auth cookie and JSON body (if present), and adds the CSRF header for any
+    /// state-changing method, since the app's CSRF middleware only requires it on
+    /// anything other than GET/HEAD/OPTIONS.
+    /// </summary>
+    private static async Task<HttpResponseMessage> SendAsync<T>(
+        this HttpClient client, HttpMethod method, string requestUri, T? body, string? authCookie)
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, requestUri)
+        var request = new HttpRequestMessage(method, requestUri);
+
+        if (body is not null)
         {
-            Content = JsonContent.Create(body)
-        };
-        request.AddCsrfHeader();
+            request.Content = JsonContent.Create(body);
+        }
+
+        if (method != HttpMethod.Get && method != HttpMethod.Head && method != HttpMethod.Options)
+        {
+            request.AddCsrfHeader();
+        }
+
         if (authCookie is not null)
         {
             request.Headers.Add("Cookie", authCookie);
@@ -58,62 +71,33 @@ public static class HttpTestExtensions
         return await client.SendAsync(request);
     }
 
-    public static async Task<HttpResponseMessage> GetWithCookieAsync(
-        this HttpClient client, string requestUri, string? authCookie = null)
-    {
-        var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
-        if (authCookie is not null)
-        {
-            request.Headers.Add("Cookie", authCookie);
-        }
+    public static Task<HttpResponseMessage> GetWithCookieAsync(
+        this HttpClient client, string requestUri, string? authCookie = null) =>
+        client.SendAsync<object>(HttpMethod.Get, requestUri, null, authCookie);
 
-        return await client.SendAsync(request);
-    }
+    public static Task<HttpResponseMessage> PostAsJsonWithCsrfAsync<T>(
+        this HttpClient client, string requestUri, T body, string? authCookie = null) =>
+        client.SendAsync(HttpMethod.Post, requestUri, body, authCookie);
 
-    public static async Task<HttpResponseMessage> PutAsJsonWithCsrfAsync<T>(
-        this HttpClient client, string requestUri, T body, string? authCookie = null)
-    {
-        var request = new HttpRequestMessage(HttpMethod.Put, requestUri)
-        {
-            Content = JsonContent.Create(body)
-        };
-        request.AddCsrfHeader();
-        if (authCookie is not null)
-        {
-            request.Headers.Add("Cookie", authCookie);
-        }
+    public static Task<HttpResponseMessage> PutAsJsonWithCsrfAsync<T>(
+        this HttpClient client, string requestUri, T body, string? authCookie = null) =>
+        client.SendAsync(HttpMethod.Put, requestUri, body, authCookie);
 
-        return await client.SendAsync(request);
-    }
+    public static Task<HttpResponseMessage> PatchWithCsrfAsync(
+        this HttpClient client, string requestUri, string? authCookie = null) =>
+        client.SendAsync<object>(HttpMethod.Patch, requestUri, null, authCookie);
 
-    public static async Task<HttpResponseMessage> DeleteWithCsrfAsync(
-        this HttpClient client, string requestUri, string? authCookie = null)
-    {
-        var request = new HttpRequestMessage(HttpMethod.Delete, requestUri);
-        request.AddCsrfHeader();
-        if (authCookie is not null)
-        {
-            request.Headers.Add("Cookie", authCookie);
-        }
+    public static Task<HttpResponseMessage> PatchAsJsonWithCsrfAsync<T>(
+        this HttpClient client, string requestUri, T body, string? authCookie = null) =>
+        client.SendAsync(HttpMethod.Patch, requestUri, body, authCookie);
 
-        return await client.SendAsync(request);
-    }
+    public static Task<HttpResponseMessage> DeleteWithCsrfAsync(
+        this HttpClient client, string requestUri, string? authCookie = null) =>
+        client.SendAsync<object>(HttpMethod.Delete, requestUri, null, authCookie);
 
-    public static async Task<HttpResponseMessage> DeleteAsJsonWithCsrfAsync<T>(
-        this HttpClient client, string requestUri, T body, string? authCookie = null)
-    {
-        var request = new HttpRequestMessage(HttpMethod.Delete, requestUri)
-        {
-            Content = JsonContent.Create(body)
-        };
-        request.AddCsrfHeader();
-        if (authCookie is not null)
-        {
-            request.Headers.Add("Cookie", authCookie);
-        }
-
-        return await client.SendAsync(request);
-    }
+    public static Task<HttpResponseMessage> DeleteAsJsonWithCsrfAsync<T>(
+        this HttpClient client, string requestUri, T body, string? authCookie = null) =>
+        client.SendAsync(HttpMethod.Delete, requestUri, body, authCookie);
 
     /// <summary>
     /// Registers a brand-new user (unique email each call) through the real

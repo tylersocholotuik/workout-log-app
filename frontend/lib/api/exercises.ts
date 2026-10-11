@@ -1,5 +1,5 @@
 import {apiFetch} from "./client";
-import {extractErrorMessage} from "./apiErrors";
+import {throwApiError} from "./apiErrors";
 
 // NEXT_PUBLIC_API_URL should be left unset in Vercel (staging/production) so
 // requests are made relative to the frontend's own origin and proxied to the
@@ -17,8 +17,7 @@ export const getExercises = async () => {
     const res = await apiFetch(`${API_URL}/api/exercises`);
 
     if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(extractErrorMessage(errorData, "Failed to load exercises"));
+        await throwApiError(res, "Failed to load exercises");
     }
 
     return await res.json();
@@ -36,8 +35,7 @@ export const addUserExercise = async (
     });
 
     if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(extractErrorMessage(errorData, "Failed to add exercise"));
+        await throwApiError(res, "Failed to add exercise");
     }
 
     return await res.json();

@@ -3,6 +3,7 @@ import {
     CardHeader,
     CardBody,
     CardFooter,
+    Chip,
     Divider,
     Link,
 } from "@heroui/react";
@@ -15,6 +16,8 @@ interface WorkoutCardProps {
 }
 
 export default function WorkoutCard({ workout }: WorkoutCardProps) {
+    const isInProgress = !workout.finishedAt;
+    
     return (
         <Card>
             <CardHeader className="flex justify-between">
@@ -34,7 +37,11 @@ export default function WorkoutCard({ workout }: WorkoutCardProps) {
                         </p>
                     )}
                 </div>
-                <div className=""></div>
+                {isInProgress && (
+                    <Chip color="warning" variant="dot">
+                        In Progress
+                    </Chip>
+                )}
             </CardHeader>
             <Divider />
             <CardBody>
@@ -55,7 +62,7 @@ export default function WorkoutCard({ workout }: WorkoutCardProps) {
             <Divider />
             <CardFooter>
                 <Link showAnchorIcon isBlock href={`/workout/${workout.id}`}>
-                    View/Edit
+                    {isInProgress ? "Continue Workout" : "View/Edit"}
                 </Link>
             </CardFooter>
         </Card>

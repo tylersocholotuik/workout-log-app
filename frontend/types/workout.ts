@@ -7,6 +7,7 @@ export interface Workout {
     notes: string;
     date: string;
     userId: string;
+    finishedAt: string | null;
     exercises: WorkoutExercise[];
 }
 

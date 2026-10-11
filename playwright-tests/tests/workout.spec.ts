@@ -1,7 +1,6 @@
 import { test, expect } from './fixtures';
 import {
   uniqueTitle,
-  workoutIdFromUrl,
   deleteWorkoutViaApi,
   startNewWorkout,
   pressIconTrigger,
@@ -9,13 +8,32 @@ import {
   addExercise,
   fillSet,
   editWorkoutDetails,
-  saveWorkout,
-  waitForCreateToSettle,
+  waitForAutosave,
+  finishWorkout,
+  acquireAccountLock,
+  releaseAccountLock,
+  ACCOUNT_LOCK_HOOK_TIMEOUT_MS,
 } from './helpers';
 
 // Tests in this file share one Playwright test account and its workout
-// history, so keep them serial to avoid cross-test interference.
+// history, so keep them serial to avoid cross-test interference. This
+// matters even more now that the backend only allows one in-progress
+// workout per user at a time - see "Test data & cleanup" in
+// test-plans/workout.md.
 test.describe.configure({ mode: 'serial' });
+
+// history.spec.ts also creates/finishes workouts on this same account, so a
+// file-level lock keeps the two files from running at the same time too -
+// `serial` mode above only pins *this* file to one worker, it doesn't stop a
+// different file running concurrently on another worker/project.
+test.beforeAll(async ({}, testInfo) => {
+  testInfo.setTimeout(ACCOUNT_LOCK_HOOK_TIMEOUT_MS);
+  await acquireAccountLock();
+});
+
+test.afterAll(() => {
+  releaseAccountLock();
+});
 
 test.describe('Entry point', () => {
   test('shows create/load options for a brand-new workout', async ({ page }) => {
@@ -32,20 +50,36 @@ test.describe('Entry point', () => {
     await expect(page).toHaveURL('/history');
   });
 
-  test('new workout loads with sensible defaults', async ({ page }) => {
-    await startNewWorkout(page);
+  test('new workout loads with sensible defaults and is saved immediately', async ({
+    page,
+    trackWorkout,
+  }) => {
+    await startNewWorkout(page, trackWorkout);
 
     const today = new Date().toLocaleDateString('en-CA', { dateStyle: 'short' });
     await expect(
       page.getByRole('heading', { name: `${today} Workout` })
     ).toBeVisible();
     await expect(page.getByRole('heading', { level: 3 })).toHaveCount(0);
+    await expect(page).toHaveURL(/\/workout\/(?!new-workout)[^/]+$/);
+  });
+
+  test('returning to /workout/new-workout with an in-progress workout resumes it', async ({
+    page,
+    trackWorkout,
+  }) => {
+    const workoutId = await startNewWorkout(page, trackWorkout);
+
+    await page.goto('/workout/new-workout');
+
+    await expect(page).toHaveURL(`/workout/${workoutId}`);
+    await expect(page.getByRole('button', { name: 'Create New Workout' })).toHaveCount(0);
   });
 });
 
 test.describe('Workout details', () => {
-  test('cannot save an empty title', async ({ page }) => {
-    await startNewWorkout(page);
+  test('cannot save an empty title', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
     await page.getByRole('button', { name: 'Edit Details' }).click();
 
     const dialog = page.getByRole('dialog');
@@ -56,8 +90,8 @@ test.describe('Workout details', () => {
     await expect(dialog).toBeVisible();
   });
 
-  test('valid details are applied to the page', async ({ page }) => {
-    await startNewWorkout(page);
+  test('valid details are applied to the page', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
 
     const title = uniqueTitle('Details');
     const yesterday = new Date();
@@ -76,15 +110,15 @@ test.describe('Workout details', () => {
 });
 
 test.describe('Exercises', () => {
-  test('exercise list loads', async ({ page }) => {
-    await startNewWorkout(page);
+  test('exercise list loads', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
     await page.getByRole('button', { name: 'Add Exercise' }).click();
 
     await expect(page.getByRole('row', { name: 'Ab Wheel', exact: true })).toBeVisible();
   });
 
-  test('search filters the exercise list', async ({ page }) => {
-    await startNewWorkout(page);
+  test('search filters the exercise list', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
     await page.getByRole('button', { name: 'Add Exercise' }).click();
     await page.getByPlaceholder('Search exercises...').fill('bench press');
 
@@ -97,8 +131,8 @@ test.describe('Exercises', () => {
     await expect(page.getByRole('row', { name: 'Ab Wheel', exact: true })).toHaveCount(0);
   });
 
-  test('adding an exercise creates a card with one empty set', async ({ page }) => {
-    await startNewWorkout(page);
+  test('adding an exercise creates a card with one empty set', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
     await addExercise(page, 'Ab Wheel');
 
     const card = exerciseCard(page, 'Ab Wheel');
@@ -106,9 +140,12 @@ test.describe('Exercises', () => {
     await expect(card.getByRole('textbox', { name: 'weight' })).toHaveCount(1);
   });
 
-  test('creating a brand-new exercise adds it to the list and workout', async ({ page }) => {
+  test('creating a brand-new exercise adds it to the list and workout', async ({
+    page,
+    trackWorkout,
+  }) => {
     const exerciseName = uniqueTitle('Custom Exercise');
-    await startNewWorkout(page);
+    await startNewWorkout(page, trackWorkout);
 
     await page.getByRole('button', { name: 'Add Exercise' }).click();
     await page.getByRole('button', { name: 'Create New' }).click();
@@ -116,6 +153,11 @@ test.describe('Exercises', () => {
     await page.getByRole('button', { name: 'Create', exact: true }).click();
 
     await expect(page.getByText(`Exercise '${exerciseName}' was created!`)).toBeVisible();
+    // Dismiss it and wait for it to fully leave the DOM - its own inline
+    // "Add" action otherwise collides with the Select Exercise modal's "Add"
+    // button below, even mid-close-animation.
+    await page.getByRole('button', { name: 'closeButton' }).first().click();
+    await expect(page.getByText(`Exercise '${exerciseName}' was created!`)).toHaveCount(0);
 
     // Verify it through the normal select flow rather than the toast's inline
     // action, which is harder to scope reliably.
@@ -127,8 +169,8 @@ test.describe('Exercises', () => {
     await expect(exerciseCard(page, exerciseName)).toBeVisible();
   });
 
-  test('duplicate exercise names are rejected', async ({ page }) => {
-    await startNewWorkout(page);
+  test('duplicate exercise names are rejected', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
     await page.getByRole('button', { name: 'Add Exercise' }).click();
     await page.getByRole('button', { name: 'Create New' }).click();
     await page.getByLabel('Exercise Name').fill('Ab Wheel');
@@ -139,13 +181,14 @@ test.describe('Exercises', () => {
     ).toBeVisible();
   });
 
-  test('exercise can be swapped', async ({ page }) => {
-    await startNewWorkout(page);
+  test('exercise can be swapped', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
     await addExercise(page, 'Ab Wheel');
 
     await pressIconTrigger(
       exerciseCard(page, 'Ab Wheel').getByRole('button', { name: 'Actions', exact: true })
     );
+    await expect(page.getByRole('menu')).toBeVisible();
     await page.getByRole('menuitem', { name: 'Change exercise' }).click();
 
     await page.getByPlaceholder('Search exercises...').fill('Back Extension');
@@ -156,33 +199,45 @@ test.describe('Exercises', () => {
     await expect(page.getByRole('heading', { name: 'Ab Wheel', exact: true })).toHaveCount(0);
   });
 
-  test('exercise can be removed', async ({ page }) => {
-    await startNewWorkout(page);
+  test('exercise can be removed', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
     await addExercise(page, 'Ab Wheel');
 
     await pressIconTrigger(
       exerciseCard(page, 'Ab Wheel').getByRole('button', { name: 'Actions', exact: true })
     );
+    await expect(page.getByRole('menu')).toBeVisible();
     await page.getByRole('menuitem', { name: 'Delete exercise' }).click();
 
     await expect(page.getByRole('heading', { name: 'Ab Wheel', exact: true })).toHaveCount(0);
   });
 
-  test('exercise history is viewable', async ({ page }) => {
+  test('exercise history is viewable', async ({ page, trackWorkout }) => {
     const exerciseName = uniqueTitle('History Exercise');
-    await startNewWorkout(page);
+    await startNewWorkout(page, trackWorkout);
     await page.getByRole('button', { name: 'Add Exercise' }).click();
     await page.getByRole('button', { name: 'Create New' }).click();
     await page.getByLabel('Exercise Name').fill(exerciseName);
     await page.getByRole('button', { name: 'Create', exact: true }).click();
+    // Dismiss the creation toast and wait for it to fully leave the DOM - its
+    // inline "Add" action otherwise collides with the Select Exercise
+    // modal's "Add" button below, even mid-close-animation.
+    await expect(page.getByText(`Exercise '${exerciseName}' was created!`)).toBeVisible();
+    await page.getByRole('button', { name: 'closeButton' }).first().click();
+    await expect(page.getByText(`Exercise '${exerciseName}' was created!`)).toHaveCount(0);
     await page.getByRole('button', { name: 'Back' }).click();
     await page.getByPlaceholder('Search exercises...').fill(exerciseName);
     await page.getByRole('row', { name: exerciseName, exact: true }).click();
     await page.getByRole('button', { name: 'Add', exact: true }).click();
+    // Wait out the modal's close animation - opening the Actions dropdown
+    // underneath while it's still closing can make the dropdown unstable to
+    // click (Firefox in particular).
+    await expect(page.getByRole('dialog')).toHaveCount(0);
 
     await pressIconTrigger(
       exerciseCard(page, exerciseName).getByRole('button', { name: 'Actions', exact: true })
     );
+    await expect(page.getByRole('menu')).toBeVisible();
     await page.getByRole('menuitem', { name: 'Exercise history' }).click();
 
     await expect(
@@ -192,8 +247,8 @@ test.describe('Exercises', () => {
 });
 
 test.describe('Sets', () => {
-  test('sets can be added', async ({ page }) => {
-    await startNewWorkout(page);
+  test('sets can be added', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
     await addExercise(page, 'Ab Wheel');
     const card = exerciseCard(page, 'Ab Wheel');
 
@@ -202,8 +257,8 @@ test.describe('Sets', () => {
     await expect(card.getByRole('textbox', { name: 'weight' })).toHaveCount(2);
   });
 
-  test('sets can be removed', async ({ page }) => {
-    await startNewWorkout(page);
+  test('sets can be removed', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
     await addExercise(page, 'Ab Wheel');
     const card = exerciseCard(page, 'Ab Wheel');
     await card.getByRole('button', { name: 'Add Set' }).click();
@@ -213,8 +268,8 @@ test.describe('Sets', () => {
     await expect(card.getByRole('textbox', { name: 'weight' })).toHaveCount(1);
   });
 
-  test('invalid characters are rejected in Weight/Reps/RPE', async ({ page }) => {
-    await startNewWorkout(page);
+  test('invalid characters are rejected in Weight/Reps/RPE', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
     await addExercise(page, 'Ab Wheel');
     const card = exerciseCard(page, 'Ab Wheel');
 
@@ -222,8 +277,8 @@ test.describe('Sets', () => {
     await expect(card.getByRole('textbox', { name: 'weight' })).toHaveValue('');
   });
 
-  test('estimated one-rep max is calculated and displayed', async ({ page }) => {
-    await startNewWorkout(page);
+  test('estimated one-rep max is calculated and displayed', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
     await addExercise(page, 'Ab Wheel');
     const card = exerciseCard(page, 'Ab Wheel');
 
@@ -235,33 +290,27 @@ test.describe('Sets', () => {
 
 test.describe('Weight unit & notes', () => {
   test('weight unit can be switched between lbs and kg', async ({ page, trackWorkout }) => {
-    await startNewWorkout(page);
-    await editWorkoutDetails(page, { title: uniqueTitle('Weight Unit') });
+    await startNewWorkout(page, trackWorkout);
     await addExercise(page, 'Ab Wheel');
     const card = exerciseCard(page, 'Ab Wheel');
 
     await pressIconTrigger(card.getByRole('button', { name: 'exercise options' }));
-    await page.getByRole('radio', { name: 'kg' }).click();
+    await waitForAutosave(page, () => page.getByRole('radio', { name: 'kg' }).click());
     await page.keyboard.press('Escape');
-
-    await saveWorkout(page);
-    trackWorkout(workoutIdFromUrl(page));
 
     await page.reload();
     await expect(exerciseCard(page, 'Ab Wheel').getByText('kg')).toBeVisible();
   });
 
   test('exercise notes are saved', async ({ page, trackWorkout }) => {
-    await startNewWorkout(page);
-    await editWorkoutDetails(page, { title: uniqueTitle('Exercise Notes') });
+    await startNewWorkout(page, trackWorkout);
     await addExercise(page, 'Ab Wheel');
     const card = exerciseCard(page, 'Ab Wheel');
 
-    await card.getByRole('textbox', { name: 'Notes' }).fill('Felt strong today');
-    await card.getByRole('textbox', { name: 'Notes' }).blur();
-
-    await saveWorkout(page);
-    trackWorkout(workoutIdFromUrl(page));
+    await waitForAutosave(page, async () => {
+      await card.getByRole('textbox', { name: 'Notes' }).fill('Felt strong today');
+      await card.getByRole('textbox', { name: 'Notes' }).blur();
+    });
 
     await page.reload();
     await expect(
@@ -270,34 +319,81 @@ test.describe('Weight unit & notes', () => {
   });
 });
 
-test.describe('Saving', () => {
-  test('creating a workout succeeds', async ({ page, trackWorkout }) => {
-    await startNewWorkout(page);
-    await editWorkoutDetails(page, { title: uniqueTitle('Create') });
-    await addExercise(page, 'Ab Wheel');
-    await fillSet(exerciseCard(page, 'Ab Wheel'), { weight: '100', reps: '10', rpe: '8' });
+test.describe('Autosave & finishing', () => {
+  test('edits are autosaved', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
+    // Let addExercise's own autosave settle first - otherwise its still-in-flight
+    // PUT can be the one waitForAutosave below happens to catch (any PUT
+    // resolving during the click matches), making the test believe the "Add
+    // Set" edit persisted when it was really just the earlier one.
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
+    const card = exerciseCard(page, 'Ab Wheel');
 
-    await saveWorkout(page);
-    trackWorkout(workoutIdFromUrl(page));
-
-    await expect(page).toHaveURL(/\/workout\/(?!new-workout)[^/]+$/);
-  });
-
-  test('editing an existing workout succeeds', async ({ page, trackWorkout }) => {
-    await startNewWorkout(page);
-    const originalTitle = uniqueTitle('Before Edit');
-    await editWorkoutDetails(page, { title: originalTitle });
-    await addExercise(page, 'Ab Wheel');
-    await saveWorkout(page);
-    trackWorkout(workoutIdFromUrl(page));
-    await waitForCreateToSettle(page, originalTitle);
-
-    const newTitle = uniqueTitle('Edited');
-    await editWorkoutDetails(page, { title: newTitle });
-    await saveWorkout(page);
+    // Use a near-instant edit (no modal) so the brief "Saving..." indicator
+    // is reliably still visible when we check for it.
+    await waitForAutosave(page, () => card.getByRole('button', { name: 'Add Set' }).click());
+    await expect(page.getByText('Saving...')).toBeVisible();
 
     await page.reload();
-    await expect(page.getByRole('heading', { name: newTitle })).toBeVisible();
+    await expect(exerciseCard(page, 'Ab Wheel').getByRole('textbox', { name: 'weight' })).toHaveCount(2);
+  });
+
+  test('an edit made right before navigating away is not lost', async ({
+    page,
+    trackWorkout,
+  }) => {
+    const workoutId = await startNewWorkout(page, trackWorkout);
+    const title = uniqueTitle('Flush On Navigate');
+
+    await page.getByRole('button', { name: 'Edit Details' }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel('Workout Title').fill(title);
+
+    // Save, then immediately navigate away - before the 300ms autosave
+    // debounce would normally fire - and confirm routeChangeStart's flush
+    // actually completes the save rather than just discarding the edit.
+    const [response] = await Promise.all([
+      page.waitForResponse(
+        (res) => /\/api\/workouts\/[^/?]+$/.test(res.url()) && res.request().method() === 'PUT'
+      ),
+      (async () => {
+        await dialog.getByRole('button', { name: 'Save' }).click();
+        await expect(page.getByRole('dialog')).toHaveCount(0);
+        await page.getByRole('link', { name: 'Workout', exact: true }).click();
+      })(),
+    ]);
+    expect(response.ok()).toBeTruthy();
+
+    // Load the workout directly (bypassing the new-workout/active-workout
+    // redirect) to confirm the flushed edit actually persisted.
+    await page.goto(`/workout/${workoutId}`);
+    await expect(page.getByRole('heading', { name: title })).toBeVisible();
+  });
+
+  test('finishing a workout', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
+
+    await finishWorkout(page);
+
+    await expect(page.getByText('Workout finished!')).toBeVisible();
+    await expect(page).toHaveURL('/history');
+  });
+
+  test('finishing an already-finished workout just navigates away', async ({
+    page,
+    trackWorkout,
+  }) => {
+    const workoutId = await startNewWorkout(page, trackWorkout);
+    await finishWorkout(page);
+    await expect(page).toHaveURL('/history');
+
+    await page.goto(`/workout/${workoutId}`);
+    await expect(page.getByRole('button', { name: 'Finish Editing' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Finish Editing' }).click();
+
+    await expect(page).toHaveURL('/history');
+    await expect(page.getByText('Workout finished!')).toHaveCount(0);
   });
 });
 
@@ -306,20 +402,15 @@ test.describe('Updating a saved workout (soft-delete)', () => {
     page,
     trackWorkout,
   }) => {
-    await startNewWorkout(page);
-    const title = uniqueTitle('Remove Exercise');
-    await editWorkoutDetails(page, { title });
-    await addExercise(page, 'Ab Wheel');
-    await addExercise(page, 'Back Extension');
-    await saveWorkout(page);
-    trackWorkout(workoutIdFromUrl(page));
-    await waitForCreateToSettle(page, title);
+    await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
+    await waitForAutosave(page, () => addExercise(page, 'Back Extension'));
 
     await pressIconTrigger(
       exerciseCard(page, 'Ab Wheel').getByRole('button', { name: 'Actions', exact: true })
     );
-    await page.getByRole('menuitem', { name: 'Delete exercise' }).click();
-    await saveWorkout(page);
+    await expect(page.getByRole('menu')).toBeVisible();
+    await waitForAutosave(page, () => page.getByRole('menuitem', { name: 'Delete exercise' }).click());
 
     await page.reload();
     await expect(page.getByRole('heading', { name: 'Ab Wheel', exact: true })).toHaveCount(0);
@@ -330,22 +421,18 @@ test.describe('Updating a saved workout (soft-delete)', () => {
     page,
     trackWorkout,
   }) => {
-    await startNewWorkout(page);
-    const title = uniqueTitle('Remove Set');
-    await editWorkoutDetails(page, { title });
-    await addExercise(page, 'Ab Wheel');
+    await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
     const card = exerciseCard(page, 'Ab Wheel');
-    await card.getByRole('button', { name: 'Add Set' }).click();
-    await fillSet(card, { weight: '100', reps: '10', rpe: '8' });
+    await waitForAutosave(page, () => card.getByRole('button', { name: 'Add Set' }).click());
+    await waitForAutosave(page, () => fillSet(card, { weight: '100', reps: '10', rpe: '8' }));
     const secondSetWeight = card.getByRole('textbox', { name: 'weight' }).nth(1);
-    await secondSetWeight.fill('200');
-    await secondSetWeight.blur();
-    await saveWorkout(page);
-    trackWorkout(workoutIdFromUrl(page));
-    await waitForCreateToSettle(page, title);
+    await waitForAutosave(page, async () => {
+      await secondSetWeight.fill('200');
+      await secondSetWeight.blur();
+    });
 
-    await card.getByRole('button', { name: 'delete set' }).first().click();
-    await saveWorkout(page);
+    await waitForAutosave(page, () => card.getByRole('button', { name: 'delete set' }).first().click());
 
     await page.reload();
     const reloadedCard = exerciseCard(page, 'Ab Wheel');
@@ -354,23 +441,11 @@ test.describe('Updating a saved workout (soft-delete)', () => {
   });
 });
 
-test.describe('Deleting / cancelling', () => {
-  test('cancelling an unsaved workout resets the page', async ({ page }) => {
-    await startNewWorkout(page);
-    await addExercise(page, 'Ab Wheel');
-
-    await page.getByRole('button', { name: 'Cancel Workout' }).click();
-    await page.getByRole('button', { name: 'Delete' }).click();
-
-    await expect(page.getByRole('button', { name: 'Create New Workout' })).toBeVisible();
-  });
-
-  test('deleting a saved workout removes it', async ({ page }) => {
+test.describe('Deleting', () => {
+  test('deleting a workout removes it', async ({ page, trackWorkout }) => {
     const title = uniqueTitle('To Delete');
-    await startNewWorkout(page);
-    await editWorkoutDetails(page, { title });
-    await addExercise(page, 'Ab Wheel');
-    await saveWorkout(page);
+    await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => editWorkoutDetails(page, { title }));
 
     await page.getByRole('button', { name: 'Delete Workout' }).click();
     await page.getByRole('button', { name: 'Delete', exact: true }).click();
@@ -402,10 +477,7 @@ test.describe('Authorization', () => {
       await otherPage.getByRole('button', { name: 'Login' }).click();
       await expect(otherPage).toHaveURL('/');
 
-      await startNewWorkout(otherPage);
-      await addExercise(otherPage, 'Ab Wheel');
-      await saveWorkout(otherPage);
-      otherWorkoutId = workoutIdFromUrl(otherPage);
+      otherWorkoutId = await startNewWorkout(otherPage);
 
       await page.goto(`/workout/${otherWorkoutId}`);
       await expect(
@@ -423,13 +495,12 @@ test.describe('Authorization', () => {
 test.describe('History persistence', () => {
   test('saved workout is retrievable by ID', async ({ page, trackWorkout }) => {
     const title = uniqueTitle('Retrievable');
-    await startNewWorkout(page);
-    await editWorkoutDetails(page, { title, notes: 'Retrieval check notes' });
-    await addExercise(page, 'Ab Wheel');
-    await fillSet(exerciseCard(page, 'Ab Wheel'), { weight: '135', reps: '5', rpe: '7' });
-    await saveWorkout(page);
-    const workoutId = workoutIdFromUrl(page);
-    trackWorkout(workoutId);
+    const workoutId = await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => editWorkoutDetails(page, { title, notes: 'Retrieval check notes' }));
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
+    await waitForAutosave(page, () =>
+      fillSet(exerciseCard(page, 'Ab Wheel'), { weight: '135', reps: '5', rpe: '7' })
+    );
 
     await page.goto(`/workout/${workoutId}`);
 
@@ -440,11 +511,8 @@ test.describe('History persistence', () => {
 
   test('saved workout appears in history', async ({ page, trackWorkout }) => {
     const title = uniqueTitle('History Visible');
-    await startNewWorkout(page);
-    await editWorkoutDetails(page, { title });
-    await addExercise(page, 'Ab Wheel');
-    await saveWorkout(page);
-    trackWorkout(workoutIdFromUrl(page));
+    await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => editWorkoutDetails(page, { title }));
 
     await page.goto('/history');
 

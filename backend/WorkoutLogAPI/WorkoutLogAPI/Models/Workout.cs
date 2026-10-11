@@ -31,6 +31,9 @@ public class Workout : IAuditableEntity
     [Column("updated_at")]
     public DateTime? UpdatedAt { get; set; }
     
+    [Column("finished_at")]
+    public DateTime? FinishedAt { get; set; }
+    
     // Navigation properties
     [ForeignKey(nameof(UserId))]
     public User User { get; set; } = null!;

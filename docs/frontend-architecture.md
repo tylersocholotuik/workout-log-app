@@ -118,8 +118,9 @@ root via `QueryClientProvider` in `_app.tsx`.
 
 **Query keys** are plain arrays matching the resource, e.g. `["workouts"]`
 (the history list), `["workout", workoutId]` (a single workout),
-`["exercises"]`, `["currentUser"]`. Reads use `useQuery`; writes use
-`useMutation`.
+`["activeWorkout"]` (the current user's in-progress workout, if any - see
+[Autosave](#autosave-workout-editor) below), `["exercises"]`,
+`["currentUser"]`. Reads use `useQuery`; writes use `useMutation`.
 
 **Global error handling** lives in `lib/queryClient.ts`:
 - `QueryCache`/`MutationCache` both have an `onError` that shows a generic
@@ -150,6 +151,23 @@ a component is still actively observing that key triggers an immediate
 refetch of a now-404ing resource) and invalidates `["workouts"]` so the
 history list picks up the deletion next time it's viewed.
 
+A single workout's data can be cached under more than one query key at
+once - `["workout", id]` and, while it's the in-progress workout,
+`["activeWorkout"]` as well. By convention, a mutation that changes a
+workout writes the result into every key that could currently be showing
+it, rather than relying on just one: `updateWorkoutMutation`'s
+`onSuccess` writes the saved workout into `["workout", workoutId]`,
+conditionally into `["activeWorkout"]` (only if the cached active
+workout's `id` matches, so it doesn't clobber a *different* workout that
+happens to be active), and into the `["workouts"]` list. Follow this same
+pattern for any future mutation touching workout data. Similarly, prefer
+`setQueryData` over `invalidateQueries` when a navigation will unmount the
+observing component immediately afterward (e.g. finishing a workout) -
+`setQueryData` with an already-known value (e.g. `null` for "no active
+workout" right after finishing one) applies synchronously, whereas
+`invalidateQueries`'s background refetch can get cut short by the
+unmount, leaving stale cached data.
+
 **Local draft state still exists alongside the cache** where a page needs
 to let the user make in-progress edits before saving - see
 `WorkoutContext` below. The pattern is: seed local state from the query's
@@ -157,7 +175,9 @@ to let the user make in-progress edits before saving - see
 independently-mutable local state from an external source, not deriving a
 value), then keep local edits in that state until a save mutation
 succeeds, at which point both the local state and the query cache are
-updated together so they never disagree.
+updated together so they never disagree. On the workout editor, this save
+isn't a single explicit action - it's driven by autosave; see
+[Autosave](#autosave-workout-editor) below.
 
 ## Authentication (`AuthProvider`)
 
@@ -224,10 +244,103 @@ that is, at three scopes:
   on whole-tree `PUT` updates). This local draft is necessary because the
   workout is mutated in-place by the user (adding exercises/sets) before
   being saved - it can't just be the query's `data` directly, since a
-  background refetch should never silently clobber in-progress edits.
+  background refetch should never silently clobber in-progress edits. It's
+  also the state autosave watches for changes - see
+  [Autosave](#autosave-workout-editor) below.
 - **Local:** component-level `useState` for form inputs and per-field
   validation errors (e.g. `login.tsx` tracks a separate error string per
   field rather than a single form-level error object).
+
+## Autosave (workout editor)
+
+The workout editor (`pages/workout/[workoutId].tsx`) autosaves the
+in-progress workout rather than requiring an explicit "Save" action -
+every edit (adding/removing an exercise or set, editing notes, weight,
+reps, RPE, workout details) is persisted to the backend automatically
+after a short debounce. Finishing a workout just sets `finishedAt`; it
+doesn't need its own separate "save everything" step, since autosave
+already keeps the backend caught up.
+
+**Resuming an in-progress workout:** a workout's `finishedAt` is `null`
+while it's in progress. Navigating to `/workout/new-workout` fetches
+`GET /api/workouts/active` (`["activeWorkout"]`) and, if one exists,
+replaces the URL with that workout's real id instead of starting a new
+one - so leaving and returning to the editor resumes where the user left
+off rather than prompting to start a new workout. The backend also
+rejects creating a second workout while one is already active (see
+[backend-architecture.md](backend-architecture.md)).
+
+**Tracking "dirty" state without extra re-renders:** rather than marking
+specific edit call sites as dirty (which would require touching every
+child component that edits the workout), `WorkoutContext`'s `setWorkout`
+itself is wrapped at the page level: every call sets `isDirtyRef.current
+= true` and mirrors the new value into `workoutRef.current`, then
+delegates to the real `useState` setter. Child components are unaffected -
+they already call `setWorkout` from context. Two `useRef`s do the
+otherwise-tricky parts here:
+- `isDirtyRef` distinguishes a real user edit from `setWorkout` calls that
+  aren't - e.g. syncing state after the load query resolves, or after a
+  save mutation's `onSuccess` - which must *not* re-trigger another
+  autosave.
+- `workoutRef` holds the latest workout *synchronously*, because
+  `setState` schedules a re-render asynchronously. Code that needs "the
+  current workout right now" (flushing before navigation, for example)
+  reads `workoutRef.current` rather than the `workout` state variable,
+  which could still be one render behind.
+
+**The debounce** is a `useEffect` watching `[workout]`: if the change was
+a real edit (`isDirtyRef.current`), it resets the flag and schedules a
+`setTimeout` (`AUTOSAVE_DELAY_MS`, currently 300ms) that calls
+`saveWorkout(workoutRef.current)`; the timer id lives in `saveTimeoutRef`
+so it can be reached and cancelled outside the effect. `saveWorkout` picks
+`addWorkoutMutation` or `updateWorkoutMutation` based on whether the
+workout has been persisted yet, and both are called via `.mutateAsync`
+(not `.mutate`) so callers that need to `await` completion (finishing,
+flushing) can, while fire-and-forget call sites still attach a no-op
+`.catch(() => {})` purely to silence unhandled-rejection console noise -
+the global `MutationCache.onError` handler (see above) shows the actual
+error toast regardless.
+
+**Flushing before navigation:** the debounce alone isn't enough - without
+it, navigating away (or clicking "Finish") while an edit is still sitting
+in the debounce timer would lose that edit. `flushPendingSave` clears any
+pending timer and, if there's unsaved work, awaits `saveWorkout`
+immediately. A subtlety: the debounce effect clears `isDirtyRef.current`
+the moment it *schedules* a timer, not when the timer *fires* - so
+`flushPendingSave` must also treat "a pending timer currently exists"
+(captured as `hasPendingTimer` before clearing it) as a reason to flush,
+not just `isDirtyRef.current` alone. This is wired up to two triggers:
+- `router.events.on("routeChangeStart", ...)` flushes on any client-side
+  navigation. It also force-blurs `document.activeElement` first, since
+  the Notes/Weight/Reps/RPE inputs only commit their value to
+  `WorkoutContext` on blur (not on every keystroke) - without this, a
+  value typed but never blurred (e.g. the user clicks a nav link while
+  still focused in the field) wouldn't be in `workout` yet for
+  `flushPendingSave` to save. In practice this is a no-op for ordinary
+  clicks (clicking elsewhere already fires blur before the click handler
+  runs) and doesn't cover browser back/forward or tab close, which would
+  need a `beforeunload` + `navigator.sendBeacon` approach instead - not
+  currently implemented.
+  Since this effect's dependency (`router.events`) is a stable reference,
+  the effect (and the closure it captures) only runs once - so the handler
+  reads the latest `flushPendingSave` through a ref
+  (`flushPendingSaveRef.current = flushPendingSave`, reassigned every
+  render) rather than calling it directly, to avoid acting on a stale
+  closure.
+- `completeWorkout` (the "Finish Workout" button) awaits
+  `flushPendingSave()` before calling `finishWorkoutMutation`, so the
+  workout is guaranteed to reflect the latest edits before `finishedAt` is
+  set.
+
+**Saving indicator:** a brief "Saving..." label (`showSaving` state) is
+shown for a fixed, minimum duration whenever a save is triggered -
+intentionally decoupled from the mutation's actual `isPending` state,
+since a fast local save could resolve before a human would ever perceive
+an `isPending`-driven indicator. `showSavingIndicator()` sets `showSaving`
+to `true` and (re)starts a fixed-length `setTimeout` to hide it again;
+it's called from the debounce effect (right when a real edit is detected,
+not from inside `saveWorkout`), so it appears immediately rather than only
+after the debounce delay and network round trip.
 
 ## Types & factories
 

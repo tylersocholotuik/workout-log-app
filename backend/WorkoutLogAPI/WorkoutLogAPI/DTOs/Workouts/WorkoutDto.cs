@@ -12,7 +12,8 @@ public record WorkoutDto(
     DateOnly Date,
     [param: StringLength(250, ErrorMessage = "Notes must be less than 250 characters")]
     string? Notes,
-    List<WorkoutExerciseDto>? Exercises )
+    List<WorkoutExerciseDto>? Exercises,
+    DateTime? FinishedAt = null) 
 {
     public static WorkoutDto FromWorkout(Workout workout) =>
         new(
@@ -23,5 +24,6 @@ public record WorkoutDto(
             workout.Notes,
             workout.Exercises
                 .Select(WorkoutExerciseDto.FromWorkoutExercise)
-                .ToList());
+                .ToList(),
+            workout.FinishedAt);
 }

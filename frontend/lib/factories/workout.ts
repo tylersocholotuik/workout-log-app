@@ -12,6 +12,7 @@ export const createEmptyWorkout = (): Workout => {
         notes: "",
         date,
         userId: "",
+        finishedAt: null,
         exercises: []
     };
 };

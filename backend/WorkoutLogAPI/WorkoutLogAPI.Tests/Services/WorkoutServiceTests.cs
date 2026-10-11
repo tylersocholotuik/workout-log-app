@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using WorkoutLogAPI.Data;
 using WorkoutLogAPI.DTOs.Workouts;
 using WorkoutLogAPI.Enums;
+using WorkoutLogAPI.Exceptions;
 using WorkoutLogAPI.Models;
 using WorkoutLogAPI.Services;
 using WorkoutLogAPI.Tests.TestHelpers;
@@ -62,7 +63,7 @@ public class WorkoutServiceTests
     }
 
     [Fact]
-    public async Task CreateWorkout_WithDuplicateTitleAndDate_ThrowsInvalidOperationException()
+    public async Task CreateWorkout_WithDuplicateTitleAndDate_ThrowsDuplicateWorkoutException()
     {
         var (context, service) = CreateSut();
         const string userId = "user-1";
@@ -71,7 +72,8 @@ public class WorkoutServiceTests
             Id = Guid.NewGuid().ToString(),
             Title = "Leg Day",
             UserId = userId,
-            Date = new DateOnly(2026, 1, 1)
+            Date = new DateOnly(2026, 1, 1),
+            FinishedAt = DateTime.UtcNow
         };
         context.Workouts.Add(existingWorkout);
         await context.SaveChangesAsync();
@@ -86,10 +88,99 @@ public class WorkoutServiceTests
             Notes: null,
             Exercises: null);
         
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+        var ex = await Assert.ThrowsAsync<DuplicateWorkoutException>(
             () => service.CreateWorkout(duplicateDto, userId));
 
         Assert.Equal("A workout with this title and date already exists.", ex.Message);
+    }
+
+    [Fact]
+    public async Task CreateWorkout_WhenUserHasAnUnfinishedWorkout_ThrowsActiveWorkoutExistsException()
+    {
+        var (context, service) = CreateSut();
+        const string userId = "user-1";
+        var activeWorkout = new Workout
+        {
+            Id = Guid.NewGuid().ToString(),
+            Title = "In Progress",
+            UserId = userId,
+            Date = new DateOnly(2026, 1, 1),
+            FinishedAt = null
+        };
+        context.Workouts.Add(activeWorkout);
+        await context.SaveChangesAsync();
+
+        var dto = new WorkoutDto(
+            Id: null,
+            Title: "Another Workout",
+            UserId: userId,
+            Date: new DateOnly(2026, 1, 2),
+            Notes: null,
+            Exercises: null);
+
+        var ex = await Assert.ThrowsAsync<ActiveWorkoutExistsException>(
+            () => service.CreateWorkout(dto, userId));
+
+        Assert.Equal(
+            "You already have an unfinished workout. Please finish it before creating a new one.",
+            ex.Message);
+    }
+
+    [Fact]
+    public async Task CreateWorkout_WhenAnotherUserHasAnUnfinishedWorkout_StillAllowsCreation()
+    {
+        var (context, service) = CreateSut();
+        var otherUsersActiveWorkout = new Workout
+        {
+            Id = Guid.NewGuid().ToString(),
+            Title = "Someone Else's In Progress Workout",
+            UserId = "other-user",
+            Date = new DateOnly(2026, 1, 1),
+            FinishedAt = null
+        };
+        context.Workouts.Add(otherUsersActiveWorkout);
+        await context.SaveChangesAsync();
+
+        var dto = new WorkoutDto(
+            Id: null,
+            Title: "My Workout",
+            UserId: "user-1",
+            Date: new DateOnly(2026, 1, 2),
+            Notes: null,
+            Exercises: null);
+
+        var result = await service.CreateWorkout(dto, "user-1");
+
+        Assert.Equal("My Workout", result.Title);
+    }
+
+    [Fact]
+    public async Task CreateWorkout_WhenUsersOnlyExistingWorkoutIsFinished_AllowsCreation()
+    {
+        var (context, service) = CreateSut();
+        const string userId = "user-1";
+        var finishedWorkout = new Workout
+        {
+            Id = Guid.NewGuid().ToString(),
+            Title = "Done Already",
+            UserId = userId,
+            Date = new DateOnly(2026, 1, 1),
+            FinishedAt = DateTime.UtcNow
+        };
+        context.Workouts.Add(finishedWorkout);
+        await context.SaveChangesAsync();
+
+        var dto = new WorkoutDto(
+            Id: null,
+            Title: "New Workout",
+            UserId: userId,
+            Date: new DateOnly(2026, 1, 2),
+            Notes: null,
+            Exercises: null);
+
+        var result = await service.CreateWorkout(dto, userId);
+
+        Assert.Equal("New Workout", result.Title);
     }
     
     [Fact]
@@ -179,7 +270,7 @@ public class WorkoutServiceTests
     }
     
     [Fact]
-    public async Task UpdateWorkout_WithDuplicateTitleAndDate_ThrowsInvalidOperationException()
+    public async Task UpdateWorkout_WithDuplicateTitleAndDate_ThrowsDuplicateWorkoutException()
     {
         var (context, service) = CreateSut();
         const string userId = "user-1";
@@ -211,10 +302,178 @@ public class WorkoutServiceTests
             Notes: null,
             Exercises: null);
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+        var ex = await Assert.ThrowsAsync<DuplicateWorkoutException>(
             () => service.UpdateWorkout(workoutToUpdate.Id, updateDto, userId));
 
         Assert.Equal("A workout with this title and date already exists.", ex.Message);
+    }
+
+    [Fact]
+    public async Task GetActiveWorkout_WhenUserHasAnUnfinishedWorkout_ReturnsIt()
+    {
+        var (context, service) = CreateSut();
+        const string userId = "user-1";
+        var activeWorkout = new Workout
+        {
+            Id = Guid.NewGuid().ToString(),
+            Title = "In Progress",
+            UserId = userId,
+            Date = new DateOnly(2026, 1, 1),
+            FinishedAt = null
+        };
+        context.Workouts.Add(activeWorkout);
+        await context.SaveChangesAsync();
+
+        var result = await service.GetActiveWorkout(userId);
+
+        Assert.NotNull(result);
+        Assert.Equal(activeWorkout.Id, result!.Id);
+    }
+
+    [Fact]
+    public async Task GetActiveWorkout_WhenUsersOnlyWorkoutIsFinished_ReturnsNull()
+    {
+        var (context, service) = CreateSut();
+        const string userId = "user-1";
+        var finishedWorkout = new Workout
+        {
+            Id = Guid.NewGuid().ToString(),
+            Title = "Done",
+            UserId = userId,
+            Date = new DateOnly(2026, 1, 1),
+            FinishedAt = DateTime.UtcNow
+        };
+        context.Workouts.Add(finishedWorkout);
+        await context.SaveChangesAsync();
+
+        var result = await service.GetActiveWorkout(userId);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task GetActiveWorkout_WhenUserHasNoWorkouts_ReturnsNull()
+    {
+        var (_, service) = CreateSut();
+
+        var result = await service.GetActiveWorkout("user-1");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task GetActiveWorkout_IgnoresOtherUsersUnfinishedWorkouts()
+    {
+        var (context, service) = CreateSut();
+        var otherUsersActiveWorkout = new Workout
+        {
+            Id = Guid.NewGuid().ToString(),
+            Title = "Not Mine",
+            UserId = "other-user",
+            Date = new DateOnly(2026, 1, 1),
+            FinishedAt = null
+        };
+        context.Workouts.Add(otherUsersActiveWorkout);
+        await context.SaveChangesAsync();
+
+        var result = await service.GetActiveWorkout("user-1");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task GetActiveWorkout_IgnoresDeletedUnfinishedWorkouts()
+    {
+        var (context, service) = CreateSut();
+        const string userId = "user-1";
+        var deletedActiveWorkout = new Workout
+        {
+            Id = Guid.NewGuid().ToString(),
+            Title = "Deleted But Unfinished",
+            UserId = userId,
+            Date = new DateOnly(2026, 1, 1),
+            FinishedAt = null,
+            Deleted = true
+        };
+        context.Workouts.Add(deletedActiveWorkout);
+        await context.SaveChangesAsync();
+
+        var result = await service.GetActiveWorkout(userId);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task FinishWorkout_WithValidId_SetsFinishedAt()
+    {
+        var (context, service) = CreateSut();
+        const string userId = "user-1";
+        var workout = new Workout
+        {
+            Id = Guid.NewGuid().ToString(),
+            Title = "In Progress",
+            UserId = userId,
+            Date = new DateOnly(2026, 1, 1)
+        };
+        context.Workouts.Add(workout);
+        await context.SaveChangesAsync();
+
+        await service.FinishWorkout(workout.Id, userId);
+
+        var updated = await context.Workouts.FindAsync(workout.Id);
+        Assert.NotNull(updated!.FinishedAt);
+    }
+
+    [Fact]
+    public async Task FinishWorkout_WhenAlreadyFinished_ThrowsInvalidOperationException()
+    {
+        var (context, service) = CreateSut();
+        const string userId = "user-1";
+        var workout = new Workout
+        {
+            Id = Guid.NewGuid().ToString(),
+            Title = "Already Done",
+            UserId = userId,
+            Date = new DateOnly(2026, 1, 1),
+            FinishedAt = DateTime.UtcNow
+        };
+        context.Workouts.Add(workout);
+        await context.SaveChangesAsync();
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => service.FinishWorkout(workout.Id, userId));
+
+        Assert.Equal("This workout has already been finished.", ex.Message);
+        // The exception should be the base type here rather than one of the
+        // Create-specific subclasses, since this isn't a workout-creation conflict.
+        Assert.IsType<InvalidOperationException>(ex);
+    }
+
+    [Fact]
+    public async Task FinishWorkout_WithNonexistentId_ThrowsKeyNotFoundException()
+    {
+        var (_, service) = CreateSut();
+
+        await Assert.ThrowsAsync<KeyNotFoundException>(
+            () => service.FinishWorkout(Guid.NewGuid().ToString(), "user-1"));
+    }
+
+    [Fact]
+    public async Task FinishWorkout_WhenWorkoutDoesNotBelongToUser_ThrowsUnauthorizedAccessException()
+    {
+        var (context, service) = CreateSut();
+        var workout = new Workout
+        {
+            Id = Guid.NewGuid().ToString(),
+            Title = "Someone Else's Workout",
+            UserId = "owner-user",
+            Date = new DateOnly(2026, 1, 1)
+        };
+        context.Workouts.Add(workout);
+        await context.SaveChangesAsync();
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(
+            () => service.FinishWorkout(workout.Id, "different-user"));
     }
 
     [Fact]

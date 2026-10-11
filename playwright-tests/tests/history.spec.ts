@@ -3,12 +3,15 @@ import { test, expect, request, Page, Locator } from '@playwright/test';
 import { storageStateFor } from '../playwright.config';
 import {
   uniqueTitle,
-  workoutIdFromUrl,
   deleteWorkoutViaApi,
   startNewWorkout,
   addExercise,
   editWorkoutDetails,
-  saveWorkout,
+  waitForAutosave,
+  finishWorkout,
+  acquireAccountLock,
+  releaseAccountLock,
+  ACCOUNT_LOCK_HOOK_TIMEOUT_MS,
 } from './helpers';
 
 // Forces the whole file onto a single worker so the shared fixture set below
@@ -56,10 +59,15 @@ function weekGroupLabel(date: Date): string {
   return `${format(start)} - ${format(end)}`;
 }
 
+// A workout card's footer link reads "View/Edit" once finished, or
+// "Continue Workout" while still in progress - match either so this helper
+// works for both kinds of fixture.
 function historyCard(page: Page, title: string): Locator {
   return page
     .getByRole('heading', { name: title, exact: true })
-    .locator('xpath=ancestor::div[.//a[normalize-space(text())="View/Edit"]][1]');
+    .locator(
+      'xpath=ancestor::div[.//a[normalize-space(text())="View/Edit" or normalize-space(text())="Continue Workout"]][1]'
+    );
 }
 
 async function openFilterPopover(page: Page): Promise<Locator> {
@@ -88,9 +96,30 @@ async function setDateRangeFilter(dialog: Locator, start: Date, end: Date) {
   await dialog.page().keyboard.type(`${endMonth}${endDay}${endYear}`);
 }
 
+// A plain `.click()` here can retry indefinitely without ever stabilizing:
+// HeroUI's Popover uses floating-ui to reposition itself, and Playwright's
+// own actionability check re-scrolls the page on every retry, which
+// re-triggers floating-ui's scroll-driven reposition, moving the radio
+// again - a feedback loop that can outlast the whole test timeout. Wait for
+// visibility only (no scroll/stability loop), then dispatch the click
+// directly and confirm it actually landed via the checked state.
 async function selectGroupBy(dialog: Locator, option: 'None' | 'Month' | 'Week') {
-  await dialog.getByRole('radio', { name: option }).click();
+  const radio = dialog.getByRole('radio', { name: option });
+  await expect(radio).toBeVisible();
+  await radio.click({ force: true });
+  await expect(radio).toBeChecked();
 }
+
+// workout.spec.ts also creates/finishes workouts on this same account, so a
+// file-level lock keeps the two files from running at the same time too -
+// `serial` mode above only pins *this* file to one worker, it doesn't stop a
+// different file running concurrently on another worker/project. Acquired
+// here (before the fixture-building beforeAll below) and released in the
+// final afterAll, so the lock covers this file's entire run.
+test.beforeAll(async ({}, testInfo) => {
+  testInfo.setTimeout(ACCOUNT_LOCK_HOOK_TIMEOUT_MS);
+  await acquireAccountLock();
+});
 
 test.beforeAll(async ({ browser }, testInfo) => {
   // Creates 4 workouts sequentially - on a slow staging round-trip this can
@@ -110,12 +139,16 @@ test.beforeAll(async ({ browser }, testInfo) => {
   ];
 
   for (const item of plan) {
-    await startNewWorkout(page);
+    const id = await startNewWorkout(page);
     const notes = item.title === plan[0].title ? 'History fixture notes' : undefined;
-    await editWorkoutDetails(page, { title: item.title, date: item.date, notes });
-    await addExercise(page, item.exercise);
-    await saveWorkout(page);
-    fixtures.push({ ...item, id: workoutIdFromUrl(page) });
+    await waitForAutosave(page, () => editWorkoutDetails(page, { title: item.title, date: item.date, notes }));
+    await waitForAutosave(page, () => addExercise(page, item.exercise));
+    // Fixtures must be finished (not just saved) - an unfinished workout
+    // sorts first and shows an "In Progress" chip, which would break the
+    // date-ordering assumptions these tests rely on. It also frees up the
+    // single-active-workout slot for the next fixture in this loop.
+    await finishWorkout(page);
+    fixtures.push({ ...item, id });
   }
 
   await context.close();
@@ -132,6 +165,10 @@ test.afterAll(async ({}, testInfo) => {
     await deleteWorkoutViaApi(context, fixture.id);
   }
   await context.dispose();
+});
+
+test.afterAll(() => {
+  releaseAccountLock();
 });
 
 test.describe('Viewing history', () => {
@@ -161,6 +198,32 @@ test.describe('Viewing history', () => {
 
     await expect(page).toHaveURL(`/workout/${fixture.id}`);
     await expect(page.getByRole('heading', { name: fixture.title })).toBeVisible();
+  });
+
+  test('an in-progress workout shows an "In Progress" chip and sorts first', async ({
+    page,
+    request,
+  }) => {
+    const title = uniqueTitle('History In Progress');
+    const workoutId = await startNewWorkout(page);
+    await waitForAutosave(page, () => editWorkoutDetails(page, { title }));
+
+    try {
+      await page.goto('/history');
+
+      const card = historyCard(page, title);
+      await expect(card).toBeVisible();
+      await expect(card.getByText('In Progress', { exact: true })).toBeVisible();
+      await expect(card.getByRole('link', { name: 'Continue Workout' })).toBeVisible();
+
+      // In-progress workouts sort ahead of every other workout, regardless
+      // of date - this one defaults to today, but every finished fixture
+      // above it (if any shared today's date) would otherwise tie-break by
+      // insertion order instead.
+      await expect(page.getByRole('heading', { level: 3 }).first()).toHaveText(title);
+    } finally {
+      await deleteWorkoutViaApi(request, workoutId);
+    }
   });
 });
 
