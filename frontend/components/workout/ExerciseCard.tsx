@@ -36,7 +36,7 @@ import {
 
 import { createEmptySet } from "@/lib/factories";
 
-import SelectExerciseModal from "./SelectExerciseModal";
+import SelectExerciseDrawer from "./SelectExerciseDrawer";
 import ExerciseHistoryModal from "./ExerciseHistoryModal";
 
 import { useWorkoutContext } from "@/pages/workout/[workoutId]";
@@ -61,7 +61,7 @@ export default function ExerciseCard({
     const [weightUnit, setWeightUnit] = useState(exercise.weightUnit.toString());
     const [showOneRepMax, setShowOneRepMax] = useState(true);
 
-    const changeExerciseModal = useDisclosure();
+    const changeExerciseDrawer = useDisclosure();
     const exerciseHistoryModal = useDisclosure();
 
     // determine best set that has between 1-10 reps and RPE >= 6
@@ -204,7 +204,7 @@ export default function ExerciseCard({
                                 <DropdownMenu aria-label="Static Actions">
                                     <DropdownItem
                                         key="change"
-                                        onPress={changeExerciseModal.onOpen}
+                                        onPress={changeExerciseDrawer.onOpen}
                                         startContent={
                                             <Icon
                                                 icon="material-symbols:change-circle-rounded"
@@ -346,9 +346,9 @@ export default function ExerciseCard({
                 </CardFooter>
             </Card>
 
-            <SelectExerciseModal
-                isOpen={changeExerciseModal.isOpen}
-                onOpenChange={changeExerciseModal.onOpenChange}
+            <SelectExerciseDrawer
+                isOpen={changeExerciseDrawer.isOpen}
+                onOpenChange={changeExerciseDrawer.onOpenChange}
                 callbackFunction={changeExercise}
                 exerciseIndex={exerciseIndex}
                 update={true}

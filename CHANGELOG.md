@@ -20,6 +20,21 @@ change behind it.
 
 ### Added
 
+- Added a `SelectExerciseDrawer.tsx` component to replace `SelectExerciseModal.tsx`. 
+  This new component provides a better user experience on mobile devices by avoiding issues with the virtual keyboard pushing up the modal.
+
+### Changed
+
+- Updated `[workoutId].tsx` to use the new `SelectExerciseDrawer` instead of the old modal.
+- Improved the search algorithm in the Select Exercise Drawer to ignore the order of the words in the 
+  filter value. For example, "inc bench" will now match "Bench Press (Incline)".
+
+### Removed
+
+- Removed the `SelectExerciseModal.tsx` component.
+
+### Added
+
 - Added a nullable `FinishedAt` column to `Workouts` (with a backfill
   migration), marking whether a workout is finished or still in progress.
 - Added `GET /api/workouts/active` and `PATCH /api/workouts/{id}/finish`
