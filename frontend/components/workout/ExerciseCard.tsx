@@ -32,6 +32,7 @@ import SetsTable from "./SetsTable";
 import {
     Exercise,
     WorkoutExercise,
+    EffortRatingType,
 } from "@/types";
 
 import { createEmptySet } from "@/lib/factories";
@@ -41,7 +42,7 @@ import ExerciseHistoryModal from "./ExerciseHistoryModal";
 
 import { useWorkoutContext } from "@/pages/workout/[workoutId]";
 
-import { calculateOneRepMax } from "@/utils/calculator/calc-functions";
+import { calculateOneRepMax, convertEffortRating } from "@/utils/calculator/calculator";
 
 
 import {getExerciseHistory} from "@/lib/api/workouts";
@@ -59,32 +60,45 @@ export default function ExerciseCard({
 
     const [notes, setNotes] = useState(exercise.notes);
     const [weightUnit, setWeightUnit] = useState(exercise.weightUnit.toString());
+    const [effortType, setEffortType] = useState(exercise.effortType.toString());
     const [showOneRepMax, setShowOneRepMax] = useState(true);
 
     const changeExerciseDrawer = useDisclosure();
     const exerciseHistoryModal = useDisclosure();
 
-    // determine best set that has between 1-10 reps and RPE >= 6
+    // determine best set that has between 1-10 reps and RPE >= 6 or RIR <= 4
     // this rule is due to there only being data for these values
-    // see utils/calc-functions/rpeData.ts
+    // see utils/calculator/rpeData.ts
     const oneRepMax = useMemo(() => {
         const eligibleSets = exercise.sets.filter((set) => {
-            if (set.weight && set.reps && set.effortRating) {
-                return set.reps >= 1 && set.reps <= 10 && set.effortRating >= 6;
+            // must explicitly check for as 0 is falsy
+            if (
+                set.weight != null &&
+                set.reps != null &&
+                set.effortRating != null
+            ) {
+                return exercise.effortType === "rpe"
+                    ? set.reps >= 1 && set.reps <= 10 && set.effortRating >= 6
+                    : set.reps >= 1 && set.reps <= 10 && set.effortRating <= 4;
             }
         });
 
         if (eligibleSets.length > 0) {
             // calculate e1RM for each set and use the highest value
             const maxList = eligibleSets.map((set) => {
-                return calculateOneRepMax(set.weight!, set.reps!, set.effortRating!);
+                return calculateOneRepMax({
+                    weight: set.weight!, 
+                    reps: set.reps!, 
+                    effortType: exercise.effortType, 
+                    effortRating: set.effortRating!
+                });
             });
 
             return Math.max(...maxList);
         }
 
         return null;
-    }, [exercise.sets]);
+    }, [exercise.sets, exercise.effortType]);
 
     const addSet = () => {
         const newSet = createEmptySet();
@@ -162,6 +176,38 @@ export default function ExerciseCard({
                           [field]: value,
                       }
                     : exercise
+            ),
+        };
+        
+        setWorkout(updatedWorkout);
+    };
+
+    // Switching effort type requires converting all existing effort ratings to the new type.
+    // When converting from RPE to RIR, we round up to the nearest whole number before converting.
+    // The downside of this is when converting back to RPE, the original RPE value is lost (if it was x.5)
+    const handleEffortTypeChange = (value: string) => {
+        // RadioGroup only emits "rpe" or "rir".
+        const newValue = value as EffortRatingType;
+
+        setEffortType(newValue);
+
+        const updatedWorkout = {
+            ...workout,
+            exercises: workout.exercises.map((ex, index) =>
+                index === exerciseIndex
+                    ? {
+                          ...ex,
+                          effortType: newValue,
+                          sets: ex.sets.map((set) =>
+                                set.effortRating != null
+                                    ? {
+                                          ...set,
+                                          effortRating: convertEffortRating(set.effortRating),
+                                      }
+                                    : set
+                          ),
+                      }
+                    : ex
             ),
         };
 
@@ -268,8 +314,9 @@ export default function ExerciseCard({
                                         >
                                             Options
                                         </p>
-                                        <div className="flex flex-col gap-2 w-full mb-4">
+                                        <div className="flex flex-col gap-4 w-full mb-4">
                                             <RadioGroup
+                                                size="sm"
                                                 label="Weight Unit"
                                                 id={`exercise-${exerciseIndex}-weight-unit`}
                                                 orientation="horizontal"
@@ -285,6 +332,27 @@ export default function ExerciseCard({
                                             >
                                                 <Radio value="lbs">lbs</Radio>
                                                 <Radio value="kg">kg</Radio>
+                                            </RadioGroup>
+                                            <RadioGroup
+                                                size="sm"
+                                                label="Effort Rating Type"
+                                                id={`exercise-${exerciseIndex}-effort-type`}
+                                                orientation="vertical"
+                                                value={effortType}
+                                                onValueChange={handleEffortTypeChange}
+                                            >
+                                                <Radio
+                                                    value="rpe" 
+                                                    description="Rate of Perceived Exertion"
+                                                >
+                                                    RPE
+                                                </Radio>
+                                                <Radio 
+                                                    value="rir" 
+                                                    description="Reps In Reserve"
+                                                >
+                                                    RIR
+                                                </Radio>
                                             </RadioGroup>
                                         </div>
                                         <div>
@@ -321,6 +389,7 @@ export default function ExerciseCard({
                     <SetsTable
                         sets={exercise.sets}
                         weightUnit={exercise.weightUnit}
+                        effortType={exercise.effortType}
                         exerciseIndex={exerciseIndex}
                     />
                     {oneRepMax && showOneRepMax && (

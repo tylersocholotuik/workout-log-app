@@ -7,11 +7,13 @@ import { Button, Tooltip } from "@heroui/react";
 import CalculatorForm from "@/components/calculator/CalculatorForm";
 import RPEDataTable from "@/components/calculator/RPEDataTable";
 
+import { WeightUnit, EffortRatingType } from "@/types";
+
 export interface SetDataType {
     weight: number | string;
-    weightUnit: string;
+    weightUnit: WeightUnit;
     reps: number | string;
-    rpe: number | string;
+    effortRating: number | string;
 }
 
 export default function Calculator() {
@@ -19,10 +21,11 @@ export default function Calculator() {
         weight: "",
         weightUnit: "lbs",
         reps: "",
-        rpe: "",
+        effortRating: "",
     });
     const [oneRepMax, setOneRepMax] = useState(0);
-    const [conversionWeightUnit, setConversionWeightUnit] = useState("lbs");
+    const [effortType, setEffortType] = useState<EffortRatingType>("rpe");
+    const [conversionWeightUnit, setConversionWeightUnit] = useState<WeightUnit>("lbs");
     const [prevWeightUnit, setPrevWeightUnit] = useState("lbs");
     const { weightUnit } = setData;
 
@@ -45,20 +48,15 @@ export default function Calculator() {
         // flag to perform unit conversion only when weight unit and conversion
         // unit are not the same
         const doUnitConversion = weightUnit !== conversionUnit;
-
+        
         let conversionRate = 1;
 
         if (
             (doUnitConversion && weightUnit === "lbs") ||
             (!doUnitConversion && weightUnit === "kg")
         ) {
-            // convert from lbs to kg
             conversionRate = LBS_TO_KG;
-        } else if (
-            (!doUnitConversion && weightUnit === "lbs") ||
-            (doUnitConversion && weightUnit === "kg")
-        ) {
-            // convert from kg to lbs
+        } else {
             conversionRate = KG_TO_LBS;
         }
 
@@ -83,6 +81,8 @@ export default function Calculator() {
                         <CalculatorForm
                             setSetData={setSetData}
                             setOneRepMax={setOneRepMax}
+                            effortType={effortType}
+                            setEffortType={setEffortType}
                         />
                         <div className="text-center mb-6">
                             <p className="text-lg mb-2">
@@ -137,6 +137,7 @@ export default function Calculator() {
                         <RPEDataTable 
                             oneRepMax={oneRepMax}
                             weightUnit={conversionWeightUnit}
+                            effortType={effortType}
                          />
                     </section>
                 </div>

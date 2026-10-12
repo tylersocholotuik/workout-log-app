@@ -1,16 +1,18 @@
 import SetsTableRow from "./SetsTableRow";
 
-import { Set, WeightUnit } from "@/types";
+import {EffortRatingType, Set, WeightUnit} from "@/types";
 
 interface SetsTableProps {
     sets: Set[];
     weightUnit: WeightUnit;
+    effortType: EffortRatingType;
     exerciseIndex: number;
 }
 
 export default function SetsTable({
     sets,
     weightUnit,
+    effortType,
     exerciseIndex,
 }: SetsTableProps) {
     return (
@@ -22,7 +24,7 @@ export default function SetsTable({
                 Reps
             </p>
             <p className="col-span-2 text-sm dark:text-foreground-500 font-semibold mb-1">
-                RPE
+                {effortType.toUpperCase()}
             </p>
             <div></div>
             {sets.map((set, setIndex) => (
@@ -32,6 +34,7 @@ export default function SetsTable({
                     setIndex={setIndex}
                     exerciseIndex={exerciseIndex}
                     weightUnit={weightUnit}
+                    effortType={effortType}
                 />
             ))}
         </div>
