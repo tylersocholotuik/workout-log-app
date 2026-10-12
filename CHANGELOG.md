@@ -16,6 +16,29 @@ change behind it.
 
 ## [Unreleased]
 
+### Added
+
+- Added support for logging effort as RIR (Reps in Reserve) as an alternative to RPE. A new
+  `workout_exercises.effort_type` column (`rpe`/`rir`, default `rpe`) determines which scale applies
+  to every set on that exercise, since switching scales mid-exercise doesn't make sense (mirrors the
+  existing per-exercise `weight_unit` design).
+- Added an RPE/RIR toggle to the exercise card and the 1RM calculator; toggling converts any entered
+  value to the equivalent rating and updates the calculator's data table to show a single, correctly
+  labeled column instead of both scales side by side.
+- Added `IValidatableObject`-based validation on `WorkoutExerciseDto` to enforce effort-rating
+  range/step rules (0.5 steps for RPE, whole numbers for RIR) that depend on the exercise's
+  `effortType`, replacing the old single-scale `RpeRangeAttribute`.
+- Added shared `handleInputChange`/`stripLeadingZeros`/`sanitizeDisplayValues` helpers
+  (`utils/inputHandlers.ts`) for numeric input validation and blur-time cleanup, used by both the
+  workout editor and the calculator.
+
+### Changed
+
+- Renamed `sets.rpe` to `sets.effort_rating` (backend, frontend types/factories, and API payloads)
+  to reflect that the column now holds either an RPE or RIR value.
+- Updated the calculator and exercise-history display to show the active effort-rating type
+  (RPE or RIR) instead of assuming RPE.
+
 ## [1.7.0] - 2026-10-11
 
 ### Added
