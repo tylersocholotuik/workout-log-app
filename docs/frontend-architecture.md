@@ -48,7 +48,7 @@ frontend/
 │   └── workout/[workoutId].tsx  # Workout editor (dynamic route)
 ├── components/         # UI components, grouped by feature folder
 │   ├── auth/           # AuthProvider, forgot-password modal
-│   ├── calculator/     # 1RM calculator form + RPE table
+│   ├── calculator/     # 1RM calculator form + RPE/RIR table
 │   ├── history/        # Workout history list/card
 │   ├── workout/        # Workout editor: exercise cards, sets table, modals
 │   └── *.tsx           # Shared: NavBar, Footer, DarkModeSwitch, LogoutModal
@@ -256,10 +256,10 @@ that is, at three scopes:
 The workout editor (`pages/workout/[workoutId].tsx`) autosaves the
 in-progress workout rather than requiring an explicit "Save" action -
 every edit (adding/removing an exercise or set, editing notes, weight,
-reps, RPE, workout details) is persisted to the backend automatically
-after a short debounce. Finishing a workout just sets `finishedAt`; it
-doesn't need its own separate "save everything" step, since autosave
-already keeps the backend caught up.
+reps, effort rating (RPE/RIR), workout details) is persisted to the backend
+automatically after a short debounce. Finishing a workout just sets
+`finishedAt`; it doesn't need its own separate "save everything" step,
+since autosave already keeps the backend caught up.
 
 **Resuming an in-progress workout:** a workout's `finishedAt` is `null`
 while it's in progress. Navigating to `/workout/new-workout` fetches
@@ -312,7 +312,7 @@ the moment it *schedules* a timer, not when the timer *fires* - so
 not just `isDirtyRef.current` alone. This is wired up to two triggers:
 - `router.events.on("routeChangeStart", ...)` flushes on any client-side
   navigation. It also force-blurs `document.activeElement` first, since
-  the Notes/Weight/Reps/RPE inputs only commit their value to
+  the Notes/Weight/Reps/Effort Rating inputs only commit their value to
   `WorkoutContext` on blur (not on every keystroke) - without this, a
   value typed but never blurred (e.g. the user clicks a nav link while
   still focused in the field) wouldn't be in `workout` yet for

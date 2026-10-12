@@ -4,46 +4,81 @@ import { Dispatch, SetStateAction } from "react";
 
 import { Button, Input, Tooltip } from "@heroui/react";
 
-import { calculateOneRepMax } from "@/utils/calculator/calc-functions";
+import { calculateOneRepMax, convertEffortRating } from "@/utils/calculator/calculator";
+import { handleInputChange, sanitizeDisplayValues } from "@/utils/inputHandlers";
 
 import { SetDataType } from "@/pages/calculator";
+import { EffortRatingType, WeightUnit} from "@/types";
 
 interface CalculatorFormProps {
     setSetData: Dispatch<SetStateAction<SetDataType>>;
     setOneRepMax: Dispatch<SetStateAction<number>>;
+    effortType: EffortRatingType;
+    setEffortType: Dispatch<SetStateAction<EffortRatingType>>;
 }
 
 export default function CalculatorForm({
     setSetData,
     setOneRepMax,
+    effortType,
+    setEffortType,
 }: CalculatorFormProps) {
     const [weight, setWeight] = useState("");
-    const [weightUnit, setWeightUnit] = useState("lbs");
+    const [weightUnit, setWeightUnit] = useState<WeightUnit>("lbs");
     const [reps, setReps] = useState("");
-    const [rpe, setRPE] = useState("");
+    const [effortRating, setEffortRating] = useState("");
+
+    // Rules for weight:
+    //  min: 0, max: 9999, steps of 0.5, can be empty string, only 1 digit after decimal (0 or 5), only 1 decimal
+    const WEIGHT_REGEX = /^(\d{0,4})(\.([05]?)?)?$/;
+    // Rules for reps:
+    //  min: 1, max: 10, must be an integer, can be empty string
+    const REPS_REGEX = /^(10|[1-9])?$/;
+    // Rules for RPE: min: 6, max: 10, steps of 0.5, can be empty string
+    const RPE_REGEX = /^(\d{0,2})(\.([05]?)?)?$/;
+    const RPE_MIN = 6;
+    const RPE_MAX = 10;
+    // Rules for RIR: min: 0, max: 4, must be an integer, can be empty string
+    const RIR_REGEX = /^[0-4]?$/;
+    const RIR_MIN = 0;
+    const RIR_MAX = 4;
+    
+    const effortRatingRegex = effortType === "rpe" ? RPE_REGEX : RIR_REGEX;
+    const effortRatingMin = effortType === "rpe" ? RPE_MIN : RIR_MIN;
+    const effortRatingMax = effortType === "rpe" ? RPE_MAX : RIR_MAX;
 
     const updateOneRepMax = useCallback(
-        (weight: string, reps: string, rpe: string) => {
+        (weight: string, reps: string, effortRating: string) => {
+            const effortRatingNumber = parseFloat(effortRating);
+            let isValidEffortRating = true;
+            
+            // Handles the case where RPE is entered as 1 to allow the user to enter 10, 
+            // but does not allow 1 to be used in the calculation.
+            if (effortType === "rpe" && effortRatingNumber < RPE_MIN) {
+                isValidEffortRating = false;
+            }
+            
             if (
                 weight !== "" &&
                 reps !== "" &&
-                rpe !== "" &&
-                parseFloat(rpe) >= 6
+                effortRating !== "" &&
+                isValidEffortRating
             ) {
                 const weightNumber = parseFloat(weight);
                 const repsNumber = parseInt(reps);
-                const rpeNumber = parseFloat(rpe);
+                const effortRatingNumber = parseFloat(effortRating);
 
-                const oneRepMax = calculateOneRepMax(
-                    weightNumber,
-                    repsNumber,
-                    rpeNumber
-                );
+                const oneRepMax = calculateOneRepMax({
+                    weight: weightNumber,
+                    reps: repsNumber,
+                    effortType: effortType,
+                    effortRating: effortRatingNumber
+                });
                 const setData = {
                     weight: weightNumber,
                     weightUnit: weightUnit,
                     reps: repsNumber,
-                    rpe: rpeNumber,
+                    effortRating: effortRatingNumber,
                 };
 
                 setOneRepMax(oneRepMax);
@@ -52,140 +87,52 @@ export default function CalculatorForm({
                 setOneRepMax(0);
             }
         },
-        [weightUnit, setOneRepMax, setSetData]
+        [weightUnit, effortType, setOneRepMax, setSetData]
     );
-
+    
     useEffect(() => {
-        updateOneRepMax(weight, reps, rpe);
-    }, [weight, reps, rpe, weightUnit, updateOneRepMax]);
+        updateOneRepMax(weight, reps, effortRating);
+    }, [weight, reps, effortRating, weightUnit, updateOneRepMax]);
 
     const toggleWeightUnit = () => {
-        if (weightUnit === "lbs") {
-            setWeightUnit("kg");
-        }
-        if (weightUnit === "kg") {
-            setWeightUnit("lbs");
-        }
+        const newWeightUnit = weightUnit === "lbs" ? "kg" : "lbs";
+        setWeightUnit(newWeightUnit);
     };
+    
+    const toggleEffortType = () => {
+        const newEffortType = effortType === "rpe" ? "rir" : "rpe";
 
-    const handleWeightChange = (value: string) => {
-        // let isValid = false;
-        // rules for weight:
-        // min: 0
-        // max: 9999
-        // must be in steps of 0.5
-        // can be empty string
-        // only 1 digital after decimal, must be 0 or 5
-        // only 1 decimal
-        const regex = /^(\d{0,4})(\.([05]?)?)?$/;
+        setEffortType(newEffortType);
 
-        const isValidFormat = regex.test(value);
-
-        const parsedValue = parseFloat(value);
-
-        const isValidValue =
-            !isNaN(parsedValue) &&
-            parsedValue >= 0 &&
-            parsedValue <= 9999 &&
-            parsedValue % 0.5 === 0;
-
-        const isValid = isValidFormat && (value === "" || isValidValue);
-
-        // allow input if isValid, otherwise, input is prevented
-        if (isValid) {
-            setWeight(value);
-        }
-    };
-
-    const handleRepsChange = (value: string) => {
-        // rules for reps:
-        // min: 1
-        // max: 10
-        // must be whole number
-        // can be empty string
-        const regex = /^(10|[1-9])?$/;
-
-        const isValidFormat = regex.test(value);
-
-        const parsedValue = parseInt(value);
-
-        const isValidValue =
-            !isNaN(parsedValue) &&
-            parsedValue >= 1 &&
-            parsedValue <= 10;
-
-        const isValid = isValidFormat && (value === "" || isValidValue);
-
-        if (isValid) {
-            setReps(value);
-        }
-    };
-
-    const handleRPEChange = (value: string) => {
-        // rules for RPE:
-        // min: 6
-        // max: 10
-        // steps of 0.5
-        // can be empty string
-        // only 1 digital after decimal, must be 0 or 5
-        // only 1 decimal
-        const regex = /^(1$|10|[6-9](\.\d{0,1})?)?$/;
-
-        const isValidFormat = regex.test(value);
-
-        const parsedValue = parseFloat(value);
-
-
-        let isValidValue = false;
-
-        if (value.length === 1) {
-            isValidValue =
-                // allows input value of 1 if length is 1 so you can enter 10
-                ((parsedValue >= 6 || parsedValue === 1) &&
-                    parsedValue % 0.5 === 0) ||
-                value === "";
-        } else {
-            isValidValue =
-                (parsedValue >= 6 &&
-                    parsedValue <= 10 &&
-                    parsedValue % 0.5 === 0) ||
-                value === "";
-        }
-
-        const isValid = isValidFormat && (value === "" || isValidValue);
-
-        console.log(isValidFormat)
-
-        if (isValid) {
-            setRPE(value);
+        if (effortRating !== "") {
+            setEffortRating(convertEffortRating(parseFloat(effortRating)).toString());
         }
     };
 
 
-    // called on focus blur to remove trailing decimals
-    const removeTrailingDecimal = (weight: string, rpe: string) => {
-        if (weight.endsWith(".")) {
-            weight = weight.slice(0, -1);
-            setWeight(weight);
-        }
-        if (rpe.endsWith(".")) {
-            rpe = rpe.slice(0, -1);
-            setRPE(rpe);
-        }
-        if (rpe === "1") {
-            // since 1 must be allowed to be entered in order 
+
+    // called on focus blur to clean up display formatting
+    const handleBlur = () => {
+        sanitizeDisplayValues([
+            { value: weight, setter: setWeight, stripTrailingDecimal: true, stripLeadingZero: true },
+            { value: effortRating, setter: setEffortRating, stripTrailingDecimal: true },
+        ]);
+
+        if (effortType === "rpe" && effortRating === "1") {
+            // since 1 must be allowed to be entered in order
             // to enter 10, clear the input if user leaves RPE
             // input on 1
-            setRPE("");
+            setEffortRating("");
         }
-    }
+    };
 
     const Clear = () => {
         setWeight("");
         setReps("");
         setWeightUnit("lbs");
-        setRPE("");
-        setSetData({ weight: "", weightUnit: "lbs", reps: "", rpe: "" });
+        setEffortRating("");
+        setEffortType("rpe");
+        setSetData({ weight: "", weightUnit: "lbs", reps: "", effortRating: "" });
         setOneRepMax(0);
     };
 
@@ -197,8 +144,9 @@ export default function CalculatorForm({
                         <Input
                             classNames={{
                                 label: "text-inherit",
+                                input: "min-w-0",
                             }}
-                            className="w-[80px]"
+                            className="w-[125px]"
                             id="weight"
                             label="Weight"
                             labelPlacement="outside"
@@ -207,47 +155,48 @@ export default function CalculatorForm({
                             color="primary"
                             inputMode="decimal"
                             endContent={
-                                <div className="pointer-events-none flex items-center">
-                                    <span className="text-default-400 text-small">
-                                        {weightUnit}
+                                <Button
+                                    aria-label="weight unit"
+                                    className="h-7 min-w-0 shrink-0 gap-0.5 px-1 text-tiny"
+                                    color="default"
+                                    variant="light"
+                                    size="sm"
+                                    onPress={toggleWeightUnit}
+                                >
+                                    <span
+                                        className={
+                                            weightUnit === "lbs"
+                                                ? "text-primary font-bold"
+                                                : "text-default-400"
+                                        }
+                                    >
+                                        lbs
                                     </span>
-                                </div>
+                                    <span className="text-default-400">/</span>
+                                    <span
+                                        className={
+                                            weightUnit === "kg"
+                                                ? "text-primary font-bold"
+                                                : "text-default-400"
+                                        }
+                                    >
+                                        kg
+                                    </span>
+                                </Button>
                             }
                             value={weight}
-                            onValueChange={handleWeightChange}
-                            onBlur={() => removeTrailingDecimal(weight, rpe)}
+                            onValueChange={(value) =>
+                                handleInputChange({
+                                    value,
+                                    regex: WEIGHT_REGEX,
+                                    isInteger: false,
+                                    minValue: 0,
+                                    maxValue: 9999,
+                                    setter: setWeight,
+                                })
+                            }
+                            onBlur={handleBlur}
                         />
-                    </Tooltip>
-                </div>
-                <div className="">
-                    <Tooltip content="Weight Unit">
-                        <Button
-                            aria-label="weight unit"
-                            color="default"
-                            variant="bordered"
-                            size="sm"
-                            onPress={toggleWeightUnit}
-                        >
-                            <span
-                                className={
-                                    weightUnit === "lbs"
-                                        ? "text-primary font-bold"
-                                        : ""
-                                }
-                            >
-                                lbs
-                            </span>
-                            /
-                            <span
-                                className={
-                                    weightUnit === "kg"
-                                        ? "text-primary font-bold"
-                                        : ""
-                                }
-                            >
-                                kg
-                            </span>
-                        </Button>
                     </Tooltip>
                 </div>
                 <div>
@@ -256,7 +205,7 @@ export default function CalculatorForm({
                             classNames={{
                                 label: "text-inherit",
                             }}
-                            className="w-[60px]"
+                            className="w-[70px]"
                             id="reps"
                             label="Reps"
                             labelPlacement="outside"
@@ -265,8 +214,17 @@ export default function CalculatorForm({
                             color="primary"
                             inputMode="decimal"
                             value={reps}
-                            onValueChange={handleRepsChange}
-                            onBlur={() => removeTrailingDecimal(weight, rpe)}
+                            onValueChange={(value) =>
+                                handleInputChange({
+                                    value,
+                                    regex: REPS_REGEX,
+                                    isInteger: true,
+                                    minValue: 1,
+                                    maxValue: 10,
+                                    setter: setReps,
+                                })
+                            }
+                            onBlur={handleBlur}
                         />
                     </Tooltip>
                 </div>
@@ -275,10 +233,12 @@ export default function CalculatorForm({
                         content={
                             <div className="px-1 py-2">
                                 <div className="text-small font-bold">
-                                    Rate of Perceived Exertion
+                                    {effortType === "rpe" ? 
+                                        "Rate of Perceived Exertion" : "Reps in Reserve"}
                                 </div>
                                 <div className="text-tiny">
-                                    Range: 6-10, steps of 0.5
+                                    {effortType === "rpe" ? 
+                                        "Range: 6-10, steps of 0.5" : "Range: 0-4"}
                                 </div>
                             </div>
                         }
@@ -286,18 +246,58 @@ export default function CalculatorForm({
                         <Input
                             classNames={{
                                 label: "text-inherit",
+                                input: "min-w-0",
                             }}
-                            className="w-[60px]"
-                            id="rpe"
-                            label="RPE"
+                            className="w-[125px]"
+                            id="effortRating"
+                            label={effortType === "rpe" ? "RPE" : "RIR"}
                             labelPlacement="outside"
                             variant="bordered"
                             size="sm"
                             color="primary"
                             inputMode="decimal"
-                            value={rpe}
-                            onValueChange={handleRPEChange}
-                            onBlur={() => removeTrailingDecimal(weight, rpe)}
+                            endContent={
+                                <Button
+                                    aria-label="effort rating type"
+                                    className="h-7 min-w-0 shrink-0 gap-0.5 px-1 text-tiny"
+                                    color="default"
+                                    variant="light"
+                                    size="sm"
+                                    onPress={toggleEffortType}
+                                >
+                                    <span
+                                        className={
+                                            effortType === "rpe"
+                                                ? "text-primary font-bold"
+                                                : "text-default-400"
+                                        }
+                                    >
+                                        RPE
+                                    </span>
+                                    <span className="text-default-400">/</span>
+                                    <span
+                                        className={
+                                            effortType === "rir"
+                                                ? "text-primary font-bold"
+                                                : "text-default-400"
+                                        }
+                                    >
+                                        RIR
+                                    </span>
+                                </Button>
+                            }
+                            value={effortRating}
+                            onValueChange={(value) =>
+                                handleInputChange({
+                                    value,
+                                    regex: effortRatingRegex,
+                                    isInteger: effortType === "rir",
+                                    minValue: effortRatingMin,
+                                    maxValue: effortRatingMax,
+                                    setter: setEffortRating,
+                                })
+                            }
+                            onBlur={handleBlur}
                         />
                     </Tooltip>
                 </div>

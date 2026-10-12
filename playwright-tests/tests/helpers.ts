@@ -188,7 +188,7 @@ export async function addExercise(page: Page, exerciseName: string) {
 
 export async function fillSet(
   card: Locator,
-  values: { weight?: string; reps?: string; rpe?: string },
+  values: { weight?: string; reps?: string; effortRating?: string },
   setIndex = 0
 ) {
   if (values.weight !== undefined) {
@@ -197,11 +197,11 @@ export async function fillSet(
   if (values.reps !== undefined) {
     await card.getByRole('textbox', { name: 'reps' }).nth(setIndex).fill(values.reps);
   }
-  if (values.rpe !== undefined) {
-    await card.getByRole('textbox', { name: 'rpe' }).nth(setIndex).fill(values.rpe);
+  if (values.effortRating !== undefined) {
+    await card.getByRole('textbox', { name: 'effort rating' }).nth(setIndex).fill(values.effortRating);
   }
   // blur to trigger the row's onBlur save handler
-  await card.getByRole('textbox', { name: 'rpe' }).nth(setIndex).blur();
+  await card.getByRole('textbox', { name: 'effort rating' }).nth(setIndex).blur();
 }
 
 export async function setWorkoutDate(dialog: Locator, date: Date) {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useWorkoutContext } from "@/pages/workout/[workoutId]";
 
@@ -7,11 +7,14 @@ import { Set } from "@/types";
 import { Input, Tooltip, Button } from "@heroui/react";
 import { DeleteIcon } from "@/icons/DeleteIcon";
 
+import { handleInputChange, sanitizeDisplayValues } from "@/utils/inputHandlers";
+
 interface SetTableRowProps {
     set: Set;
     setIndex: number;
     exerciseIndex: number;
     weightUnit: string;
+    effortType: string;
 }
 
 export default function SetsTableRow({
@@ -19,123 +22,48 @@ export default function SetsTableRow({
     setIndex,
     exerciseIndex,
     weightUnit,
+    effortType,
 }: SetTableRowProps) {
     // ensuring "null" does not appear in inputs, set to empty string instead
     const weightString = set.weight !== null ? String(set.weight) : "";
     const repsString = set.reps !== null ? String(set.reps) : "";
-    const rpeString = set.rpe !== null ? String(set.rpe) : "";
+    const effortRatingString = set.effortRating !== null ? String(set.effortRating) : "";
 
     const [weight, setWeight] = useState(weightString);
     const [reps, setReps] = useState(repsString);
-    const [rpe, setRPE] = useState(rpeString);
+    const [effortRating, setEffortRating] = useState(effortRatingString);
 
     const { workout, setWorkout } = useWorkoutContext();
 
-    const handleWeightChange = (value: string) => {
-        // let isValid = false;
-        // rules for weight:
-        // min: 0
-        // max: 9999
-        // must be in steps of 0.5
-        // can be empty string
-        // only 1 digital after decimal, must be 0 or 5
-        // only 1 decimal
-        const regex = /^(\d{0,4})(\.([05]?)?)?$/;
+    // Rules for weight:
+    //  min: 0, max: 9999, steps of 0.5, can be empty string, only 1 digit after decimal (0 or 5), only 1 decimal
+    const WEIGHT_REGEX= /^(\d{0,4})(\.([05]?)?)?$/;
+    const WEIGHT_MIN = 0;
+    const WEIGHT_MAX = 9999;
+    // Rules for reps:
+    //  min: 0, max: 9999, must be an integer, can be empty string
+    const REPS_REGEX = /^(?:[0-9]{1,4})?$/;
+    const REPS_MIN = 0;
+    const REPS_MAX = 9999;
+    // Rules for effort rating:
+    //  min: 0, max: 10, steps of 0.5 (RPE only), can be empty string, only 1 digit after decimal (0 or 5) (RPE only), only 1 decimal
+    const RPE_REGEX = /^(10|[0-9](\.\d{0,1})?)?$/;
+    const RIR_REGEX = /^(10|[0-9])?$/;
+    const effortRatingRegex = effortType === "rpe" ? RPE_REGEX : RIR_REGEX;
+    const EFFORT_RATING_MIN = 0;
+    const EFFORT_RATING_MAX = 10;
+    const effortRatingIsInteger = effortType === "rir";
 
-        const isValidFormat = regex.test(value);
+    // Resyncs displayed effort rating when ExerciseCard truncates it externally.
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setEffortRating(
+            set.effortRating !== null ? String(set.effortRating) : ""
+        );
+    }, [set.effortRating]);
 
-        const parsedValue = parseFloat(value);
-
-        const isValidValue =
-            !isNaN(parsedValue) &&
-            parsedValue >= 0 &&
-            parsedValue <= 9999 &&
-            parsedValue % 0.5 === 0;
-
-        const isValid = isValidFormat && (value === "" || isValidValue);
-
-        // allow input if isValid, otherwise, input is prevented
-        if (isValid) {
-            setWeight(value);
-        }
-    };
-
-    const handleRepsChange = (value: string) => {
-        // rules for reps:
-        // min: 0
-        // max: 9999
-        // must be whole number
-        // can be empty string
-        const regex = /^(?:[0-9]{1,4})?$/;
-
-        const isValidFormat = regex.test(value);
-
-        const parsedValue = parseInt(value);
-
-        const isValidValue =
-            !isNaN(parsedValue) && parsedValue >= 0 && parsedValue <= 9999;
-
-        const isValid = isValidFormat && (value === "" || isValidValue);
-
-        if (isValid) {
-            setReps(value);
-        }
-    };
-
-    const handleRPEChange = (value: string) => {
-        // rules for RPE:
-        // min: 6
-        // max: 10
-        // steps of 0.5
-        // can be empty string
-        // only 1 digital after decimal, must be 0 or 5
-        // only 1 decimal
-        const regex = /^(1$|10|[6-9](\.\d{0,1})?)?$/;
-
-        const isValidFormat = regex.test(value);
-
-        const parsedValue = parseFloat(value);
-
-        let isValidValue = false;
-
-        if (value.length === 1) {
-            isValidValue =
-                // allows input value of 1 if length is 1 so you can enter 10
-                ((parsedValue >= 6 || parsedValue === 1) &&
-                    parsedValue % 0.5 === 0) ||
-                value === "";
-        } else {
-            isValidValue =
-                (parsedValue >= 6 &&
-                    parsedValue <= 10 &&
-                    parsedValue % 0.5 === 0) ||
-                value === "";
-        }
-
-        const isValid = isValidFormat && (value === "" || isValidValue);
-
-        if (isValid) {
-            setRPE(value);
-        }
-    };
-
-    // called on focus blur to remove trailing decimals
-    const removeTrailingDecimal = (weight: string, rpe: string) => {
-        if (weight.endsWith(".")) {
-            weight = weight.slice(0, -1);
-            setWeight(weight);
-        }
-        if (rpe.endsWith(".")) {
-            rpe = rpe.slice(0, -1);
-            setRPE(rpe);
-        }
-        if (rpe === "1") {
-            // since 1 must be allowed to be entered in order
-            // to enter 10, clear the input if user leaves RPE
-            // input on 1
-            setRPE("");
-        }
-    };
+    // Shared input change handler for weight, reps, and effort rating inputs
+    // is imported from @/utils/form-input
 
     // called on focus blur for all inputs
     // updates the state of the workout with the set
@@ -159,8 +87,10 @@ export default function SetsTableRow({
                                             reps !== ""
                                                 ? parseFloat(reps)
                                                 : null,
-                                        rpe:
-                                            rpe !== "" ? parseFloat(rpe) : null,
+                                        effortRating:
+                                            effortRating !== ""
+                                                ? parseFloat(effortRating)
+                                                : null,
                                     }
                                   : set
                           ),
@@ -170,6 +100,15 @@ export default function SetsTableRow({
         };
 
         setWorkout(updatedWorkout);
+    };
+    
+    const handleBlur = () => {
+        sanitizeDisplayValues([
+            { value: weight, setter: setWeight, stripTrailingDecimal: true, stripLeadingZero: true },
+            { value: reps, setter: setReps, stripLeadingZero: true },
+            { value: effortRating, setter: setEffortRating, stripTrailingDecimal: true },
+        ]);
+        saveChanges();
     };
 
     const deleteSet = (setIndex: number) => {
@@ -212,11 +151,17 @@ export default function SetsTableRow({
                         </div>
                     }
                     value={weight}
-                    onValueChange={handleWeightChange}
-                    onBlur={() => {
-                        removeTrailingDecimal(weight, rpe);
-                        saveChanges();
+                    onValueChange={(value) => {
+                        handleInputChange({
+                            value,
+                            regex: WEIGHT_REGEX,
+                            isInteger: false,
+                            minValue: WEIGHT_MIN,
+                            maxValue: WEIGHT_MAX,
+                            setter: setWeight,
+                        });
                     }}
+                    onBlur={handleBlur}
                 />
             </div>
             <div className="col-span-2">
@@ -229,28 +174,40 @@ export default function SetsTableRow({
                     aria-label="reps"
                     color="primary"
                     value={reps}
-                    onValueChange={handleRepsChange}
-                    onBlur={() => {
-                        removeTrailingDecimal(weight, rpe);
-                        saveChanges();
+                    onValueChange={(value) => {
+                        handleInputChange({
+                            value,
+                            regex: REPS_REGEX,
+                            isInteger: true,
+                            minValue: REPS_MIN,
+                            maxValue: REPS_MAX,
+                            setter: setReps,
+                        });
                     }}
+                    onBlur={handleBlur}
                 />
             </div>
             <div className="col-span-2">
                 <Input
                     classNames={{ input: "text-center" }}
-                    id={`exercise-${exerciseIndex}-set-${setIndex}-rpe`}
+                    id={`exercise-${exerciseIndex}-set-${setIndex}-effort-rating`}
                     inputMode="decimal"
                     variant="bordered"
                     size="sm"
-                    aria-label="rpe"
+                    aria-label="effort rating"
                     color="primary"
-                    value={rpe}
-                    onValueChange={handleRPEChange}
-                    onBlur={() => {
-                        removeTrailingDecimal(weight, rpe);
-                        saveChanges();
+                    value={effortRating}
+                    onValueChange={(value) => {
+                        handleInputChange({
+                            value,
+                            regex: effortRatingRegex,
+                            isInteger: effortRatingIsInteger,
+                            minValue: EFFORT_RATING_MIN,
+                            maxValue: EFFORT_RATING_MAX,
+                            setter: setEffortRating,
+                        });
                     }}
+                    onBlur={handleBlur}
                 />
             </div>
             <div>

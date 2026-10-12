@@ -227,7 +227,10 @@ test.describe('Exercises', () => {
     await drawer.getByRole('button', { name: 'Back' }).click();
     await drawer.getByPlaceholder('Search exercises...').fill(exerciseName);
     await drawer.getByRole('row', { name: exerciseName, exact: true }).click();
-    await drawer.getByRole('button', { name: 'Add', exact: true }).click();
+    // Wait for this add's own autosave to settle - otherwise a later
+    // waitForAutosave() (for filling a set, below) can resolve on this PUT
+    // instead of the real edit if it's still in flight on a slower browser.
+    await waitForAutosave(page, () => drawer.getByRole('button', { name: 'Add', exact: true }).click());
     // Wait out the drawer's close animation - opening the Actions dropdown
     // underneath while it's still closing can make the dropdown unstable to
     // click (Firefox in particular).
@@ -242,6 +245,26 @@ test.describe('Exercises', () => {
     await expect(
       page.getByText('You have not performed this exercise before.')
     ).toBeVisible();
+    await page.keyboard.press('Escape');
+    // Wait out the modal's close animation - interacting with the set row's
+    // inputs immediately after can race the close and silently drop values.
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    // fill and persist a set, then reload so the history query refetches and
+    // picks up this (now-saved) instance of the exercise - the backend's
+    // exercise history doesn't exclude the workout currently being edited.
+    await waitForAutosave(page, () =>
+      fillSet(exerciseCard(page, exerciseName), { weight: '100', reps: '5', effortRating: '8' })
+    );
+    await page.reload();
+
+    await pressIconTrigger(
+      exerciseCard(page, exerciseName).getByRole('button', { name: 'Actions', exact: true })
+    );
+    await expect(page.getByRole('menu')).toBeVisible();
+    await page.getByRole('menuitem', { name: 'Exercise history' }).click();
+
+    await expect(page.getByText('@ RPE 8')).toBeVisible();
   });
 });
 
@@ -267,7 +290,7 @@ test.describe('Sets', () => {
     await expect(card.getByRole('textbox', { name: 'weight' })).toHaveCount(1);
   });
 
-  test('invalid characters are rejected in Weight/Reps/RPE', async ({ page, trackWorkout }) => {
+  test('invalid characters are rejected in Weight/Reps/effort rating', async ({ page, trackWorkout }) => {
     await startNewWorkout(page, trackWorkout);
     await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
     const card = exerciseCard(page, 'Ab Wheel');
@@ -281,13 +304,13 @@ test.describe('Sets', () => {
     await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
     const card = exerciseCard(page, 'Ab Wheel');
 
-    await fillSet(card, { weight: '250', reps: '8', rpe: '9' });
+    await fillSet(card, { weight: '250', reps: '8', effortRating: '9' });
 
     await expect(card.getByText(/e1RM:/)).toBeVisible();
   });
 });
 
-test.describe('Weight unit & notes', () => {
+test.describe('Weight unit, effort rating type, & notes', () => {
   test('weight unit can be switched between lbs and kg', async ({ page, trackWorkout }) => {
     await startNewWorkout(page, trackWorkout);
     await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
@@ -299,6 +322,28 @@ test.describe('Weight unit & notes', () => {
 
     await page.reload();
     await expect(exerciseCard(page, 'Ab Wheel').getByText('kg')).toBeVisible();
+  });
+
+  test('effort rating type can be switched between RPE and RIR', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
+    const card = exerciseCard(page, 'Ab Wheel');
+    await waitForAutosave(page, () => fillSet(card, { weight: '100', reps: '5', effortRating: '8' }));
+
+    await expect(card.getByText('RPE', { exact: true })).toBeVisible();
+
+    await pressIconTrigger(card.getByRole('button', { name: 'exercise options' }));
+    await waitForAutosave(page, () => page.getByRole('radio', { name: 'RIR' }).click());
+    await page.keyboard.press('Escape');
+
+    // RIR = 10 - ceil(RPE) => 10 - ceil(8) = 2
+    await expect(card.getByText('RIR', { exact: true })).toBeVisible();
+    await expect(card.getByRole('textbox', { name: 'effort rating' })).toHaveValue('2');
+
+    await page.reload();
+    const reloadedCard = exerciseCard(page, 'Ab Wheel');
+    await expect(reloadedCard.getByText('RIR', { exact: true })).toBeVisible();
+    await expect(reloadedCard.getByRole('textbox', { name: 'effort rating' })).toHaveValue('2');
   });
 
   test('exercise notes are saved', async ({ page, trackWorkout }) => {
@@ -433,7 +478,7 @@ test.describe('Updating a saved workout (soft-delete)', () => {
     await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
     const card = exerciseCard(page, 'Ab Wheel');
     await waitForAutosave(page, () => card.getByRole('button', { name: 'Add Set' }).click());
-    await waitForAutosave(page, () => fillSet(card, { weight: '100', reps: '10', rpe: '8' }));
+    await waitForAutosave(page, () => fillSet(card, { weight: '100', reps: '10', effortRating: '8' }));
     const secondSetWeight = card.getByRole('textbox', { name: 'weight' }).nth(1);
     await waitForAutosave(page, async () => {
       await secondSetWeight.fill('200');
@@ -507,7 +552,7 @@ test.describe('History persistence', () => {
     await waitForAutosave(page, () => editWorkoutDetails(page, { title, notes: 'Retrieval check notes' }));
     await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
     await waitForAutosave(page, () =>
-      fillSet(exerciseCard(page, 'Ab Wheel'), { weight: '135', reps: '5', rpe: '7' })
+      fillSet(exerciseCard(page, 'Ab Wheel'), { weight: '135', reps: '5', effortRating: '7' })
     );
 
     await page.goto(`/workout/${workoutId}`);

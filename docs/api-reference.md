@@ -133,7 +133,7 @@ loading `[workoutId].tsx` or app startup.
     "notes": "Felt strong",
     "weightUnit": "lbs",
     "workout": { "date": "2026-09-20" },
-    "sets": [ { "id": 1, "weight": 135, "reps": 5, "rpe": 8, "exerciseId": 7 } ]
+    "sets": [ { "id": 1, "weight": 135, "reps": 5, "effortRating": 8, "exerciseId": 7 } ]
   }
 ]
 ```
@@ -262,23 +262,30 @@ validation attributes).
   "id": 12,
   "notes": "optional, \u2264 100 chars",
   "weightUnit": "lbs",
+  "effortType": "rpe",
   "exerciseId": 7,
   "workoutId": "guid",
   "exercise": { /* ExerciseDto */ },
   "sets": [ /* SetDto */ ]
 }
 ```
-`weightUnit` is `"lbs"` or `"kg"`.
+`weightUnit` is `"lbs"` or `"kg"`; `effortType` is `"rpe"` or `"rir"` and
+determines the range/step validation applied to every set's `effortRating`
+below.
 
 **`SetDto`**
 ```json
-{ "id": 1, "weight": 135, "reps": 5, "rpe": 8, "exerciseId": 12 }
+{ "id": 1, "weight": 135, "reps": 5, "effortRating": 8, "exerciseId": 12 }
 ```
 Despite the name, `exerciseId` here is the parent `workout_exercises.id`
 (see [database-design.md](database-design.md#table-reference)).
-Validation: `weight` 0–9999 in steps of 0.5, `reps`/`rpe` have their own
-range checks (`Validation/RepsRangeAttribute.cs`, `RpeRangeAttribute.cs`);
-all three fields are nullable.
+Validation: `weight` 0–9999 in steps of 0.5 (`Validation/WeightRangeAttribute.cs`),
+`reps` has its own range check (`Validation/RepsRangeAttribute.cs`);
+`effortRating` is 0–10, and must be in steps of 0.5 if the parent
+`WorkoutExerciseDto.effortType` is `"rpe"`, or a whole number if `"rir"` —
+enforced via `WorkoutExerciseDto`'s `IValidatableObject.Validate` rather
+than a `[ValidationAttribute]`, since the rule depends on a sibling field.
+All three set fields are nullable.
 
 **`ExerciseHistoryDto`**
 ```json

@@ -1,4 +1,4 @@
-import { WeightUnit } from './common';
+import {EffortRatingType, WeightUnit} from './common';
 import { WorkoutExercise } from './workout';
 
 export interface Exercise {
@@ -11,6 +11,7 @@ export interface Exercise {
 export interface ExerciseHistory {
     notes: string;
     weightUnit: WeightUnit;
+    effortType: EffortRatingType;
     workout: {
         date: string;
     };
@@ -18,7 +19,7 @@ export interface ExerciseHistory {
         {
             weight: number;
             reps: number;
-            rpe: number;
+            effortRating: number;
         }
     ];
 }

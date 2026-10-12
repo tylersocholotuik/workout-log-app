@@ -141,6 +141,10 @@ namespace WorkoutLogAPI.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("deleted");
 
+                    b.Property<double?>("EffortRating")
+                        .HasColumnType("double precision")
+                        .HasColumnName("effort_rating");
+
                     b.Property<int>("ExerciseId")
                         .HasColumnType("integer")
                         .HasColumnName("exercise_id");
@@ -148,10 +152,6 @@ namespace WorkoutLogAPI.Migrations
                     b.Property<int?>("Reps")
                         .HasColumnType("integer")
                         .HasColumnName("reps");
-
-                    b.Property<double?>("Rpe")
-                        .HasColumnType("double precision")
-                        .HasColumnName("rpe");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -301,6 +301,13 @@ namespace WorkoutLogAPI.Migrations
                     b.Property<bool>("Deleted")
                         .HasColumnType("boolean")
                         .HasColumnName("deleted");
+
+                    b.Property<string>("EffortType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("rpe")
+                        .HasColumnName("effort_type");
 
                     b.Property<int>("ExerciseId")
                         .HasColumnType("integer")

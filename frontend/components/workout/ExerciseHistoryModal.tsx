@@ -60,7 +60,7 @@ export default function ExerciseHistoryModal({
                                                             key={`ex-${eIndex}-set-${sIndex}`}
                                                             className="text-sm"
                                                         >
-                                                            {`${set.weight} ${exercise.weightUnit} x ${set.reps} reps @ RPE ${set.rpe}`}
+                                                            {`${set.weight} ${exercise.weightUnit} x ${set.reps} reps @ ${exercise.effortType.toUpperCase()} ${set.effortRating}`}
                                                         </li>
                                                     )
                                                 )}
