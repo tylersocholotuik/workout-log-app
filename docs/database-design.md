@@ -83,6 +83,7 @@ erDiagram
         int id PK
         string notes
         string weight_unit "lbs / kg"
+        string effort_type "rpe / rir"
         int exercise_id FK
         string workout_id FK
         bool deleted
@@ -94,7 +95,7 @@ erDiagram
         int id PK
         double weight
         int reps
-        double rpe
+        double effort_rating
         int exercise_id FK "references workout_exercises.id"
         bool deleted
         datetime created_at
@@ -181,20 +182,27 @@ catalog entry itself.
   lowercase string name (`"lbs"`/`"kg"`) via an EF value converter so the
   column is human-readable and matches the API's JSON representation,
   rather than the default numeric enum value
+- `effort_type` — the `EffortRatingType` enum (`Rpe`/`Rir`), stored the
+  same way as `weight_unit` (lowercase string name via an EF value
+  converter). Determines how every set's `effort_rating` on this
+  exercise-within-a-workout is interpreted and validated (see
+  [`sets`](#sets) below)
 - `exercise_id` (FK to `exercises.id`, `ON DELETE RESTRICT`)
 - `workout_id` (FK to `workouts.id`, `ON DELETE RESTRICT`)
 - `deleted`, `created_at`, `updated_at`
 
 ### `sets`
 
-An individual set (weight/reps/RPE) performed for a `workout_exercises` row.
-Despite the FK property being named `ExerciseId` in code, it actually points
-at `workout_exercises.id`, not `exercises.id` — a set only makes sense in
-the context of one specific exercise-within-a-workout.
+An individual set (weight/reps/effort rating) performed for a
+`workout_exercises` row. Despite the FK property being named `ExerciseId`
+in code, it actually points at `workout_exercises.id`, not `exercises.id` —
+a set only makes sense in the context of one specific exercise-within-a-workout.
 
 - `id` (PK, `int` identity)
-- `weight` (nullable `double`), `reps` (nullable `int`), `rpe` (nullable
-  `double`, Rate of Perceived Exertion, used by the 1RM calculator)
+- `weight` (nullable `double`), `reps` (nullable `int`), `effort_rating`
+  (nullable `double`, used by the 1RM calculator) — interpreted as RPE
+  (Rate of Perceived Exertion, 0.5 steps) or RIR (Reps in Reserve, whole
+  numbers) depending on the parent `workout_exercises.effort_type`
 - `exercise_id` (FK to `workout_exercises.id`, `ON DELETE RESTRICT`)
 - `deleted`, `created_at`, `updated_at`
 
@@ -239,10 +247,21 @@ instead of silently cascading.
 
 `exercises` is a catalog (name + owner), while `workout_exercises` captures
 the point-in-time details of using that exercise in a specific workout
-(notes, weight unit). This lets a user's exercise history be queried across
-all workouts (`WorkoutService.GetExerciseHistory`) by joining on
-`exercise_id`, while still letting each workout's notes/weight unit vary
-independently.
+(notes, weight unit, effort rating type). This lets a user's exercise
+history be queried across all workouts (`WorkoutService.GetExerciseHistory`)
+by joining on `exercise_id`, while still letting each workout's
+notes/weight unit/effort rating type vary independently.
+
+### Why is effort rating type (RPE/RIR) stored per exercise, not per set?
+
+`effort_type` lives on `workout_exercises` alongside `weight_unit`, for the
+same reason: both represent a *unit of measurement* for the exercise as a
+whole, not a per-set choice. Switching between RPE and RIR mid-exercise
+(the way `weight_unit` already couldn't switch mid-exercise between lbs/kg)
+wouldn't make sense — a lifter picks one effort-rating scale and uses it
+consistently for every set of that exercise. Storing it at the exercise
+level also keeps the UI simple: one toggle per exercise card, rather than a
+rating-type picker on every individual set.
 
 ### System vs. custom exercises
 
@@ -271,3 +290,7 @@ Notable migrations beyond the initial schema:
 - `AddFinishedAtToWorkouts` — added the `finished_at` column and backfilled
   existing rows with `COALESCE(updated_at, created_at)` so historical
   workouts aren't retroactively treated as in-progress.
+- `AddEffortTypeToWorkoutExercisesAndEffortRatingToSets` — renamed
+  `sets.rpe` to `sets.effort_rating` and added `workout_exercises.effort_type`
+  (default `"rpe"`), so existing data keeps its original meaning without a
+  manual backfill.

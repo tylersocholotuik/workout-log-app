@@ -30,7 +30,7 @@ WorkoutLogAPI/
 ├── Data/            # WorkoutDbContext + seed data
 ├── Migrations/      # EF Core migrations
 ├── Exceptions/      # Custom domain exceptions (business-rule violations)
-├── Validation/      # Custom [ValidationAttribute]s (weight/reps/RPE ranges)
+├── Validation/      # Custom [ValidationAttribute]s (weight/reps ranges)
 ├── Constants/       # Shared string/config constants (AppConstants)
 ├── Enums/           # Shared enums (e.g. WeightUnit)
 ├── Extensions/      # Small static helper extension methods
@@ -65,9 +65,14 @@ WorkoutLogAPI/
   using `System.ComponentModel.DataAnnotations` attributes on the record's
   primary constructor parameters (`[param: Required]`, `[param:
   StringLength]`, etc.), plus a few custom attributes in `Validation/` for
-  domain-specific numeric ranges (`WeightRangeAttribute`, `RepsRangeAttribute`,
-  `RpeRangeAttribute`) that mirror the same constraints enforced in the
-  frontend UI.
+  domain-specific numeric ranges (`WeightRangeAttribute`,
+  `RepsRangeAttribute`) that mirror the same constraints enforced in the
+  frontend UI. `SetDto.EffortRating`'s range/step validation is the
+  exception — since the rule depends on the parent
+  `WorkoutExerciseDto.EffortType` (RPE allows 0.5 steps, RIR must be a whole
+  number), it's enforced via `IValidatableObject.Validate` on
+  `WorkoutExerciseDto` instead of an attribute, since attributes only see
+  the single property they're applied to.
 
 This keeps controllers small and consistent; every action follows the same
 shape: get the user ID from claims → call one service method → map to a
