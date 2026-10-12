@@ -72,7 +72,9 @@ persistence into workout history.
   card is removed from the workout.
 - **exercise history is viewable** — open the actions menu → "Exercise
   history" → modal opens showing past performances (or "You have not
-  performed this exercise before." if none exist).
+  performed this exercise before." if none exist), with each past set's
+  effort rating labeled RPE or RIR to match whatever type that historical
+  exercise instance used.
 
 ### Sets
 
@@ -80,19 +82,32 @@ persistence into workout history.
   appears.
 - **sets can be removed** — click the delete icon on a set row → that row is
   removed.
-- **invalid characters are rejected in Weight/Reps/RPE** — attempt to type a
-  non-numeric character into each input → the character is not accepted
-  (representative check only — exhaustive regex boundary cases belong in a
-  component test).
+- **invalid characters are rejected in Weight/Reps/effort rating** — attempt
+  to type a non-numeric character into each input → the character is not
+  accepted (representative check only — exhaustive regex boundary cases
+  belong in a component test).
 - **estimated one-rep max is calculated and displayed** — enter a
-  Weight/Reps/RPE combination within the eligible range (reps 1-10, RPE ≥ 6)
-  → "e1RM: <value>" appears under the set rows.
+  Weight/Reps/effort rating combination within the eligible range (reps
+  1-10, and RPE ≥ 6 or RIR ≤ 4 depending on the exercise's effort rating
+  type) → "e1RM: <value>" appears under the set rows.
 
-### Weight unit & notes
+  > Note: unlike the calculator page, a set row's effort rating input isn't
+  > restricted to the e1RM-eligible range — RPE accepts 0-10 in steps of
+  > 0.5, and RIR accepts 0-10 as a whole number. Values outside the eligible
+  > range (e.g. RPE 5, RIR 6) are accepted but simply excluded from the
+  > e1RM calculation.
+
+### Weight unit, effort rating type, & notes
 
 - **weight unit can be switched between lbs and kg** — open the exercise's
   Options popover, toggle the unit → the selected unit persists after
   saving.
+- **effort rating type can be switched between RPE and RIR** — open the
+  exercise's Options popover, select "RIR" in the Effort Rating Type radio
+  group → the sets table's column header changes from "RPE" to "RIR", and
+  any effort rating already entered on that exercise's sets is
+  automatically converted (e.g. RPE 8 → RIR 2) and reflected in the set
+  rows; the new type and converted values persist after saving.
 - **exercise notes are saved** — type in the exercise's Notes field, blur
   → autosave persists the change; notes are still present after reload.
 
