@@ -118,7 +118,7 @@ export default function CalculatorForm({
             { value: effortRating, setter: setEffortRating, stripTrailingDecimal: true },
         ]);
 
-        if (effortRating === "1") {
+        if (effortType === "rpe" && effortRating === "1") {
             // since 1 must be allowed to be entered in order
             // to enter 10, clear the input if user leaves RPE
             // input on 1
