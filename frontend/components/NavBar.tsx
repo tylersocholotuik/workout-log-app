@@ -22,7 +22,7 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import { ChevronDownIcon } from "@/icons/ChevronDownIcon";
 
 import DarkModeSwitch from "./DarkModeSwitch";
-import LogoutModal from "./LogoutModal";
+import ConfirmationModal from "@/components/shared/ConfirmationModal";
 
 import { useAuth } from "./auth/AuthProvider";
 
@@ -330,11 +330,15 @@ export default function NavBar() {
                     )}
                 </NavbarMenu>
             </Navbar>
-
-            <LogoutModal 
-                isOpen={logoutModal.isOpen}
-                onOpenChange={logoutModal.onOpenChange}
-                logOutFunction={logout}
+            
+            <ConfirmationModal 
+                isOpen={logoutModal.isOpen} 
+                onOpenChange={logoutModal.onOpenChange} 
+                headerText="Logout" 
+                bodyText="Are you sure you want to logout?"
+                confirmButtonText="Logout"
+                confirmButtonColor="danger"
+                confirmFunction={logout}
             />
         </>
     );

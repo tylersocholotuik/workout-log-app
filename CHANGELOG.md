@@ -19,8 +19,7 @@ change behind it.
 ### Added
 
 - Added a reusable `ConfirmationModal` component (`frontend/components/shared/ConfirmationModal.tsx`),
-  replacing the one-off `DeleteWorkoutModal`. It's used both to confirm deleting a workout and to confirm
-  manually saving edits made to an already-finished workout.
+  replacing the one-off `DeleteWorkoutModal` and `LogoutModal`.
 
 ### Changed
 
