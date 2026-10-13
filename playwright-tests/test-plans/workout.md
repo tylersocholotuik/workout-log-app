@@ -113,10 +113,13 @@ persistence into workout history.
 
 ### Autosave & finishing
 
-There's no explicit "Save Workout" button - edits persist automatically.
-See [frontend-architecture.md](../../docs/frontend-architecture.md) for the
-full debounce/flush design; these scenarios only need to check the
-observable behavior.
+There's no explicit "Save Workout" button for an in-progress workout - edits
+persist automatically. See
+[frontend-architecture.md](../../docs/frontend-architecture.md) for the full
+debounce/flush design; these scenarios only need to check the observable
+behavior. Autosave only applies while a workout is unfinished - once it's
+finished, edits are no longer saved automatically and require an explicit
+save (see below).
 
 - **edits are autosaved** — add an exercise/set, or change an exercise's
   notes/weight unit → a brief "Saving..." indicator appears, and the
@@ -126,20 +129,40 @@ observable behavior.
   edit, then immediately click a nav link (before the autosave debounce
   would normally fire) → navigating away flushes the pending save, so the
   edit is persisted (verified by reloading or revisiting the workout).
-- **finishing a workout** — click "Finish Workout" → "Workout finished!"
-  toast, redirected to `/history`, and the workout no longer shows an "In
-  Progress" chip there.
-- **finishing an already-finished workout just navigates away** — load a
-  previously finished workout, the action button reads "Finish Editing";
-  click it → redirected to `/history` with no "Workout finished!" toast
-  (it was already finished).
+- **cannot finish a workout with no exercises** — on a workout with no
+  exercises added, click "Finish Workout" → "Cannot finish a workout with
+  no exercises." warning toast shown, the workout stays unfinished (still
+  on the workout page, button still reads "Finish Workout", no `PATCH
+  /finish` request is sent).
+- **finishing a workout** — add at least one exercise, click "Finish
+  Workout" → "Workout finished!" toast, redirected to `/history`, and the
+  workout no longer shows an "In Progress" chip there.
+- **finishing an already-finished workout with no edits just navigates
+  away** — load a previously finished workout without changing anything,
+  the action button reads "Finish Editing"; click it → redirected to
+  `/history` with no "Workout finished!" toast and no confirmation modal
+  (there's nothing new to save).
+- **editing a finished workout requires an explicit save** — load a
+  previously finished workout, make an edit (e.g. add a set, change
+  notes) → no "Saving..." indicator appears and no autosave request is
+  sent; the edit only exists in local state until explicitly saved.
+- **confirmation modal when updating a finished workout** — on a
+  previously finished workout, make an edit, then click "Finish Editing"
+  → "Confirm Workout Update" modal appears asking whether to save changes
+  to a finished workout; clicking "Save" persists the edit (`PUT
+  /api/workouts/{id}`), shows a "Workout saved!" toast, and redirects to
+  `/history`. Clicking "Cancel" instead closes the modal without saving -
+  the edit remains unsaved and the user stays on the workout page.
 
-### Updating a saved workout (soft-delete)
+### Updating a saved workout (exercise/set removal)
 
-The backend soft-deletes removed exercises/sets rather than hard-deleting
-them, and that's already covered by backend unit tests. These scenarios just
-confirm the frontend doesn't keep showing (or resurrect) something the user
-removed.
+The backend reconciles exercises/sets missing from a `PUT` payload by
+removing them - hard-deleted while the workout is still unfinished (e.g.
+during autosave), soft-deleted once it's finished - and that distinction is
+already covered by backend unit tests. Playwright can't tell a hard delete
+from a soft delete (both just make the row disappear from the API/UI), so
+these scenarios only confirm the frontend doesn't keep showing
+(or resurrect) something the user removed from an in-progress workout.
 
 - **removing an exercise from a saved workout persists after reload** — load
   a saved workout with 2+ exercises, delete one via the actions menu, wait
@@ -157,12 +180,17 @@ removed.
 Every workout - including one just created via "Create New Workout" - is
 persisted to the backend immediately (see **Entry point** above), so there
 is no separate "cancel an unsaved workout" flow anymore; the action button
-is always labeled "Delete Workout".
+is always labeled "Delete Workout", which opens the shared
+`ConfirmationModal` component (also used for the finished-workout update
+confirmation above).
 
 - **deleting a workout removes it** — click "Delete Workout", confirm in
   the modal → "'<title>' was deleted" toast, redirected to
   `/workout/new-workout`, workout no longer appears in history. This
-  applies whether the workout is still in progress or already finished.
+  applies whether the workout is still in progress or already finished -
+  the backend hard-deletes an unfinished workout and soft-deletes a
+  finished one, but that distinction isn't observable via Playwright, so
+  it isn't covered here (see backend unit tests instead).
 
 ### Authorization
 

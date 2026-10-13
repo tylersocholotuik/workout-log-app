@@ -10,9 +10,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { useRouter } from "next/router";
 
-import Head from "next/head";
+import Head from "next/head";   
 
-import DeleteWorkoutModal from "@/components/workout/DeleteWorkoutModal";
+import ConfirmationModal from "@/components/shared/ConfirmationModal";
 import ExerciseCard from "@/components/workout/ExerciseCard";
 import SelectExerciseDrawer from "@/components/workout/SelectExerciseDrawer";
 import WorkoutDetailsModal from "@/components/workout/WorkoutDetailsModal";
@@ -94,6 +94,7 @@ export default function WorkoutLog() {
 
     const detailsModal = useDisclosure();
     const deleteModal = useDisclosure();
+    const confirmationModal = useDisclosure();
     const addExerciseDrawer = useDisclosure();
 
     const router = useRouter();
@@ -181,6 +182,9 @@ export default function WorkoutLog() {
     // Flush any pending save immediately, without waiting for the autosave delay.
     // This is used when a workout is finished, deleted, or when the user navigates away from the page.
     const flushPendingSave = async () => {
+        // Don't save if the workout is finished, since edits must be saved manually after a workout is finished.
+        if (workoutRef.current.finishedAt) return;
+        
         const hasPendingTimer = saveTimeoutRef.current !== null;
         
         if (saveTimeoutRef.current) {
@@ -203,6 +207,24 @@ export default function WorkoutLog() {
         flushPendingSaveRef.current = flushPendingSave;
     });
     
+    // Loads server-sourced workout data (as opposed to a user edit) into state,
+    // keeping `workoutRef`/`isDirtyRef` in sync so a leftover dirty flag or stale
+    // ref from a previously viewed workout can't bleed into the newly loaded one.
+    // This matters because Next.js reuses this component instance when navigating
+    // between two URLs that both match this dynamic route (e.g. from one workout
+    // directly to another, or to "new-workout"), so local state isn't reset for us.
+    const loadWorkout = (data: Workout) => {
+        // Cancel any pending autosave timer from the previously loaded workout so it can't
+        // fire afterward and save stale data against the wrong (or now-deleted) workout id.
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+            saveTimeoutRef.current = null;
+        }
+        isDirtyRef.current = false;
+        workoutRef.current = data;
+        setWorkoutState(data);
+    };
+
     // Load the workout data when the component mounts or when the workoutId changes. 
     // If the user is starting a new workout and has an active workout, load that instead.
     useEffect(() => {
@@ -211,7 +233,7 @@ export default function WorkoutLog() {
         if (workoutId === "new-workout") {
             if (activeWorkout) {
                 // eslint-disable-next-line react-hooks/set-state-in-effect
-                setWorkoutState(activeWorkout);
+                loadWorkout(activeWorkout);
                 void router.replace(`/workout/${activeWorkout.id}`);
             } else if (startNewWorkout) {
                 // The user explicitly chose to start a new workout and has no active
@@ -220,9 +242,13 @@ export default function WorkoutLog() {
                 // No-op catch because the global error handler will display an error toast if the save fails, 
                 // and we don't want to throw an unhandled promise rejection here.
                 saveWorkout(workout).catch(() => {});
+            } else {
+                // Reset to a blank workout so starting a new workout doesn't
+                // accidentally reuse a previously viewed workout's title/date/exercises.
+                loadWorkout(createEmptyWorkout());
             }
         } else if (fetchedWorkout) {
-            setWorkoutState(fetchedWorkout);
+            loadWorkout(fetchedWorkout);
         }
         // `workout`/`saveWorkout`/`router` are intentionally excluded below so this
         // only re-runs when the loaded data itself changes, not on every local edit.
@@ -251,6 +277,9 @@ export default function WorkoutLog() {
     
     // Autosave the workout after a delay whenever it is updated.
     useEffect(() => {
+        // Disable autosave if the workout is finished. Edits must be saved manually after a workout is finished.
+        if (workout && workout.finishedAt) return;
+        
         // Skip if the workout was changed by the server rather than the user.
         if (!isDirtyRef.current) return;
 
@@ -326,16 +355,33 @@ export default function WorkoutLog() {
                 await flushPendingSave();
 
                 if (!workout.finishedAt) {
+                    if (workout.exercises.length === 0) {
+                        addToast({
+                            description: "Cannot finish a workout with no exercises.",
+                            color: "warning",
+                        });
+                        return;
+                    }
                     await finishWorkoutMutation.mutateAsync(workout.id);
+                } else if (isDirtyRef.current) {
+                    confirmationModal.onOpen();   
                 } else {
-                    // If the workout is already finished, just navigate to the history page.
-                    // Changes are autosaved, so the user can finish editing and return to history without needing to explicitly save.
                     void router.push(`/history`);
                 }
             } catch {
                 // No-op catch because the global error handler will display an error toast if the save fails.
             }
         })();
+    };
+    
+    const confirmWorkoutUpdate = async () => {
+        await saveWorkout(workout);
+        addToast({
+            description: "Workout saved!",
+            color: "success",
+        });
+        isDirtyRef.current = false;
+        void router.push(`/history`);
     };
     
     const deleteWorkoutMutation = useMutation({
@@ -350,8 +396,8 @@ export default function WorkoutLog() {
                 if (!oldWorkouts) return;
                 return oldWorkouts.filter((workout) => workout.id !== deletedWorkoutId);
             });
-            setWorkoutState(createEmptyWorkout());
             setStartNewWorkout(false);
+            loadWorkout(createEmptyWorkout());
             router.push(`/workout/new-workout`).then(() => {
                 // Wait until after navigation so this component's useQuery
                 // is no longer observing the deleted workout's key - removing
@@ -536,7 +582,8 @@ export default function WorkoutLog() {
                         <div className="flex justify-center gap-4 mb-8">
                             <div>
                                 <Button
-                                    isLoading={finishWorkoutMutation.isPending}
+                                    isLoading={workout.finishedAt ? 
+                                        updateWorkoutMutation.isPending : finishWorkoutMutation.isPending}
                                     color="success"
                                     variant="flat"
                                     radius="full"
@@ -589,10 +636,26 @@ export default function WorkoutLog() {
                     update={false}
                 />}
 
-                <DeleteWorkoutModal
+                <ConfirmationModal
                     isOpen={deleteModal.isOpen}
                     onOpenChange={deleteModal.onOpenChange}
-                    callbackFunction={() => discardWorkout(workoutId)}
+                    headerText="Delete Workout"
+                    bodyText="Are you sure you want to delete this workout?"
+                    confirmButtonText="Delete"
+                    confirmButtonColor="danger"
+                    cancelButtonColor="default"
+                    confirmFunction={() => discardWorkout(workoutId)}
+                />
+                
+                <ConfirmationModal
+                    isOpen={confirmationModal.isOpen}
+                    onOpenChange={confirmationModal.onOpenChange}
+                    headerText="Confirm Workout Update"
+                    bodyText="This Workout is finished. Are you sure you want to save the changes to this workout?"
+                    confirmButtonText="Save"
+                    confirmButtonColor="primary"
+                    cancelButtonColor="default"
+                    confirmFunction={confirmWorkoutUpdate}
                 />
             </WorkoutContext.Provider>
         </>

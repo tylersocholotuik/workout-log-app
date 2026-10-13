@@ -149,6 +149,12 @@ public class WorkoutService
 
         // Add, update, or soft delete exercises and sets based on the provided DTO
         SyncExercises(workout, workoutDto.Exercises);
+        
+        if (workout.FinishedAt == null)
+        {
+            // If the workout is unfinished, we hard-delete any exercises/sets that were removed in the update request.
+            PurgeDeletedExercisesAndSets(workout, _context);
+        }
 
         await _context.SaveChangesAsync();
 
@@ -180,16 +186,25 @@ public class WorkoutService
     public async Task DeleteWorkout(string id, string userId)
     {
         var workout = await GetWorkoutById(id, userId);
-        workout.Deleted = true;
 
-        // Soft-delete all exercises and sets associated with the workout
-        foreach (var exercise in workout.Exercises)
+        if (workout.FinishedAt == null)
         {
-            exercise.Deleted = true;
+            // Unfinished workouts have no history worth preserving, so remove them outright.
+            HardDeleteWorkout(workout, _context);
+        }
+        else
+        {
+            workout.Deleted = true;
 
-            foreach (var set in exercise.Sets)
+            // Soft-delete all exercises and sets associated with the workout
+            foreach (var exercise in workout.Exercises)
             {
-                set.Deleted = true;
+                exercise.Deleted = true;
+
+                foreach (var set in exercise.Sets)
+                {
+                    set.Deleted = true;
+                }
             }
         }
 
@@ -311,5 +326,27 @@ public class WorkoutService
                 });
             }
         }
+    }
+    
+    // After autosave was implemented, it no longer makes sense to soft delete exercises and sets when an *unfinished* workout is updated.
+    // This method is called on update *only* if the workout is unfinished. Updating a finished workout will soft-delete.
+    private static void PurgeDeletedExercisesAndSets(Workout workout, WorkoutDbContext context)
+    {
+        var deletedSets = workout.Exercises.SelectMany(e => e.Sets).Where(s => s.Deleted).ToList();
+        var deletedExercises = workout.Exercises.Where(e => e.Deleted).ToList();
+        
+        context.Sets.RemoveRange(deletedSets);
+        context.WorkoutExercises.RemoveRange(deletedExercises);
+    }
+    
+    // Hard delete a workout and all associated exercises and sets from the database. Called conditionally when deleting an unfinished workout.
+    private static void HardDeleteWorkout(Workout workout, WorkoutDbContext context)
+    {
+        var sets = workout.Exercises.SelectMany(e => e.Sets).ToList();
+        var exercises = workout.Exercises.ToList();
+        
+        context.Sets.RemoveRange(sets);
+        context.WorkoutExercises.RemoveRange(exercises);
+        context.Workouts.Remove(workout);
     }
 }

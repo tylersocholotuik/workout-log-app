@@ -104,9 +104,9 @@ another user is never returned (`404`/`403`, never another user's data).
 | GET | `/{id}` | Get one workout by ID, including its exercises and sets. |
 | GET | `/exercise-history/{exerciseId}` | All past logged instances of one exercise across the user's workouts, newest first — powers the "exercise history" view. |
 | POST | `/` | Create a workout (with nested exercises/sets in one request). Blocked if the user already has an in-progress workout. |
-| PUT | `/{id}` | Replace a workout's fields and reconcile its exercises/sets against the payload (missing ones are soft-deleted). |
+| PUT | `/{id}` | Replace a workout's fields and reconcile its exercises/sets against the payload (missing ones are removed — hard-deleted while the workout is unfinished, soft-deleted once it's finished). |
 | PATCH | `/{id}/finish` | Mark a workout as finished (sets `finishedAt`), allowing a new workout to be created. |
-| DELETE | `/{id}` | Soft-delete a workout and all of its exercises/sets. |
+| DELETE | `/{id}` | Delete a workout and all of its exercises/sets — hard-deleted while unfinished, soft-deleted once finished. |
 
 #### `GET /`, `GET /{id}`
 
@@ -143,7 +143,12 @@ loading `[workoutId].tsx` or app startup.
 Request body: `WorkoutDto` (see [Shared DTOs](#shared-dtos)). On create,
 `id` is ignored (server-generated); on update, nested exercises/sets
 without an `id` are treated as new, and any exercise/set from the current
-workout missing from the payload is soft-deleted.
+workout missing from the payload is removed — hard-deleted if the workout
+is still unfinished (`finishedAt` is `null`), or soft-deleted if it's
+already finished. This keeps the autosave flow (which calls `PUT /{id}`
+on every change to an in-progress workout) from leaving a trail of dead
+soft-deleted rows behind, while still preserving history for edits made
+after a workout is finished.
 
 - `200 OK` (`PUT`) / `201 Created` with `Location` header (`POST`) → `WorkoutDto`
 - `409 Conflict` →
@@ -168,6 +173,10 @@ only flips the `finishedAt` timestamp and doesn't accept a body.
 - `409 Conflict` → `{ "error": "Workout is already finished" }`
 
 #### `DELETE /{id}`
+
+Hard-deletes the workout (and its exercises/sets) if it's still unfinished;
+soft-deletes it if it's already finished (see
+[Why soft deletes?](database-design.md#why-soft-deletes)).
 
 - `204 No Content`
 

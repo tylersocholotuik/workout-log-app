@@ -24,7 +24,11 @@ and
   instead, since they don't need to be unguessable/globally unique.
 - **Soft deletes:** `Exercise`, `Workout`, `WorkoutExercise`, and `Set` all
   have a `deleted` boolean flag rather than being physically removed from the
-  table. Queries throughout the service layer filter with `!Deleted`.
+  table. Queries throughout the service layer filter with `!Deleted`. The
+  one exception is `Workout`, `WorkoutExercise`, and `Set` rows belonging to
+  an *unfinished* workout (`finished_at IS NULL`): `WorkoutService` hard-deletes
+  those instead, since they have no history worth preserving yet — see
+  [Why soft deletes?](#why-soft-deletes).
 - **Auditing:** Entities that represent user-facing data implement
   `IAuditableEntity` (`CreatedAt` / `UpdatedAt`). `WorkoutDbContext` overrides
   `SaveChanges`/`SaveChangesAsync` to automatically stamp `UpdatedAt` on any
@@ -239,9 +243,24 @@ otherwise still-valid, unexpired token.
 workout's record) and avoids needing `ON DELETE CASCADE` chains through
 workouts → workout_exercises → sets. It's also why every foreign key in the
 schema uses `DeleteBehavior.Restrict`: rows are never expected to be hard
-deleted by a database-level cascade, only marked `deleted = true` by the
-application, so an accidental hard delete of a parent row is blocked
+deleted by a database-level cascade, only marked `deleted = true` (or
+explicitly hard-deleted in application code, in strict child-then-parent
+order — see below) so an accidental hard delete of a parent row is blocked
 instead of silently cascading.
+
+**Exception — unfinished workouts:** the rationale above only applies once
+a workout is *finished*, since that's the point at which it becomes a
+historical record worth preserving. While a workout is still unfinished
+(`finished_at IS NULL`), the frontend autosaves on every edit
+(`PUT /workouts/{id}`), and soft-deleting on each autosave would leave a
+growing trail of dead, orphaned `workout_exercises`/`sets` rows for a
+workout that was never actually finished. So `WorkoutService` hard-deletes
+exercises/sets removed from an unfinished workout (and hard-deletes the
+whole workout if it's deleted before being finished), and only switches to
+soft deletes once `finished_at` is set. Because every FK stays
+`DeleteBehavior.Restrict`, these hard deletes are done manually in the
+service layer in child-then-parent order (sets, then workout_exercises,
+then workouts) rather than relying on a database-level cascade.
 
 ### Why are exercises separate from workout_exercises?
 

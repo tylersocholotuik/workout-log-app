@@ -270,12 +270,13 @@ public class WorkoutServiceTests
     }
 
     [Fact]
-    public async Task UpdateWorkout_RemovingAnExercise_SoftDeletesRatherThanHardDeletes()
+    public async Task UpdateWorkout_RemovingAnExercise_OnUnfinishedWorkout_HardDeletesExerciseAndSets()
     {
         var (context, service) = CreateSut();
         var exercise = SeedExercise(context);
         const string userId = "user-1";
 
+        // CreateWorkout leaves FinishedAt null, so this workout is unfinished.
         var created = await service.CreateWorkout(
             new WorkoutDto(null, "Push Day", userId, new DateOnly(2026, 1, 1), null,
             [
@@ -291,9 +292,51 @@ public class WorkoutServiceTests
         var updated = await service.UpdateWorkout(created.Id, updateDto, userId);
 
         Assert.Empty(updated.Exercises);
-        
+
+        // Removing an exercise from an unfinished workout should hard-delete the
+        // row entirely rather than leaving a soft-deleted row behind, since
+        // unfinished workouts have no history worth preserving.
         var exerciseRowStillExists = await context.WorkoutExercises
-            .IgnoreQueryFilters() // in case global query filters are ever added later
+            .IgnoreQueryFilters()
+            .AnyAsync(we => we.Id == createdExerciseId);
+        Assert.False(exerciseRowStillExists);
+
+        // The set nested under the removed exercise must also be hard-deleted.
+        var setRowStillExists = await context.Sets
+            .IgnoreQueryFilters()
+            .AnyAsync(s => s.Id == createdSetId);
+        Assert.False(setRowStillExists);
+    }
+
+    [Fact]
+    public async Task UpdateWorkout_RemovingAnExercise_OnFinishedWorkout_SoftDeletesExerciseAndSets()
+    {
+        var (context, service) = CreateSut();
+        var exercise = SeedExercise(context);
+        const string userId = "user-1";
+
+        var created = await service.CreateWorkout(
+            new WorkoutDto(null, "Push Day", userId, new DateOnly(2026, 1, 1), null,
+            [
+                new WorkoutExerciseDto(null, null, WeightUnit.Lbs,  EffortRatingType.Rpe, exercise.Id, null, null,
+                    [new SetDto(null, 100, 10, null, ExerciseId: 0)])
+            ]),
+            userId);
+
+        await service.FinishWorkout(created.Id, userId);
+
+        var createdExerciseId = created.Exercises.First().Id;
+        var createdSetId = created.Exercises.First().Sets.First().Id;
+
+        var updateDto = new WorkoutDto(created.Id, "Push Day", userId, new DateOnly(2026, 1, 1), null, []);
+        var updated = await service.UpdateWorkout(created.Id, updateDto, userId);
+
+        Assert.Empty(updated.Exercises);
+
+        // Once a workout is finished, removing an exercise should soft-delete it
+        // rather than hard-delete it, preserving the finished workout's history.
+        var exerciseRowStillExists = await context.WorkoutExercises
+            .IgnoreQueryFilters()
             .AnyAsync(we => we.Id == createdExerciseId && we.Deleted);
         Assert.True(exerciseRowStillExists);
 
@@ -304,6 +347,48 @@ public class WorkoutServiceTests
             .IgnoreQueryFilters()
             .AnyAsync(s => s.Id == createdSetId && s.Deleted);
         Assert.True(setRowStillExists);
+    }
+
+    [Fact]
+    public async Task UpdateWorkout_RemovingASet_OnUnfinishedWorkout_HardDeletesSetButKeepsExercise()
+    {
+        var (context, service) = CreateSut();
+        var exercise = SeedExercise(context);
+        const string userId = "user-1";
+
+        var created = await service.CreateWorkout(
+            new WorkoutDto(null, "Push Day", userId, new DateOnly(2026, 1, 1), null,
+            [
+                new WorkoutExerciseDto(null, null, WeightUnit.Lbs, EffortRatingType.Rpe, exercise.Id, null, null,
+                [
+                    new SetDto(null, 100, 10, null, ExerciseId: 0),
+                    new SetDto(null, 110, 8, null, ExerciseId: 0)
+                ])
+            ]),
+            userId);
+
+        var createdExercise = created.Exercises.First();
+        var keptSetId = createdExercise.Sets.First().Id;
+        var removedSetId = createdExercise.Sets.Last().Id;
+
+        var updateDto = new WorkoutDto(created.Id, "Push Day", userId, new DateOnly(2026, 1, 1), null,
+        [
+            new WorkoutExerciseDto(createdExercise.Id, null, WeightUnit.Lbs, EffortRatingType.Rpe, exercise.Id, null, null,
+                [new SetDto(keptSetId, 100, 10, null, ExerciseId: 0)])
+        ]);
+        await service.UpdateWorkout(created.Id, updateDto, userId);
+
+        // The exercise itself is still present in the update request, so it must remain.
+        var exerciseRowStillExists = await context.WorkoutExercises
+            .IgnoreQueryFilters()
+            .AnyAsync(we => we.Id == createdExercise.Id);
+        Assert.True(exerciseRowStillExists);
+
+        // The removed set should be hard-deleted, not just marked deleted.
+        var removedSetRowStillExists = await context.Sets
+            .IgnoreQueryFilters()
+            .AnyAsync(s => s.Id == removedSetId);
+        Assert.False(removedSetRowStillExists);
     }
     
     [Fact]
@@ -514,7 +599,7 @@ public class WorkoutServiceTests
     }
 
     [Fact]
-    public async Task DeleteWorkout_MarksWorkoutAsDeletedRatherThanRemovingRow()
+    public async Task DeleteWorkout_WhenFinished_MarksWorkoutAsDeletedRatherThanRemovingRow()
     {
         var (context, service) = CreateSut();
         const string userId = "user-1";
@@ -525,6 +610,7 @@ public class WorkoutServiceTests
             Title = "Old Workout",
             UserId = userId,
             Date = new DateOnly(2026, 1, 1),
+            FinishedAt = DateTime.UtcNow,
             Exercises = new List<WorkoutExercise>
             {
                 new WorkoutExercise
@@ -548,6 +634,7 @@ public class WorkoutServiceTests
         await Assert.ThrowsAsync<KeyNotFoundException>(() => service.GetWorkoutById(workout.Id, userId));
         
         var stillInDatabase = await context.Workouts
+            .IgnoreQueryFilters()
             .Include(w => w.Exercises)
             .ThenInclude(e => e.Sets)
             .FirstOrDefaultAsync(w => w.Id == workout.Id);
@@ -561,6 +648,60 @@ public class WorkoutServiceTests
         Assert.True(exercises.All(e => e.Deleted));
         Assert.NotEmpty(sets);
         Assert.True(sets.All(s => s.Deleted));
+    }
+
+    [Fact]
+    public async Task DeleteWorkout_WhenUnfinished_HardDeletesWorkoutAndRelatedEntities()
+    {
+        var (context, service) = CreateSut();
+        const string userId = "user-1";
+        var exercise = SeedExercise(context);
+        var workout = new Workout
+        {
+            Id = Guid.NewGuid().ToString(),
+            Title = "In Progress Workout",
+            UserId = userId,
+            Date = new DateOnly(2026, 1, 1),
+            FinishedAt = null,
+            Exercises = new List<WorkoutExercise>
+            {
+                new WorkoutExercise
+                {
+                    ExerciseId = exercise.Id,
+                    WeightUnit = WeightUnit.Kg,
+                    Sets = new List<Set>
+                    {
+                        new Set { Weight = 100, Reps = 5 },
+                        new Set { Weight = 110, Reps = 3 }
+                    }
+                }
+            }
+        };
+        context.Workouts.Add(workout);
+        await context.SaveChangesAsync();
+
+        var exerciseId = workout.Exercises.First().Id;
+        var setIds = workout.Exercises.First().Sets.Select(s => s.Id).ToList();
+
+        await service.DeleteWorkout(workout.Id, userId);
+
+        // Unfinished workouts have no history worth preserving, so the workout,
+        // its exercises, and its sets should be hard-deleted rather than
+        // left behind as soft-deleted rows.
+        var workoutRowStillExists = await context.Workouts
+            .IgnoreQueryFilters()
+            .AnyAsync(w => w.Id == workout.Id);
+        Assert.False(workoutRowStillExists);
+
+        var exerciseRowStillExists = await context.WorkoutExercises
+            .IgnoreQueryFilters()
+            .AnyAsync(we => we.Id == exerciseId);
+        Assert.False(exerciseRowStillExists);
+
+        var anySetRowsStillExist = await context.Sets
+            .IgnoreQueryFilters()
+            .AnyAsync(s => setIds.Contains(s.Id));
+        Assert.False(anySetRowsStillExist);
     }
     
     [Fact]

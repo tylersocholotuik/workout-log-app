@@ -16,6 +16,31 @@ change behind it.
 
 ## [Unreleased]
 
+### Added
+
+- Added a reusable `ConfirmationModal` component (`frontend/components/shared/ConfirmationModal.tsx`),
+  replacing the one-off `DeleteWorkoutModal` and `LogoutModal`.
+
+### Changed
+
+- Autosave is now disabled once a workout is finished, since persisting every edit automatically no
+  longer makes sense when an editing mistake can no longer be undone. Edits to a finished workout must
+  now be saved manually via the 'Finish Editing' button, which shows a confirmation modal before saving.
+- `UpdateWorkout` now hard-deletes exercises/sets removed from a workout while it's still unfinished,
+  instead of soft-deleting them; soft-delete is still used once a workout has been finished so its
+  history is preserved. `DeleteWorkout` follows the same rule: an unfinished workout is now hard-deleted
+  entirely, while a finished workout continues to be soft-deleted.
+- Updated `docs/api-reference.md` and `docs/database-design.md` to document the new
+  finished/unfinished-dependent delete behavior, and updated the README's workout page description to
+  reflect autosave and the new manual-save/confirmation flow for finished workouts.
+
+### Fixed
+
+- Fixed a bug where navigating from a finished workout straight into starting a new workout could load
+  the previously viewed workout's stale data, causing autosave to fail with a duplicate title/date error.
+- Fixed a race condition where a pending autosave timer could still fire after a workout was deleted,
+  sending an update request for the now-deleted workout and surfacing a "Workout Not Found" error toast.
+
 ## [1.8.0] - 2026-10-12
 
 ### Added
