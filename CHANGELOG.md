@@ -16,6 +16,8 @@ change behind it.
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-10-12
+
 ### Added
 
 - Added a reusable `ConfirmationModal` component (`frontend/components/shared/ConfirmationModal.tsx`),
@@ -452,7 +454,8 @@ not itemized here — this entry describes the state of the app as of this tag.
   `/health` endpoint for platform health checks.
 - Database migrations and idempotent seed data for local/dev environments.
 
-[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.8.0...HEAD
+[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.9.0...HEAD
+[1.9.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.9.0
 [1.8.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.8.0
 [1.7.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.7.0
 [1.6.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.6.0
