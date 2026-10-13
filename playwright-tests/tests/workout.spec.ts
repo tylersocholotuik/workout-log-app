@@ -423,8 +423,21 @@ test.describe('Autosave & finishing', () => {
     await expect(page.getByRole('heading', { name: title })).toBeVisible();
   });
 
+  test('cannot finish a workout with no exercises', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
+
+    await page.getByRole('button', { name: 'Finish Workout' }).click();
+
+    await expect(
+      page.getByText('Cannot finish a workout with no exercises.')
+    ).toBeVisible();
+    await expect(page).toHaveURL(/\/workout\/(?!new-workout)[^/]+$/);
+    await expect(page.getByRole('button', { name: 'Finish Workout' })).toBeVisible();
+  });
+
   test('finishing a workout', async ({ page, trackWorkout }) => {
     await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
 
     await finishWorkout(page);
 
@@ -432,11 +445,12 @@ test.describe('Autosave & finishing', () => {
     await expect(page).toHaveURL('/history');
   });
 
-  test('finishing an already-finished workout just navigates away', async ({
+  test('finishing an already-finished workout with no edits just navigates away', async ({
     page,
     trackWorkout,
   }) => {
     const workoutId = await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
     await finishWorkout(page);
     await expect(page).toHaveURL('/history');
 
@@ -447,10 +461,87 @@ test.describe('Autosave & finishing', () => {
 
     await expect(page).toHaveURL('/history');
     await expect(page.getByText('Workout finished!')).toHaveCount(0);
+    await expect(page.getByText('Confirm Workout Update')).toHaveCount(0);
+  });
+
+  test('editing a finished workout requires an explicit save', async ({
+    page,
+    trackWorkout,
+  }) => {
+    const workoutId = await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
+    await finishWorkout(page);
+    await expect(page).toHaveURL('/history');
+
+    await page.goto(`/workout/${workoutId}`);
+    const card = exerciseCard(page, 'Ab Wheel');
+    await card.getByRole('textbox', { name: 'Notes' }).fill('Should not autosave');
+    await card.getByRole('textbox', { name: 'Notes' }).blur();
+
+    // Give the normal debounce (300ms) + "Saving..." indicator window (500ms)
+    // time to elapse - no indicator appearing confirms no autosave request
+    // was ever sent for this edit, unlike an in-progress workout's edits.
+    await expect(page.getByText('Saving...')).toHaveCount(0);
+    await page.waitForTimeout(1000);
+    await expect(page.getByText('Saving...')).toHaveCount(0);
+
+    await page.reload();
+    await expect(
+      exerciseCard(page, 'Ab Wheel').getByText('Should not autosave')
+    ).toHaveCount(0);
+  });
+
+  test('confirmation modal when updating a finished workout', async ({
+    page,
+    trackWorkout,
+  }) => {
+    const workoutId = await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
+    await finishWorkout(page);
+    await expect(page).toHaveURL('/history');
+
+    await page.goto(`/workout/${workoutId}`);
+    const card = exerciseCard(page, 'Ab Wheel');
+    await card.getByRole('textbox', { name: 'Notes' }).fill('Added after finishing');
+    await card.getByRole('textbox', { name: 'Notes' }).blur();
+
+    await page.getByRole('button', { name: 'Finish Editing' }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByText('Confirm Workout Update')).toBeVisible();
+
+    // Cancel first - the edit should stay unsaved and the user on the page.
+    // (Checked via the textbox's live value, not getByText - HeroUI's
+    // Textarea only re-renders its DOM text content on mount, so a
+    // post-interaction value only shows up in the `value` property until a
+    // reload/remount happens.)
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(page).toHaveURL(`/workout/${workoutId}`);
+    await expect(card.getByRole('textbox', { name: 'Notes' })).toHaveValue('Added after finishing');
+
+    // Confirming instead actually saves the edit and navigates away.
+    const [response] = await Promise.all([
+      page.waitForResponse(
+        (res) => /\/api\/workouts\/[^/?]+$/.test(res.url()) && res.request().method() === 'PUT'
+      ),
+      (async () => {
+        await page.getByRole('button', { name: 'Finish Editing' }).click();
+        await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
+      })(),
+    ]);
+    expect(response.ok()).toBeTruthy();
+
+    await expect(page.getByText('Workout saved!')).toBeVisible();
+    await expect(page).toHaveURL('/history');
+
+    await page.goto(`/workout/${workoutId}`);
+    await expect(
+      exerciseCard(page, 'Ab Wheel').getByText('Added after finishing')
+    ).toBeVisible();
   });
 });
 
-test.describe('Updating a saved workout (soft-delete)', () => {
+test.describe('Updating a saved workout (exercise/set removal)', () => {
   test('removing an exercise from a saved workout persists after reload', async ({
     page,
     trackWorkout,
