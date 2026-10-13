@@ -97,11 +97,13 @@ test.describe('Workout details', () => {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
 
-    await editWorkoutDetails(page, {
-      title,
-      date: yesterday,
-      notes: 'Test workout notes',
-    });
+    await waitForAutosave(page, () =>
+      editWorkoutDetails(page, {
+        title,
+        date: yesterday,
+        notes: 'Test workout notes',
+      })
+    );
 
     await expect(page.getByRole('heading', { name: title })).toBeVisible();
     await expect(page.getByText('Test workout notes')).toBeVisible();
@@ -133,7 +135,7 @@ test.describe('Exercises', () => {
 
   test('adding an exercise creates a card with one empty set', async ({ page, trackWorkout }) => {
     await startNewWorkout(page, trackWorkout);
-    await addExercise(page, 'Ab Wheel');
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
 
     const card = exerciseCard(page, 'Ab Wheel');
     await expect(card).toBeVisible();
@@ -164,7 +166,7 @@ test.describe('Exercises', () => {
     await drawer.getByRole('button', { name: 'Back' }).click();
     await drawer.getByPlaceholder('Search exercises...').fill(exerciseName);
     await drawer.getByRole('row', { name: exerciseName, exact: true }).click();
-    await drawer.getByRole('button', { name: 'Add', exact: true }).click();
+    await waitForAutosave(page, () => drawer.getByRole('button', { name: 'Add', exact: true }).click());
 
     await expect(exerciseCard(page, exerciseName)).toBeVisible();
   });
@@ -183,7 +185,7 @@ test.describe('Exercises', () => {
 
   test('exercise can be swapped', async ({ page, trackWorkout }) => {
     await startNewWorkout(page, trackWorkout);
-    await addExercise(page, 'Ab Wheel');
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
 
     await pressIconTrigger(
       exerciseCard(page, 'Ab Wheel').getByRole('button', { name: 'Actions', exact: true })
@@ -193,7 +195,7 @@ test.describe('Exercises', () => {
 
     await page.getByPlaceholder('Search exercises...').fill('Back Extension');
     await page.getByRole('row', { name: 'Back Extension', exact: true }).click();
-    await page.getByRole('button', { name: 'Update' }).click();
+    await waitForAutosave(page, () => page.getByRole('button', { name: 'Update' }).click());
 
     await expect(exerciseCard(page, 'Back Extension')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Ab Wheel', exact: true })).toHaveCount(0);
@@ -201,13 +203,13 @@ test.describe('Exercises', () => {
 
   test('exercise can be removed', async ({ page, trackWorkout }) => {
     await startNewWorkout(page, trackWorkout);
-    await addExercise(page, 'Ab Wheel');
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
 
     await pressIconTrigger(
       exerciseCard(page, 'Ab Wheel').getByRole('button', { name: 'Actions', exact: true })
     );
     await expect(page.getByRole('menu')).toBeVisible();
-    await page.getByRole('menuitem', { name: 'Delete exercise' }).click();
+    await waitForAutosave(page, () => page.getByRole('menuitem', { name: 'Delete exercise' }).click());
 
     await expect(page.getByRole('heading', { name: 'Ab Wheel', exact: true })).toHaveCount(0);
   });
@@ -274,7 +276,7 @@ test.describe('Sets', () => {
     await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
     const card = exerciseCard(page, 'Ab Wheel');
 
-    await card.getByRole('button', { name: 'Add Set' }).click();
+    await waitForAutosave(page, () => card.getByRole('button', { name: 'Add Set' }).click());
 
     await expect(card.getByRole('textbox', { name: 'weight' })).toHaveCount(2);
   });
@@ -283,9 +285,9 @@ test.describe('Sets', () => {
     await startNewWorkout(page, trackWorkout);
     await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
     const card = exerciseCard(page, 'Ab Wheel');
-    await card.getByRole('button', { name: 'Add Set' }).click();
+    await waitForAutosave(page, () => card.getByRole('button', { name: 'Add Set' }).click());
 
-    await card.getByRole('button', { name: 'delete set' }).first().click();
+    await waitForAutosave(page, () => card.getByRole('button', { name: 'delete set' }).first().click());
 
     await expect(card.getByRole('textbox', { name: 'weight' })).toHaveCount(1);
   });
@@ -304,7 +306,7 @@ test.describe('Sets', () => {
     await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
     const card = exerciseCard(page, 'Ab Wheel');
 
-    await fillSet(card, { weight: '250', reps: '8', effortRating: '9' });
+    await waitForAutosave(page, () => fillSet(card, { weight: '250', reps: '8', effortRating: '9' }));
 
     await expect(card.getByText(/e1RM:/)).toBeVisible();
   });
