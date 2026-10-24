@@ -124,7 +124,35 @@ public class WorkoutControllerTests(PostgresContainerFixture postgres) : Integra
         Assert.Equal("Updated Title", fetched!.Title);
         Assert.Equal("Updated notes", fetched.Notes);
     }
-    
+
+    [Fact]
+    public async Task UpdateWorkout_AddingMultipleNewSetsInOneRequest_PersistsAllOfThem()
+    {
+        // The frontend submits unsaved sets with Id 0, not null. Sending two of them in the
+        // same request reproduces a bug where the second matched the first's not-yet-saved
+        // entity (both still Id 0 before SaveChanges) and overwrote it instead of being added
+        // as its own set.
+        var authCookie = await Client.RegisterNewUserAndGetAuthCookieAsync();
+        var workout = await CreateWorkoutAsync(authCookie);
+        var exerciseId = workout.Exercises![0].ExerciseId;
+        var existingSet = workout.Exercises![0].Sets![0];
+
+        var newSet1 = new SetDto(0, 100, 5, 8, exerciseId);
+        var newSet2 = new SetDto(0, 105, 4, 9, exerciseId);
+        var updatedExercise = workout.Exercises![0] with { Sets = [existingSet, newSet1, newSet2] };
+        var updatedWorkout = workout with { Exercises = [updatedExercise] };
+
+        var updateResponse = await Client.PutAsJsonWithCsrfAsync($"/api/workouts/{workout.Id}", updatedWorkout, authCookie);
+
+        Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+
+        var getResponse = await Client.GetWithCookieAsync($"/api/workouts/{workout.Id}", authCookie);
+        var fetched = await getResponse.Content.ReadFromJsonAsync<WorkoutDto>(JsonOptions);
+        Assert.Equal(3, fetched!.Exercises![0].Sets!.Count);
+        Assert.Contains(fetched.Exercises[0].Sets!, s => s.Weight == 100 && s.Reps == 5);
+        Assert.Contains(fetched.Exercises[0].Sets!, s => s.Weight == 105 && s.Reps == 4);
+    }
+
     [Theory]
     [InlineData(-50, 5, 8)]         // weight below min
     [InlineData(9999.5, 5, 8)]      // weight above max

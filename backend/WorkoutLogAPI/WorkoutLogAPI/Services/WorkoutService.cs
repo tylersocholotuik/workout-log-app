@@ -19,9 +19,9 @@ public class WorkoutService
     {
         return await _context.Workouts
             .Where(w => w.UserId == userId && !w.Deleted)
-            .Include(w => w.Exercises.Where(e => !e.Deleted))
-            .ThenInclude(e => e.Sets.Where(s => !s.Deleted))
-            .Include(w => w.Exercises.Where(e => !e.Deleted))
+            .Include(w => w.Exercises.Where(e => !e.Deleted).OrderBy(e => e.Id))
+            .ThenInclude(e => e.Sets.Where(s => !s.Deleted).OrderBy(s => s.Id))
+            .Include(w => w.Exercises.Where(e => !e.Deleted).OrderBy(e => e.Id))
             .ThenInclude(e => e.Exercise)
             .OrderBy(w => w.FinishedAt == null ? 0 : 1) // Unfinished workouts first
             .ThenByDescending(w => w.Date)
@@ -32,9 +32,9 @@ public class WorkoutService
     {
         var workout = await _context.Workouts
             .Where(w => w.Id == id && !w.Deleted)
-            .Include(w => w.Exercises.Where(e => !e.Deleted))
-            .ThenInclude(e => e.Sets.Where(s => !s.Deleted))
-            .Include(w => w.Exercises.Where(e => !e.Deleted))
+            .Include(w => w.Exercises.Where(e => !e.Deleted).OrderBy(e => e.Id))
+            .ThenInclude(e => e.Sets.Where(s => !s.Deleted).OrderBy(s => s.Id))
+            .Include(w => w.Exercises.Where(e => !e.Deleted).OrderBy(e => e.Id))
             .ThenInclude(e => e.Exercise)
             .FirstOrDefaultAsync();
 
@@ -56,9 +56,9 @@ public class WorkoutService
     {
         return await _context.Workouts
             .Where(w => w.UserId == userId && !w.Deleted && w.FinishedAt == null)
-            .Include(w => w.Exercises.Where(e => !e.Deleted))
-            .ThenInclude(e => e.Sets.Where(s => !s.Deleted))
-            .Include(w => w.Exercises.Where(e => !e.Deleted))
+            .Include(w => w.Exercises.Where(e => !e.Deleted).OrderBy(e => e.Id))
+            .ThenInclude(e => e.Sets.Where(s => !s.Deleted).OrderBy(s => s.Id))
+            .Include(w => w.Exercises.Where(e => !e.Deleted).OrderBy(e => e.Id))
             .ThenInclude(e => e.Exercise)
             .FirstOrDefaultAsync();
     }
@@ -70,7 +70,7 @@ public class WorkoutService
             .Where(we => we.ExerciseId == exerciseId && !we.Deleted && we.Workout.UserId == userId &&
                          !we.Workout.Deleted)
             .Include(we => we.Workout)
-            .Include(we => we.Sets.Where(s => !s.Deleted))
+            .Include(we => we.Sets.Where(s => !s.Deleted).OrderBy(s => s.Id))
             .OrderByDescending(we => we.Workout.Date)
             .ToListAsync();
     }
@@ -308,7 +308,13 @@ public class WorkoutService
 
         foreach (var setDto in setDtos)
         {
-            var existingSet = existingExercise.Sets.FirstOrDefault(s => s.Id == setDto.Id);
+            // Unsaved sets are submitted with Id 0 (or null). Treat those as always-new:
+            // matching on Id 0/null here would make a second new set in the same request
+            // match the first new set's not-yet-saved entity (both still have Id 0 before
+            // SaveChanges), overwriting it instead of being added as its own set.
+            var existingSet = setDto.Id is > 0
+                ? existingExercise.Sets.FirstOrDefault(s => s.Id == setDto.Id)
+                : null;
 
             if (existingSet != null)
             {
