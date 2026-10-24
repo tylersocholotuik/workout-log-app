@@ -16,6 +16,19 @@ change behind it.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed `SyncSets` reusing an existing set's identity for brand-new sets (submitted with `id: 0`)
+  when more than one new set was added to the same exercise in a single save request, causing only
+  one of them to actually persist.
+- Added explicit `.OrderBy(Id)` to the `Exercises`/`Sets` query includes in `WorkoutService`, since
+  SQL/EF Core do not guarantee row order without it; previously sets/exercises could come back in an
+  unstable order.
+- Fixed a stale-state bug in `SetsTableRow` where the `weight` and `reps` inputs weren't resynced
+  when their underlying `set` prop changed, so deleting a set (which shifts the remaining sets'
+  indices) made it look like the last set was always the one removed, regardless of which delete
+  button was pressed.
+
 ## [1.9.0] - 2026-10-12
 
 ### Added

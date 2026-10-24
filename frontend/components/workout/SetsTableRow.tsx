@@ -54,7 +54,19 @@ export default function SetsTableRow({
     const EFFORT_RATING_MAX = 10;
     const effortRatingIsInteger = effortType === "rir";
 
-    // Resyncs displayed effort rating when ExerciseCard truncates it externally.
+    // Resyncs displayed weight, reps, and effort rating whenever the underlying set
+    // changes externally (e.g. effort type conversion, or another set being deleted
+    // shifts this row's index and therefore which set it renders).
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setWeight(set.weight !== null ? String(set.weight) : "");
+    }, [set.weight]);
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setReps(set.reps !== null ? String(set.reps) : "");
+    }, [set.reps]);
+
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setEffortRating(
