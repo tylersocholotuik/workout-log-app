@@ -279,7 +279,7 @@ export default function ExerciseCard({
                           ...ex,
                           effortType: newValue,
                           sets: ex.sets.map((set) => {
-                                let updatedSet = { ...set };
+                                const updatedSet = { ...set };
                                 if (set.effortRating !== null) {
                                     updatedSet.effortRating = convertEffortRating(set.effortRating);
                                 }

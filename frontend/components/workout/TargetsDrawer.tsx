@@ -147,9 +147,9 @@ export default function TargetsDrawer({
             },
         ]);
 
-        let targetRepsMin = draft.targetRepsMin !== "" ? parseInt(draft.targetRepsMin) : null;
+        const targetRepsMin = draft.targetRepsMin !== "" ? parseInt(draft.targetRepsMin) : null;
         let targetRepsMax = draft.targetRepsMax !== "" ? parseInt(draft.targetRepsMax) : null;
-        let targetEffortMin = draft.targetEffortMin !== "" ? parseFloat(draft.targetEffortMin) : null;
+        const targetEffortMin = draft.targetEffortMin !== "" ? parseFloat(draft.targetEffortMin) : null;
         let targetEffortMax = draft.targetEffortMax !== "" ? parseFloat(draft.targetEffortMax) : null;
 
         // ensure min <= max for both reps and effort; if not, set max = min and update draft strings
