@@ -153,6 +153,22 @@ namespace WorkoutLogAPI.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("reps");
 
+                    b.Property<double?>("TargetEffortMax")
+                        .HasColumnType("double precision")
+                        .HasColumnName("target_effort_max");
+
+                    b.Property<double?>("TargetEffortMin")
+                        .HasColumnType("double precision")
+                        .HasColumnName("target_effort_min");
+
+                    b.Property<int?>("TargetRepsMax")
+                        .HasColumnType("integer")
+                        .HasColumnName("target_reps_max");
+
+                    b.Property<int?>("TargetRepsMin")
+                        .HasColumnType("integer")
+                        .HasColumnName("target_reps_min");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");

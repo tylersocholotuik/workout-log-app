@@ -15,9 +15,21 @@ public class Set : IAuditableEntity
 
     [Column("reps")]
     public int? Reps { get; set; }
+    
+    [Column("target_reps_min")]
+    public int? TargetRepsMin { get; set; }
+    
+    [Column("target_reps_max")]
+    public int? TargetRepsMax { get; set; }
 
     [Column("effort_rating")]
     public double? EffortRating { get; set; }
+    
+    [Column("target_effort_min")]
+    public double? TargetEffortMin { get; set; }
+
+    [Column("target_effort_max")]
+    public double? TargetEffortMax { get; set; }
 
     [Column("exercise_id")]
     public int ExerciseId { get; set; }
