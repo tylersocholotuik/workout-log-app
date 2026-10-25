@@ -37,7 +37,7 @@ public class WorkoutControllerTests(PostgresContainerFixture postgres) : Integra
             null, title, null, DateOnly.FromDateTime(DateTime.UtcNow), "Some notes",
             [
                 new WorkoutExerciseDto(null, "3x5", Enums.WeightUnit.Lbs, effortType, exerciseId, null, null,
-                    [new SetDto(null, 100, 5, effortRating, exerciseId)])
+                    [new SetDto(Id: null, Weight: 100, Reps: 5, EffortRating: effortRating, ExerciseId: exerciseId)])
             ]);
 
         var response = await Client.PostAsJsonWithCsrfAsync("/api/workouts", workoutDto, authCookie);
@@ -137,8 +137,8 @@ public class WorkoutControllerTests(PostgresContainerFixture postgres) : Integra
         var exerciseId = workout.Exercises![0].ExerciseId;
         var existingSet = workout.Exercises![0].Sets![0];
 
-        var newSet1 = new SetDto(0, 100, 5, 8, exerciseId);
-        var newSet2 = new SetDto(0, 105, 4, 9, exerciseId);
+        var newSet1 = new SetDto(Id: 0, Weight: 100, Reps: 5, EffortRating: 8, ExerciseId: exerciseId);
+        var newSet2 = new SetDto(Id: 0, Weight: 105, Reps: 4, EffortRating: 9, ExerciseId: exerciseId);
         var updatedExercise = workout.Exercises![0] with { Sets = [existingSet, newSet1, newSet2] };
         var updatedWorkout = workout with { Exercises = [updatedExercise] };
 
@@ -167,7 +167,7 @@ public class WorkoutControllerTests(PostgresContainerFixture postgres) : Integra
         var authCookie = await Client.RegisterNewUserAndGetAuthCookieAsync();
         var workout = await CreateWorkoutAsync(authCookie);
 
-        var invalidSet = new SetDto(null, weight, reps, rpe, workout.Exercises![0].ExerciseId);
+        var invalidSet = new SetDto(Id: null, Weight: weight, Reps: reps, EffortRating: rpe, ExerciseId: workout.Exercises![0].ExerciseId);
         var updatedExercise = workout.Exercises![0] with { Sets = [invalidSet] };
         var updatedWorkout = workout with { Exercises = [updatedExercise] };
 
@@ -185,7 +185,7 @@ public class WorkoutControllerTests(PostgresContainerFixture postgres) : Integra
         var authCookie = await Client.RegisterNewUserAndGetAuthCookieAsync();
         var workout = await CreateWorkoutAsync(authCookie, effortType: Enums.EffortRatingType.Rir, effortRating: 2);
 
-        var invalidSet = new SetDto(null, 100, 5, rir, workout.Exercises![0].ExerciseId);
+        var invalidSet = new SetDto(Id: null, Weight: 100, Reps: 5, EffortRating: rir, ExerciseId: workout.Exercises![0].ExerciseId);
         var updatedExercise = workout.Exercises![0] with { Sets = [invalidSet] };
         var updatedWorkout = workout with { Exercises = [updatedExercise] };
 
@@ -203,6 +203,120 @@ public class WorkoutControllerTests(PostgresContainerFixture postgres) : Integra
 
         Assert.Equal(Enums.EffortRatingType.Rir, workout.Exercises![0].EffortType);
         Assert.Equal(2, workout.Exercises[0].Sets![0].EffortRating);
+    }
+
+    [Fact]
+    public async Task CreateWorkout_WithTargetRepsAndTargetEffort_PersistsValues()
+    {
+        var authCookie = await Client.RegisterNewUserAndGetAuthCookieAsync();
+        var exerciseId = await GetAnySeededExerciseIdAsync(authCookie);
+        var workoutDto = new WorkoutDto(
+            null, "Test Workout", null, DateOnly.FromDateTime(DateTime.UtcNow), null,
+            [
+                new WorkoutExerciseDto(null, null, Enums.WeightUnit.Lbs, Enums.EffortRatingType.Rpe, exerciseId, null, null,
+                    [new SetDto(Id: null, Weight: 100, Reps: 5, EffortRating: 8, ExerciseId: exerciseId,
+                        TargetRepsMin: 5, TargetRepsMax: 8, TargetEffortMin: 7, TargetEffortMax: 8.5)])
+            ]);
+
+        var response = await Client.PostAsJsonWithCsrfAsync("/api/workouts", workoutDto, authCookie);
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var workout = (await response.Content.ReadFromJsonAsync<WorkoutDto>(JsonOptions))!;
+        var set = workout.Exercises![0].Sets![0];
+        Assert.Equal(5, set.TargetRepsMin);
+        Assert.Equal(8, set.TargetRepsMax);
+        Assert.Equal(7, set.TargetEffortMin);
+        Assert.Equal(8.5, set.TargetEffortMax);
+    }
+
+    [Theory]
+    [InlineData(-1, null)]    // target reps min below min
+    [InlineData(10000, null)] // target reps min above max
+    [InlineData(null, -1)]    // target reps max below min
+    [InlineData(null, 10000)] // target reps max above max
+    public async Task UpdateWorkout_WithInvalidTargetRepsData_ReturnsBadRequest(int? targetRepsMin, int? targetRepsMax)
+    {
+        var authCookie = await Client.RegisterNewUserAndGetAuthCookieAsync();
+        var workout = await CreateWorkoutAsync(authCookie);
+
+        var invalidSet = new SetDto(Id: null, Weight: 100, Reps: 5, EffortRating: 8,
+            ExerciseId: workout.Exercises![0].ExerciseId, TargetRepsMin: targetRepsMin, TargetRepsMax: targetRepsMax);
+        var updatedExercise = workout.Exercises![0] with { Sets = [invalidSet] };
+        var updatedWorkout = workout with { Exercises = [updatedExercise] };
+
+        var updateResponse = await Client.PutAsJsonWithCsrfAsync($"/api/workouts/{workout.Id}", updatedWorkout, authCookie);
+
+        Assert.Equal(HttpStatusCode.BadRequest, updateResponse.StatusCode);
+    }
+
+    [Theory]
+    [InlineData(-0.5, null)]  // target effort min below min
+    [InlineData(10.5, null)]  // target effort min above max
+    [InlineData(7.3, null)]   // target effort min not in steps of 0.5
+    [InlineData(null, -0.5)]  // target effort max below min
+    [InlineData(null, 10.5)]  // target effort max above max
+    [InlineData(null, 7.3)]   // target effort max not in steps of 0.5
+    public async Task UpdateWorkout_WithInvalidTargetEffortData_ReturnsBadRequest(double? targetEffortMin, double? targetEffortMax)
+    {
+        var authCookie = await Client.RegisterNewUserAndGetAuthCookieAsync();
+        var workout = await CreateWorkoutAsync(authCookie);
+
+        var invalidSet = new SetDto(Id: null, Weight: 100, Reps: 5, EffortRating: 8,
+            ExerciseId: workout.Exercises![0].ExerciseId, TargetEffortMin: targetEffortMin, TargetEffortMax: targetEffortMax);
+        var updatedExercise = workout.Exercises![0] with { Sets = [invalidSet] };
+        var updatedWorkout = workout with { Exercises = [updatedExercise] };
+
+        var updateResponse = await Client.PutAsJsonWithCsrfAsync($"/api/workouts/{workout.Id}", updatedWorkout, authCookie);
+
+        Assert.Equal(HttpStatusCode.BadRequest, updateResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateWorkout_WithTargetEffortMinGreaterThanMax_ReturnsBadRequest()
+    {
+        var authCookie = await Client.RegisterNewUserAndGetAuthCookieAsync();
+        var workout = await CreateWorkoutAsync(authCookie);
+
+        var invalidSet = new SetDto(Id: null, Weight: 100, Reps: 5, EffortRating: 8,
+            ExerciseId: workout.Exercises![0].ExerciseId, TargetEffortMin: 9, TargetEffortMax: 7);
+        var updatedExercise = workout.Exercises![0] with { Sets = [invalidSet] };
+        var updatedWorkout = workout with { Exercises = [updatedExercise] };
+
+        var updateResponse = await Client.PutAsJsonWithCsrfAsync($"/api/workouts/{workout.Id}", updatedWorkout, authCookie);
+
+        Assert.Equal(HttpStatusCode.BadRequest, updateResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateWorkout_WithTargetRepsMinGreaterThanMax_ReturnsBadRequest()
+    {
+        var authCookie = await Client.RegisterNewUserAndGetAuthCookieAsync();
+        var workout = await CreateWorkoutAsync(authCookie);
+
+        var invalidSet = new SetDto(Id: null, Weight: 100, Reps: 5, EffortRating: 8,
+            ExerciseId: workout.Exercises![0].ExerciseId, TargetRepsMin: 10, TargetRepsMax: 5);
+        var updatedExercise = workout.Exercises![0] with { Sets = [invalidSet] };
+        var updatedWorkout = workout with { Exercises = [updatedExercise] };
+
+        var updateResponse = await Client.PutAsJsonWithCsrfAsync($"/api/workouts/{workout.Id}", updatedWorkout, authCookie);
+
+        Assert.Equal(HttpStatusCode.BadRequest, updateResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateWorkout_WithRirEffortTypeAndNonWholeNumberTargetEffort_ReturnsBadRequest()
+    {
+        var authCookie = await Client.RegisterNewUserAndGetAuthCookieAsync();
+        var workout = await CreateWorkoutAsync(authCookie, effortType: Enums.EffortRatingType.Rir, effortRating: 2);
+
+        var invalidSet = new SetDto(Id: null, Weight: 100, Reps: 5, EffortRating: 2,
+            ExerciseId: workout.Exercises![0].ExerciseId, TargetEffortMin: 2.5);
+        var updatedExercise = workout.Exercises![0] with { Sets = [invalidSet] };
+        var updatedWorkout = workout with { Exercises = [updatedExercise] };
+
+        var updateResponse = await Client.PutAsJsonWithCsrfAsync($"/api/workouts/{workout.Id}", updatedWorkout, authCookie);
+
+        Assert.Equal(HttpStatusCode.BadRequest, updateResponse.StatusCode);
     }
 
 
