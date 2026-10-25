@@ -97,6 +97,41 @@ persistence into workout history.
   > range (e.g. RPE 5, RIR 6) are accepted but simply excluded from the
   > e1RM calculation.
 
+### Set targets
+
+Targets (a rep range and/or effort rating range) are set in bulk via the
+"Set targets" drawer rather than per-set inputs, so a single target can
+cover several sets at once.
+
+- **a target can be applied to specific sets** — open the exercise's
+  actions menu → "Set targets" → in the drawer, enter min/max reps and
+  min/max effort rating, select one set from "Apply to Sets", close the
+  drawer → that set's row shows a "Target: <range>" description under its
+  Reps and effort inputs; other sets are unaffected.
+- **"Apply to all" covers every set, including ones added later** — check
+  "Apply to all" on a target → every existing set shows the target
+  description; click "Add Set" afterward → the new set inherits the same
+  target automatically.
+- **adding a second target claims the remaining sets** — with one target
+  already applied to some sets, click "Add Target", enter different
+  values, and apply it to the remaining set(s) → each set shows its own
+  target's range, and sets already claimed by the first target aren't
+  selectable for the second.
+- **removing a target clears it from its sets** — click "Remove Target" on
+  a target row → the row disappears and the sets it covered no longer show
+  a target description.
+- **a value outside its target range is visually flagged** — enter reps
+  below a set's target minimum → the Reps input is shown in a different
+  color (representative check only; the full red/green/amber color rules
+  for reps vs. effort rating belong in a component test).
+- **"Show Targets" hides/shows the target descriptions** — in the
+  exercise's Options popover, toggle "Show Targets" off → the
+  "Target: ..." descriptions under Reps/effort rating disappear; toggle it
+  back on → they reappear.
+- **targets persist after reload** — set a target, wait for the autosave
+  to complete (or navigate away to flush it), reload the page → the same
+  target values and set assignments are still shown.
+
 ### Weight unit, effort rating type, & notes
 
 - **weight unit can be switched between lbs and kg** — open the exercise's

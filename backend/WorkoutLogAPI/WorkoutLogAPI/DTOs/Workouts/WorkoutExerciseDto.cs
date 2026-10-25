@@ -32,9 +32,11 @@ public record WorkoutExerciseDto(
     private const double MinEffortRating = 0;
     private const double MaxEffortRating = 10;
 
-    // Range and step validation for each set's EffortRating depends on this
-    // DTO's EffortType (RPE allows 0.5 steps; RIR must be a whole number), so
-    // it's validated here rather than via an attribute on SetDto.
+    // Range and step validation for each effort-rating-like field depends on
+    // this DTO's EffortType (RPE allows 0.5 steps; RIR must be a whole
+    // number), so it's validated here rather than via an attribute on
+    // SetDto. EffortRating, TargetEffortMin, and TargetEffortMax all share
+    // the same rules, so they're validated through this one helper.
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (Sets is null)
@@ -44,45 +46,77 @@ public record WorkoutExerciseDto(
 
         for (var i = 0; i < Sets.Count; i++)
         {
-            var effortRating = Sets[i].EffortRating;
+            var set = Sets[i];
 
-            if (effortRating is null)
+            foreach (var result in ValidateEffortField(set.EffortRating, nameof(SetDto.EffortRating), i))
             {
-                continue;
+                yield return result;
             }
 
-            var value = effortRating.Value;
+            foreach (var result in ValidateEffortField(set.TargetEffortMin, nameof(SetDto.TargetEffortMin), i))
+            {
+                yield return result;
+            }
 
-            if (value < MinEffortRating || value > MaxEffortRating)
+            foreach (var result in ValidateEffortField(set.TargetEffortMax, nameof(SetDto.TargetEffortMax), i))
+            {
+                yield return result;
+            }
+
+            if (set.TargetEffortMin is not null && set.TargetEffortMax is not null &&
+                set.TargetEffortMin > set.TargetEffortMax)
             {
                 yield return new ValidationResult(
-                    $"Effort rating must be between {MinEffortRating} and {MaxEffortRating}",
-                    [$"{nameof(Sets)}[{i}].{nameof(SetDto.EffortRating)}"]);
-                continue;
+                    "Target effort min must not be greater than target effort max",
+                    [$"{nameof(Sets)}[{i}].{nameof(SetDto.TargetEffortMin)}"]);
             }
 
-            if (EffortType == EffortRatingType.Rir)
+            if (set.TargetRepsMin is not null && set.TargetRepsMax is not null &&
+                set.TargetRepsMin > set.TargetRepsMax)
             {
-                if (value % 1 != 0)
-                {
-                    yield return new ValidationResult(
-                        "RIR must be a whole number",
-                        [$"{nameof(Sets)}[{i}].{nameof(SetDto.EffortRating)}"]);
-                }
+                yield return new ValidationResult(
+                    "Target reps min must not be greater than target reps max",
+                    [$"{nameof(Sets)}[{i}].{nameof(SetDto.TargetRepsMin)}"]);
             }
-            else
-            {
-                // multiplying by 2 turns the 0.5 step requirement into a whole
-                // number check, avoiding floating point precision issues from
-                // using % 0.5
-                var doubled = value * 2;
+        }
+    }
 
-                if (Math.Abs(doubled - Math.Round(doubled)) >= 0.0001)
-                {
-                    yield return new ValidationResult(
-                        "RPE must be in steps of 0.5",
-                        [$"{nameof(Sets)}[{i}].{nameof(SetDto.EffortRating)}"]);
-                }
+    // Validates a single effort-rating-like value (range + RPE/RIR step
+    // rules) and tags any error with the given property name/set index.
+    private IEnumerable<ValidationResult> ValidateEffortField(double? value, string propertyName, int setIndex)
+    {
+        if (value is null)
+        {
+            yield break;
+        }
+
+        var member = $"{nameof(Sets)}[{setIndex}].{propertyName}";
+
+        if (value < MinEffortRating || value > MaxEffortRating)
+        {
+            yield return new ValidationResult(
+                $"Effort rating must be between {MinEffortRating} and {MaxEffortRating}",
+                [member]);
+            yield break;
+        }
+
+        if (EffortType == EffortRatingType.Rir)
+        {
+            if (value % 1 != 0)
+            {
+                yield return new ValidationResult("RIR must be a whole number", [member]);
+            }
+        }
+        else
+        {
+            // multiplying by 2 turns the 0.5 step requirement into a whole
+            // number check, avoiding floating point precision issues from
+            // using % 0.5
+            var doubled = value.Value * 2;
+
+            if (Math.Abs(doubled - Math.Round(doubled)) >= 0.0001)
+            {
+                yield return new ValidationResult("RPE must be in steps of 0.5", [member]);
             }
         }
     }

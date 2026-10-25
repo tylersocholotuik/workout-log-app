@@ -56,7 +56,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 
 interface WorkoutContextType {
     workout: Workout;
-    setWorkout: (updatedWorkout: Workout) => void;
+    setWorkout: (updater: Workout | ((prevWorkout: Workout) => Workout)) => void;
 }
 
 export const WorkoutContext = createContext<WorkoutContextType | undefined>(
@@ -83,10 +83,16 @@ export default function WorkoutLog() {
     const savingIndicatorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     
     // Wrap setWorkout to mark the workout as dirty whenever it is updated.
-    const setWorkout = (updatedWorkout: Workout) => {
-        isDirtyRef.current = true;
-        workoutRef.current = updatedWorkout;
-        setWorkoutState(updatedWorkout);
+    // Accepts an updater function so callers can compose off the latest state
+    // instead of a stale closure, avoiding races when multiple handlers fire
+    // in the same batch (e.g. an input's onBlur alongside a sibling's onChange).
+    const setWorkout = (updater: Workout | ((prevWorkout: Workout) => Workout)) => {
+        setWorkoutState((prevWorkout) => {
+            const updatedWorkout = typeof updater === "function" ? updater(prevWorkout) : updater;
+            isDirtyRef.current = true;
+            workoutRef.current = updatedWorkout;
+            return updatedWorkout;
+        });
     }
 
     const { user, isLoading: isAuthLoading } = useAuth();
@@ -153,9 +159,22 @@ export default function WorkoutLog() {
     });
 
     const updateWorkoutMutation = useMutation({
-        mutationFn: (workoutData: Workout) => updateWorkout(workoutId, workoutData),
+        mutationFn: (workoutData: Workout): Promise<Workout> => updateWorkout(workoutId, workoutData),
         onSuccess: (updatedWorkout) => {
-            setWorkoutState(updatedWorkout);
+            // The server response never includes frontend-only fields like
+            // targetAppliesToAllSets (not persisted), so blindly swapping it in would
+            // wipe that flag mid-edit. Carry it over from local state by exercise position.
+            setWorkoutState((prevWorkout) => {
+                const mergedWorkout = {
+                    ...updatedWorkout,
+                    exercises: updatedWorkout.exercises.map((ex, i) => ({
+                        ...ex,
+                        targetAppliesToAllSets: prevWorkout.exercises[i]?.targetAppliesToAllSets,
+                    })),
+                };
+                workoutRef.current = mergedWorkout;
+                return mergedWorkout;
+            });
             // Keep the query cache in sync so a later refetch doesn't briefly serve stale data.
             queryClient.setQueryData(["workout", workoutId], updatedWorkout);
             queryClient.setQueryData(["activeWorkout"], (oldActiveWorkout: Workout | null | undefined) => {

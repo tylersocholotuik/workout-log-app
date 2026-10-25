@@ -16,6 +16,18 @@ change behind it.
 
 ## [Unreleased]
 
+### Added
+
+- Added optional target rep and effort ranges per set (`targetRepsMin/Max`, `targetEffortMin/Max`),
+  editable in bulk across multiple sets via a new "Set targets" drawer on the exercise card.
+- Added colour-coded reps/effort values in the sets table (red/green for reps, amber for effort)
+  when actual values fall outside their set's target range.
+
+### Changed
+
+- Refactored exercise-card target/effort-type state into a new `WorkoutExerciseContext` /
+  `WorkoutExerciseProvider` to avoid prop-drilling into `SetsTableRow`/`TargetsDrawer`.
+
 ## [1.9.1] - 2026-10-24
 
 ### Fixed

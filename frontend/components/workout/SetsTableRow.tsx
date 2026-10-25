@@ -1,13 +1,14 @@
-import { useEffect, useState } from "react";
+import {useEffect, useState} from "react";
 
-import { useWorkoutContext } from "@/pages/workout/[workoutId]";
+import {useWorkoutContext} from "@/pages/workout/[workoutId]";
+import {useWorkoutExercise} from "@/components/workout/WorkoutExerciseProvider";
 
-import { Set } from "@/types";
+import {Set} from "@/types";
 
-import { Input, Tooltip, Button } from "@heroui/react";
-import { DeleteIcon } from "@/icons/DeleteIcon";
+import {Input, Tooltip, Button} from "@heroui/react";
+import {DeleteIcon} from "@/icons/DeleteIcon";
 
-import { handleInputChange, sanitizeDisplayValues } from "@/utils/inputHandlers";
+import {handleInputChange, sanitizeDisplayValues} from "@/utils/inputHandlers";
 
 interface SetTableRowProps {
     set: Set;
@@ -18,26 +19,31 @@ interface SetTableRowProps {
 }
 
 export default function SetsTableRow({
-    set,
-    setIndex,
-    exerciseIndex,
-    weightUnit,
-    effortType,
-}: SetTableRowProps) {
+                                         set,
+                                         setIndex,
+                                         exerciseIndex,
+                                         weightUnit,
+                                         effortType,
+                                     }: SetTableRowProps) {
     // ensuring "null" does not appear in inputs, set to empty string instead
     const weightString = set.weight !== null ? String(set.weight) : "";
     const repsString = set.reps !== null ? String(set.reps) : "";
     const effortRatingString = set.effortRating !== null ? String(set.effortRating) : "";
+    const targetRepsMinString = set.targetRepsMin !== null ? String(set.targetRepsMin) : "";
+    const targetRepsMaxString = set.targetRepsMax !== null ? String(set.targetRepsMax) : "";
+    const targetEffortMinString = set.targetEffortMin !== null ? String(set.targetEffortMin) : "";
+    const targetEffortMaxString = set.targetEffortMax !== null ? String(set.targetEffortMax) : "";
 
     const [weight, setWeight] = useState(weightString);
     const [reps, setReps] = useState(repsString);
     const [effortRating, setEffortRating] = useState(effortRatingString);
 
-    const { workout, setWorkout } = useWorkoutContext();
+    const {workout, setWorkout} = useWorkoutContext();
+    const {showTargets} = useWorkoutExercise();
 
     // Rules for weight:
     //  min: 0, max: 9999, steps of 0.5, can be empty string, only 1 digit after decimal (0 or 5), only 1 decimal
-    const WEIGHT_REGEX= /^(\d{0,4})(\.([05]?)?)?$/;
+    const WEIGHT_REGEX = /^(\d{0,4})(\.([05]?)?)?$/;
     const WEIGHT_MIN = 0;
     const WEIGHT_MAX = 9999;
     // Rules for reps:
@@ -73,9 +79,85 @@ export default function SetsTableRow({
             set.effortRating !== null ? String(set.effortRating) : ""
         );
     }, [set.effortRating]);
+    
+    // below the minimum is always bad; above the maximum is only "good" when
+    // both bounds are set (a deliberate range, not just a floor)
+    const getRepsTextColor = () => {
+        if (set.reps === null) {
+            return "";
+        }
 
-    // Shared input change handler for weight, reps, and effort rating inputs
-    // is imported from @/utils/form-input
+        if (set.targetRepsMin !== null && set.reps < set.targetRepsMin) {
+            return "text-danger";
+        }
+
+        if (set.targetRepsMax !== null && set.targetRepsMin !== null && set.reps > set.targetRepsMax) {
+            return "text-success";
+        }
+
+        return "";
+    };
+
+    const repsTextColor = getRepsTextColor();
+
+    // direction of "good" vs "bad" depends on training goal, so outside the
+    // target range is just flagged as a warning rather than good/bad
+    const getEffortTextColor = () => {
+        if (set.effortRating === null) {
+            return "";
+        }
+
+        if (
+            (set.targetEffortMin !== null && set.effortRating < set.targetEffortMin) ||
+            (set.targetEffortMax !== null && set.effortRating > set.targetEffortMax)
+        ) {
+            return "text-warning";
+        }
+
+        return "";
+    };
+
+    const effortTextColor = getEffortTextColor();
+
+    const isFixedRepsTarget = set.targetRepsMin !== null && set.targetRepsMax !== null && set.targetRepsMin === set.targetRepsMax;
+    const isFixedEffortTarget = set.targetEffortMin !== null && set.targetEffortMax !== null && set.targetEffortMin === set.targetEffortMax;
+    const hasTargets = set.targetRepsMin !== null || set.targetRepsMax !== null || set.targetEffortMin !== null || set.targetEffortMax !== null;
+    
+    const getRepsTargetDescription = () => {
+        if (!showTargets || !hasTargets || (set.targetRepsMin === null && set.targetRepsMax === null)) {
+            return undefined;
+        }
+
+        if (isFixedRepsTarget) {
+            return `Target: ${targetRepsMinString}`;
+        } else if (set.targetRepsMin === null && set.targetRepsMax !== null) {
+            return `Target: <= ${targetRepsMaxString}`;
+        } else if (set.targetRepsMin !== null && set.targetRepsMax === null) {
+            return `Target: >= ${targetRepsMinString}`;
+        } else {
+            return `Target: ${targetRepsMinString}-${targetRepsMaxString}`;
+        }
+    };
+    
+    const repsTargetDescription = getRepsTargetDescription();
+    
+    const getEffortTargetDescription = () => {
+        if (!showTargets || !hasTargets || (set.targetEffortMin === null && set.targetEffortMax === null)) {
+            return undefined;
+        }
+
+        if (isFixedEffortTarget) {
+            return `Target: ${targetEffortMinString}`;
+        } else if (set.targetEffortMin === null && set.targetEffortMax !== null) {
+            return `Target: <= ${targetEffortMaxString}`;
+        } else if (set.targetEffortMin !== null && set.targetEffortMax === null) {
+            return `Target: >= ${targetEffortMinString}`;
+        } else {
+            return `Target: ${targetEffortMinString}-${targetEffortMaxString}`;
+        }
+    };
+
+    const effortTargetDescription = getEffortTargetDescription();
 
     // called on focus blur for all inputs
     // updates the state of the workout with the set
@@ -86,39 +168,39 @@ export default function SetsTableRow({
             exercises: workout.exercises.map((exercise, eIndex) =>
                 eIndex === exerciseIndex
                     ? {
-                          ...exercise,
-                          sets: exercise.sets.map((set, sIndex) =>
-                              sIndex === setIndex
-                                  ? {
-                                        ...set,
-                                        weight:
-                                            weight !== ""
-                                                ? parseFloat(weight)
-                                                : null,
-                                        reps:
-                                            reps !== ""
-                                                ? parseFloat(reps)
-                                                : null,
-                                        effortRating:
-                                            effortRating !== ""
-                                                ? parseFloat(effortRating)
-                                                : null,
-                                    }
-                                  : set
-                          ),
-                      }
+                        ...exercise,
+                        sets: exercise.sets.map((set, sIndex) =>
+                            sIndex === setIndex
+                                ? {
+                                    ...set,
+                                    weight:
+                                        weight !== ""
+                                            ? parseFloat(weight)
+                                            : null,
+                                    reps:
+                                        reps !== ""
+                                            ? parseFloat(reps)
+                                            : null,
+                                    effortRating:
+                                        effortRating !== ""
+                                            ? parseFloat(effortRating)
+                                            : null,
+                                }
+                                : set
+                        ),
+                    }
                     : exercise
             ),
         };
 
         setWorkout(updatedWorkout);
     };
-    
+
     const handleBlur = () => {
         sanitizeDisplayValues([
-            { value: weight, setter: setWeight, stripTrailingDecimal: true, stripLeadingZero: true },
-            { value: reps, setter: setReps, stripLeadingZero: true },
-            { value: effortRating, setter: setEffortRating, stripTrailingDecimal: true },
+            {value: weight, setter: setWeight, stripTrailingDecimal: true, stripLeadingZero: true},
+            {value: reps, setter: setReps, stripLeadingZero: true},
+            {value: effortRating, setter: setEffortRating, stripTrailingDecimal: true},
         ]);
         saveChanges();
     };
@@ -134,9 +216,9 @@ export default function SetsTableRow({
             exercises: workout.exercises.map((exercise, index) =>
                 index === exerciseIndex
                     ? {
-                          ...exercise,
-                          sets: updatedSets,
-                      }
+                        ...exercise,
+                        sets: updatedSets,
+                    }
                     : exercise
             ),
         };
@@ -148,7 +230,7 @@ export default function SetsTableRow({
         <>
             <div className="col-span-2">
                 <Input
-                    classNames={{ input: "text-center" }}
+                    classNames={{input: "text-center"}}
                     id={`exercise-${exerciseIndex}-set-${setIndex}-weight`}
                     inputMode="decimal"
                     variant="bordered"
@@ -178,7 +260,7 @@ export default function SetsTableRow({
             </div>
             <div className="col-span-2">
                 <Input
-                    classNames={{ input: "text-center" }}
+                    classNames={{input: `text-center ${repsTextColor}`, description: "text-center"}}
                     id={`exercise-${exerciseIndex}-set-${setIndex}-reps`}
                     inputMode="decimal"
                     variant="bordered"
@@ -186,6 +268,7 @@ export default function SetsTableRow({
                     aria-label="reps"
                     color="primary"
                     value={reps}
+                    description={repsTargetDescription}
                     onValueChange={(value) => {
                         handleInputChange({
                             value,
@@ -201,7 +284,8 @@ export default function SetsTableRow({
             </div>
             <div className="col-span-2">
                 <Input
-                    classNames={{ input: "text-center" }}
+                    className=""
+                    classNames={{input: `text-center ${effortTextColor}`, description: "text-center"}}
                     id={`exercise-${exerciseIndex}-set-${setIndex}-effort-rating`}
                     inputMode="decimal"
                     variant="bordered"
@@ -209,6 +293,7 @@ export default function SetsTableRow({
                     aria-label="effort rating"
                     color="primary"
                     value={effortRating}
+                    description={effortTargetDescription}
                     onValueChange={(value) => {
                         handleInputChange({
                             value,
@@ -231,7 +316,7 @@ export default function SetsTableRow({
                         variant="light"
                         onPress={() => deleteSet(setIndex)}
                     >
-                        <DeleteIcon />
+                        <DeleteIcon/>
                     </Button>
                 </Tooltip>
             </div>

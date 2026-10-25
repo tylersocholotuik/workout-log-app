@@ -50,7 +50,7 @@ public class WorkoutServiceTests
                     WorkoutId: null,
                     Exercise: null,
                     // Note: Set ExerciseId refers to WorkoutExercise Id which is not created yet
-                    Sets: [new SetDto(null, 135, 5, 8, ExerciseId: 0)])
+                    Sets: [new SetDto(Id: null, Weight: 135, Reps: 5, EffortRating: 8, ExerciseId: 0)])
             ]);
         
         var result = await service.CreateWorkout(dto, userId);
@@ -87,7 +87,7 @@ public class WorkoutServiceTests
                     WorkoutId: null,
                     Exercise: null,
                     // Note: Set ExerciseId refers to WorkoutExercise Id which is not created yet
-                    Sets: [new SetDto(null, 135, 5, 2, ExerciseId: 0)])
+                    Sets: [new SetDto(Id: null, Weight: 135, Reps: 5, EffortRating: 2, ExerciseId: 0)])
             ]);
 
         var result = await service.CreateWorkout(dto, userId);
@@ -281,7 +281,7 @@ public class WorkoutServiceTests
             new WorkoutDto(null, "Push Day", userId, new DateOnly(2026, 1, 1), null,
             [
                 new WorkoutExerciseDto(null, null, WeightUnit.Lbs,  EffortRatingType.Rpe, exercise.Id, null, null,
-                    [new SetDto(null, 100, 10, null, ExerciseId: 0)])
+                    [new SetDto(Id: null, Weight: 100, Reps: 10, EffortRating: null, ExerciseId: 0)])
             ]),
             userId);
 
@@ -319,7 +319,7 @@ public class WorkoutServiceTests
             new WorkoutDto(null, "Push Day", userId, new DateOnly(2026, 1, 1), null,
             [
                 new WorkoutExerciseDto(null, null, WeightUnit.Lbs,  EffortRatingType.Rpe, exercise.Id, null, null,
-                    [new SetDto(null, 100, 10, null, ExerciseId: 0)])
+                    [new SetDto(Id: null, Weight: 100, Reps: 10, EffortRating: null, ExerciseId: 0)])
             ]),
             userId);
 
@@ -361,8 +361,8 @@ public class WorkoutServiceTests
             [
                 new WorkoutExerciseDto(null, null, WeightUnit.Lbs, EffortRatingType.Rpe, exercise.Id, null, null,
                 [
-                    new SetDto(null, 100, 10, null, ExerciseId: 0),
-                    new SetDto(null, 110, 8, null, ExerciseId: 0)
+                    new SetDto(Id: null, Weight: 100, Reps: 10, EffortRating: null, ExerciseId: 0),
+                    new SetDto(Id: null, Weight: 110, Reps: 8, EffortRating: null, ExerciseId: 0)
                 ])
             ]),
             userId);
@@ -374,7 +374,7 @@ public class WorkoutServiceTests
         var updateDto = new WorkoutDto(created.Id, "Push Day", userId, new DateOnly(2026, 1, 1), null,
         [
             new WorkoutExerciseDto(createdExercise.Id, null, WeightUnit.Lbs, EffortRatingType.Rpe, exercise.Id, null, null,
-                [new SetDto(keptSetId, 100, 10, null, ExerciseId: 0)])
+                [new SetDto(Id: keptSetId, Weight: 100, Reps: 10, EffortRating: null, ExerciseId: 0)])
         ]);
         await service.UpdateWorkout(created.Id, updateDto, userId);
 

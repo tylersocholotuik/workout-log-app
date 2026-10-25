@@ -115,7 +115,11 @@ public class WorkoutService
                     {
                         Weight = s.Weight,
                         Reps = s.Reps,
+                        TargetRepsMin = s.TargetRepsMin,
+                        TargetRepsMax = s.TargetRepsMax,
                         EffortRating = s.EffortRating,
+                        TargetEffortMin = s.TargetEffortMin,
+                        TargetEffortMax = s.TargetEffortMax,
                     }).ToList() ?? new List<Set>(),
                 }).ToList() ?? new List<WorkoutExercise>(),
         };
@@ -284,7 +288,11 @@ public class WorkoutService
                         {
                             Weight = s.Weight,
                             Reps = s.Reps,
+                            TargetRepsMin = s.TargetRepsMin,
+                            TargetRepsMax = s.TargetRepsMax,
                             EffortRating = s.EffortRating,
+                            TargetEffortMin = s.TargetEffortMin,
+                            TargetEffortMax = s.TargetEffortMax,
                         }).ToList() ?? new List<Set>(),
                 });
             }
@@ -320,7 +328,11 @@ public class WorkoutService
             {
                 existingSet.Weight = setDto.Weight;
                 existingSet.Reps = setDto.Reps;
+                existingSet.TargetRepsMin = setDto.TargetRepsMin;
+                existingSet.TargetRepsMax = setDto.TargetRepsMax;
                 existingSet.EffortRating = setDto.EffortRating;
+                existingSet.TargetEffortMin = setDto.TargetEffortMin;
+                existingSet.TargetEffortMax = setDto.TargetEffortMax;
             }
             else
             {
@@ -328,7 +340,11 @@ public class WorkoutService
                 {
                     Weight = setDto.Weight,
                     Reps = setDto.Reps,
+                    TargetRepsMin = setDto.TargetRepsMin,
+                    TargetRepsMax = setDto.TargetRepsMax,
                     EffortRating = setDto.EffortRating,
+                    TargetEffortMin = setDto.TargetEffortMin,
+                    TargetEffortMax = setDto.TargetEffortMax,
                 });
             }
         }
