@@ -186,6 +186,24 @@ export async function addExercise(page: Page, exerciseName: string) {
   await expect(page.getByRole('dialog')).toHaveCount(0);
 }
 
+// Selects the given 1-based set numbers in the most recently added target
+// row's "Apply to Sets" multi-select (TargetsDrawer), then closes the
+// popover. Must close by clicking elsewhere rather than pressing Escape -
+// Escape reverts the in-progress selection in this HeroUI multi-select
+// instead of just closing it (confirmed quirk).
+export async function applyTargetToSets(page: Page, setNumbers: number[]) {
+  await page.getByRole('button', { name: 'Apply to Sets' }).last().click();
+  for (const setNumber of setNumbers) {
+    await page.getByRole('option', { name: String(setNumber), exact: true }).click();
+  }
+  await page.getByText('Set Targets', { exact: true }).click();
+  // wait out the popover's own close animation (slower on WebKit) so a
+  // later Escape press (meant for the TargetsDrawer itself) doesn't instead
+  // get consumed by this still-closing nested popover - only one dialog
+  // (the drawer) should remain.
+  await expect(page.getByRole('dialog')).toHaveCount(1);
+}
+
 export async function fillSet(
   card: Locator,
   values: { weight?: string; reps?: string; effortRating?: string },

@@ -7,6 +7,7 @@ import {
   exerciseCard,
   addExercise,
   fillSet,
+  applyTargetToSets,
   editWorkoutDetails,
   waitForAutosave,
   finishWorkout,
@@ -309,6 +310,193 @@ test.describe('Sets', () => {
     await waitForAutosave(page, () => fillSet(card, { weight: '250', reps: '8', effortRating: '9' }));
 
     await expect(card.getByText(/e1RM:/)).toBeVisible();
+  });
+});
+
+test.describe('Set targets', () => {
+  test('a target can be applied to specific sets', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
+    const card = exerciseCard(page, 'Ab Wheel');
+    await waitForAutosave(page, () => card.getByRole('button', { name: 'Add Set' }).click());
+
+    await pressIconTrigger(card.getByRole('button', { name: 'Actions', exact: true }));
+    await expect(page.getByRole('menu')).toBeVisible();
+    await page.getByRole('menuitem', { name: 'Set targets' }).click();
+    const drawer = page.getByRole('dialog');
+
+    await drawer.getByRole('button', { name: 'Add Target' }).click();
+    await applyTargetToSets(page, [1]);
+    await drawer.getByRole('textbox', { name: 'Min Reps' }).fill('8');
+    await drawer.getByRole('textbox', { name: 'Max Reps' }).fill('10');
+    await drawer.getByRole('textbox', { name: 'Min RPE' }).fill('7');
+    await drawer.getByRole('textbox', { name: 'Max RPE' }).fill('8');
+    await waitForAutosave(page, () => drawer.getByRole('button', { name: 'Close', exact: true }).click());
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    await expect(card.getByText('Target: 8-10')).toBeVisible();
+    await expect(card.getByText('Target: 7-8')).toBeVisible();
+    // the second set wasn't selected, so it stays untouched
+    await expect(card.getByRole('textbox', { name: 'reps' }).nth(1)).toHaveValue('');
+  });
+
+  test('"Apply to all" covers every set, including ones added later', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
+    const card = exerciseCard(page, 'Ab Wheel');
+
+    await pressIconTrigger(card.getByRole('button', { name: 'Actions', exact: true }));
+    await expect(page.getByRole('menu')).toBeVisible();
+    await page.getByRole('menuitem', { name: 'Set targets' }).click();
+    const drawer = page.getByRole('dialog');
+
+    await drawer.getByRole('button', { name: 'Add Target' }).click();
+    await drawer.getByRole('textbox', { name: 'Min Reps' }).fill('5');
+    await drawer.getByRole('checkbox', { name: 'Apply to all' }).click();
+    await waitForAutosave(page, () => drawer.getByRole('button', { name: 'Close', exact: true }).click());
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(card.getByText('Target: >= 5')).toBeVisible();
+
+    await waitForAutosave(page, () => card.getByRole('button', { name: 'Add Set' }).click());
+
+    await expect(card.getByText('Target: >= 5')).toHaveCount(2);
+  });
+
+  test('adding a second target claims the remaining sets', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
+    const card = exerciseCard(page, 'Ab Wheel');
+    await waitForAutosave(page, () => card.getByRole('button', { name: 'Add Set' }).click());
+
+    await pressIconTrigger(card.getByRole('button', { name: 'Actions', exact: true }));
+    await expect(page.getByRole('menu')).toBeVisible();
+    await page.getByRole('menuitem', { name: 'Set targets' }).click();
+    const drawer = page.getByRole('dialog');
+
+    await drawer.getByRole('button', { name: 'Add Target' }).click();
+    await applyTargetToSets(page, [1]);
+    await drawer.getByRole('textbox', { name: 'Min Reps' }).fill('8');
+    await waitForAutosave(page, () => drawer.getByRole('textbox', { name: 'Min Reps' }).blur());
+
+    await drawer.getByRole('button', { name: 'Add Target' }).click();
+    await page.getByRole('button', { name: 'Apply to Sets' }).last().click();
+    await expect(page.getByRole('option', { name: '1', exact: true })).toBeDisabled();
+    await page.getByRole('option', { name: '2', exact: true }).click();
+    await page.getByText('Set Targets', { exact: true }).click();
+    // wait out the popover's own close animation (slower on WebKit) so the
+    // Escape press below (meant for the TargetsDrawer) isn't instead
+    // consumed by this still-closing nested popover.
+    await expect(page.getByRole('dialog')).toHaveCount(1);
+    await page.getByRole('textbox', { name: 'Min Reps' }).last().fill('3');
+    await waitForAutosave(page, () => drawer.getByRole('button', { name: 'Close', exact: true }).click());
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    await expect(card.getByText('Target: >= 8')).toBeVisible();
+    await expect(card.getByText('Target: >= 3')).toBeVisible();
+  });
+
+  test('removing a target clears it from its sets', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
+    const card = exerciseCard(page, 'Ab Wheel');
+
+    await pressIconTrigger(card.getByRole('button', { name: 'Actions', exact: true }));
+    await expect(page.getByRole('menu')).toBeVisible();
+    await page.getByRole('menuitem', { name: 'Set targets' }).click();
+    let drawer = page.getByRole('dialog');
+
+    await drawer.getByRole('button', { name: 'Add Target' }).click();
+    await drawer.getByRole('textbox', { name: 'Min Reps' }).fill('5');
+    await drawer.getByRole('checkbox', { name: 'Apply to all' }).click();
+    await waitForAutosave(page, () => drawer.getByRole('button', { name: 'Close', exact: true }).click());
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(card.getByText('Target: >= 5')).toBeVisible();
+
+    await pressIconTrigger(card.getByRole('button', { name: 'Actions', exact: true }));
+    await expect(page.getByRole('menu')).toBeVisible();
+    await page.getByRole('menuitem', { name: 'Set targets' }).click();
+    drawer = page.getByRole('dialog');
+    await drawer.getByRole('button', { name: 'Remove Target' }).click();
+    await waitForAutosave(page, () => drawer.getByRole('button', { name: 'Close', exact: true }).click());
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    await expect(card.getByText(/Target:/)).toHaveCount(0);
+  });
+
+  test('a value outside its target range is visually flagged', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
+    const card = exerciseCard(page, 'Ab Wheel');
+
+    await pressIconTrigger(card.getByRole('button', { name: 'Actions', exact: true }));
+    await expect(page.getByRole('menu')).toBeVisible();
+    await page.getByRole('menuitem', { name: 'Set targets' }).click();
+    const drawer = page.getByRole('dialog');
+
+    await drawer.getByRole('button', { name: 'Add Target' }).click();
+    await drawer.getByRole('textbox', { name: 'Min Reps' }).fill('8');
+    await drawer.getByRole('checkbox', { name: 'Apply to all' }).click();
+    await waitForAutosave(page, () => drawer.getByRole('button', { name: 'Close', exact: true }).click());
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    await waitForAutosave(page, async () => {
+      await card.getByRole('textbox', { name: 'reps' }).fill('5');
+      await card.getByRole('textbox', { name: 'reps' }).blur();
+    });
+
+    await expect(card.getByRole('textbox', { name: 'reps' })).toHaveClass(/text-danger/);
+  });
+
+  test('"Show Targets" hides/shows the target descriptions', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
+    const card = exerciseCard(page, 'Ab Wheel');
+
+    await pressIconTrigger(card.getByRole('button', { name: 'Actions', exact: true }));
+    await expect(page.getByRole('menu')).toBeVisible();
+    await page.getByRole('menuitem', { name: 'Set targets' }).click();
+    const drawer = page.getByRole('dialog');
+
+    await drawer.getByRole('button', { name: 'Add Target' }).click();
+    await drawer.getByRole('textbox', { name: 'Min Reps' }).fill('5');
+    await drawer.getByRole('checkbox', { name: 'Apply to all' }).click();
+    await waitForAutosave(page, () => drawer.getByRole('button', { name: 'Close', exact: true }).click());
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(card.getByText('Target: >= 5')).toBeVisible();
+
+    await pressIconTrigger(card.getByRole('button', { name: 'exercise options' }));
+    await page.getByRole('switch', { name: 'Show Targets' }).click();
+    await page.keyboard.press('Escape');
+
+    await expect(card.getByText('Target: >= 5')).toHaveCount(0);
+
+    await pressIconTrigger(card.getByRole('button', { name: 'exercise options' }));
+    await page.getByRole('switch', { name: 'Show Targets' }).click();
+    await page.keyboard.press('Escape');
+
+    await expect(card.getByText('Target: >= 5')).toBeVisible();
+  });
+
+  test('targets persist after reload', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
+    const card = exerciseCard(page, 'Ab Wheel');
+
+    await pressIconTrigger(card.getByRole('button', { name: 'Actions', exact: true }));
+    await expect(page.getByRole('menu')).toBeVisible();
+    await page.getByRole('menuitem', { name: 'Set targets' }).click();
+    const drawer = page.getByRole('dialog');
+
+    await drawer.getByRole('button', { name: 'Add Target' }).click();
+    await drawer.getByRole('textbox', { name: 'Min Reps' }).fill('8');
+    await drawer.getByRole('textbox', { name: 'Max Reps' }).fill('10');
+    await drawer.getByRole('checkbox', { name: 'Apply to all' }).click();
+    await waitForAutosave(page, () => drawer.getByRole('button', { name: 'Close', exact: true }).click());
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    await page.reload();
+
+    await expect(exerciseCard(page, 'Ab Wheel').getByText('Target: 8-10')).toBeVisible();
   });
 });
 
