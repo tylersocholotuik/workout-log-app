@@ -99,7 +99,11 @@ erDiagram
         int id PK
         double weight
         int reps
+        int target_reps_min
+        int target_reps_max
         double effort_rating
+        double target_effort_min
+        double target_effort_max
         int exercise_id FK "references workout_exercises.id"
         bool deleted
         datetime created_at
@@ -207,6 +211,13 @@ a set only makes sense in the context of one specific exercise-within-a-workout.
   (nullable `double`, used by the 1RM calculator) — interpreted as RPE
   (Rate of Perceived Exertion, 0.5 steps) or RIR (Reps in Reserve, whole
   numbers) depending on the parent `workout_exercises.effort_type`
+- `target_reps_min` / `target_reps_max` (nullable `int`) and
+  `target_effort_min` / `target_effort_max` (nullable `double`) — optional
+  goals for the set, shown alongside the actual values and used to
+  colour-code them in the UI (see [frontend-architecture.md](frontend-architecture.md#set-targets)).
+  Not required to be a matched pair; either bound can be set independently.
+  Same RPE/RIR step rules as `effort_rating` apply to the two effort target
+  fields.
 - `exercise_id` (FK to `workout_exercises.id`, `ON DELETE RESTRICT`)
 - `deleted`, `created_at`, `updated_at`
 
@@ -313,3 +324,6 @@ Notable migrations beyond the initial schema:
   `sets.rpe` to `sets.effort_rating` and added `workout_exercises.effort_type`
   (default `"rpe"`), so existing data keeps its original meaning without a
   manual backfill.
+- `AddTargetRepsAndTargetEffortToSets` — added the nullable
+  `target_reps_min`/`target_reps_max`/`target_effort_min`/`target_effort_max`
+  columns to `sets` for the set-targets feature.

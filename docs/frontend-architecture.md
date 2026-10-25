@@ -247,6 +247,15 @@ that is, at three scopes:
   background refetch should never silently clobber in-progress edits. It's
   also the state autosave watches for changes - see
   [Autosave](#autosave-workout-editor) below.
+- **Per-exercise:** `WorkoutExerciseContext` (`WorkoutExerciseProvider.tsx`),
+  rendered by `ExerciseCard` around its own subtree. Exposes `showTargets`,
+  `effortType`, and the derived `targets` array (see
+  [Set targets](#set-targets) below) to `SetsTableRow`/`TargetsDrawer`
+  without threading them through as props on every set row. The state
+  itself still lives in `ExerciseCard` (`useState`/`useMemo`) since it's
+  also read/written directly by that component's own JSX (the effort type
+  radio group, the show-targets switch) - the provider is just a thin
+  pass-through, not a second source of truth.
 - **Local:** component-level `useState` for form inputs and per-field
   validation errors (e.g. `login.tsx` tracks a separate error string per
   field rather than a single form-level error object).
@@ -342,6 +351,52 @@ it's called from the debounce effect (right when a real edit is detected,
 not from inside `saveWorkout`), so it appears immediately rather than only
 after the debounce delay and network round trip.
 
+## Set targets
+
+Each set can optionally have a target rep range (`targetRepsMin`/`Max`)
+and target effort range (`targetEffortMin`/`Max`, RPE or RIR depending on
+the exercise). Targets are edited in bulk via `TargetsDrawer`, opened from
+`ExerciseCard`'s options menu, rather than per-set inputs in the sets
+table - a common use case is applying the same target to several sets at
+once (e.g. three backoff sets all targeting 8-10 reps).
+
+**Grouping sets into target rows:** `ExerciseCard`'s `deriveTargets(sets)`
+groups the exercise's sets by identical target values into a `SetTargets[]`
+(`{ setIndices, targetRepsMin, targetRepsMax, targetEffortMin,
+targetEffortMax }`, defined in `types/workout.ts`) - sets with no target
+values at all are omitted. This is recomputed fresh from `sets` on every
+render (`useMemo`) rather than kept as independent state, so it can never
+drift out of sync with the actual per-set data (e.g. after a set is added
+or removed). `TargetsDrawer` seeds its own local per-row draft/selection
+state from this array whenever it opens, and writes changes back onto the
+individual sets in `WorkoutContext` - `targets` itself is read-only from
+the drawer's perspective.
+
+**"Apply to all sets":** a target row can be marked as applying to every
+set, including ones added later - this is the common case for a single
+fixed target across an entire exercise. Since this intent ("I want this
+target on every set, even future ones") can't be inferred purely from
+which sets currently share a target, it's tracked explicitly on
+`WorkoutExercise.targetAppliesToAllSets` rather than derived. That field
+is frontend-only and isn't persisted to the backend, so a freshly loaded
+workout won't have it set - `deriveAppliesToAllSets` falls back to
+inferring it (a single target row currently covering every set) in that
+case. Only one target row may claim "apply to all" at a time, since it's
+mutually exclusive with any other row having its own sets claimed.
+
+**Colour-coding actual vs. target values** (`SetsTableRow`): reps below
+`targetRepsMin` are always shown in red, since falling short of a minimum
+is unambiguous regardless of training goal; exceeding `targetRepsMax` is
+shown in green, but only when both a min and max are set (a deliberate
+range) - an exceeded max with no min set is left uncoloured, since that's
+genuinely ambiguous (bonus reps vs. a soft ceiling the lifter meant to
+enforce). Effort rating outside its target range (in either direction) is
+shown in amber/warning rather than red or green, since whether higher or
+lower effort is "better" depends on the lifter's goal (e.g. a bodybuilder
+training close to failure vs. a powerlifter leaving more in the tank) -
+unlike reps, there's no universally "good" direction to color-code.
+
+
 ## Types & factories
 
 `types/` mirrors the backend's DTOs (`Workout`, `WorkoutExercise`, `Set`,
@@ -363,10 +418,14 @@ mirrors the same rules for a responsive UX — e.g.
 `SetsTableRow.handleWeightChange` uses a regex plus a numeric check to
 block keystrokes that would produce an invalid weight (not 0–9999, not in
 steps of 0.5) before the value is even committed to state, and `login.tsx`
-does manual required-field/length checks before calling the API. The
-comments in the frontend validation code explicitly reference which
-backend rule they're mirroring, which is a handy pattern if this ever
-grows into a shared validation schema (e.g. Zod) down the line.
+does manual required-field/length checks before calling the API.
+`TargetsDrawer` reuses the same reps/effort regexes for the four target
+fields, plus a min-must-not-exceed-max check on blur (clamping the max
+down to the min rather than rejecting the edit) mirroring the backend's
+`WorkoutExerciseDto.Validate` rule. The comments in the frontend
+validation code explicitly reference which backend rule they're
+mirroring, which is a handy pattern if this ever grows into a shared
+validation schema (e.g. Zod) down the line.
 
 ## UI/styling conventions
 
@@ -388,6 +447,18 @@ grows into a shared validation schema (e.g. Zod) down the line.
   for most icons (loaded by name from Iconify's icon sets), and a handful
   of hand-written SVG components in `icons/` for icons used adjacent to
   HeroUI form controls (e.g. `DeleteIcon`, `EditIcon`).
+- **Scrollable `Drawer`/`Modal` bodies with a dynamic list of items:** wrap
+  each repeated block in a real element (e.g. `<div>`), never a
+  `<Fragment>`. A `Fragment`-wrapped group renders its children as direct
+  flex items of the scrollable container; if any of those children uses a
+  HeroUI component with `overflow-hidden` baked into its theme classes
+  (e.g. `Button`), its CSS flexbox "automatic minimum size" becomes `0`
+  instead of its content size, so once the list overflows, flex-shrink can
+  collapse that child to `0` height entirely rather than letting the
+  container scroll (discovered in `TargetsDrawer`, where "Remove Target"
+  buttons silently disappeared past the third target on mobile). Wrapping
+  each block in its own `<div>` makes that div the flex item instead, so
+  its own min-content size protects the whole group from being shrunk.
 
 ## Dependency notes
 

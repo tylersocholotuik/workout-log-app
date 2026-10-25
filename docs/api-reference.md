@@ -284,17 +284,31 @@ below.
 
 **`SetDto`**
 ```json
-{ "id": 1, "weight": 135, "reps": 5, "effortRating": 8, "exerciseId": 12 }
+{
+  "id": 1,
+  "weight": 135,
+  "reps": 5,
+  "effortRating": 8,
+  "exerciseId": 12,
+  "targetRepsMin": 5,
+  "targetRepsMax": 8,
+  "targetEffortMin": 7,
+  "targetEffortMax": 9
+}
 ```
 Despite the name, `exerciseId` here is the parent `workout_exercises.id`
 (see [database-design.md](database-design.md#table-reference)).
 Validation: `weight` 0–9999 in steps of 0.5 (`Validation/WeightRangeAttribute.cs`),
-`reps` has its own range check (`Validation/RepsRangeAttribute.cs`);
-`effortRating` is 0–10, and must be in steps of 0.5 if the parent
-`WorkoutExerciseDto.effortType` is `"rpe"`, or a whole number if `"rir"` —
-enforced via `WorkoutExerciseDto`'s `IValidatableObject.Validate` rather
-than a `[ValidationAttribute]`, since the rule depends on a sibling field.
-All three set fields are nullable.
+`reps`/`targetRepsMin`/`targetRepsMax` share the same range check
+(`Validation/RepsRangeAttribute.cs`);
+`effortRating`, `targetEffortMin`, and `targetEffortMax` are each 0–10, and
+must be in steps of 0.5 if the parent `WorkoutExerciseDto.effortType` is
+`"rpe"`, or a whole number if `"rir"` — enforced via `WorkoutExerciseDto`'s
+`IValidatableObject.Validate` rather than a `[ValidationAttribute]`, since
+the rule depends on a sibling field. All of a set's fields are nullable and
+optional; the four target fields don't have to be set in matched pairs,
+but if both a min and max are supplied for either reps or effort, min must
+not be greater than max.
 
 **`ExerciseHistoryDto`**
 ```json
