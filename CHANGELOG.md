@@ -25,6 +25,10 @@ change behind it.
 
 ### Changed
 
+- Production deploys no longer require `e2e-staging` to pass (they still wait for it to finish);
+  the required reviewer on the `production` environment decides based on the E2E results.
+- Removed the non-functional "Upload Playwright report" step from `deploy.yml` (the `line`
+  reporter doesn't generate an HTML report, so there was nothing to upload).
 - Refactored exercise-card target/effort-type state into a new `WorkoutExerciseContext` /
   `WorkoutExerciseProvider` to avoid prop-drilling into `SetsTableRow`/`TargetsDrawer`.
 

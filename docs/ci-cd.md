@@ -23,7 +23,7 @@ flowchart TD
     K -->|yes| M[Deploy frontend to Vercel staging]
     L --> N[Playwright E2E vs staging]
     M --> N
-    N --> O[production environment: manual approval]
+    N --> O[production environment: manual approval<br/>review E2E results]
     O --> P{backend changed?}
     O --> Q{frontend changed?}
     P -->|yes| R[Deploy backend to Render production]
@@ -108,14 +108,18 @@ Runs on every push to `main` (i.e. every merged PR):
    docs-only merge, where both deploy jobs are skipped, does *not* trigger
    an E2E run against an unchanged staging environment). Runs the full
    Playwright suite (`playwright-tests/`) against the staging URLs with
-   `--reporter=line` for console pass/fail output; the HTML report (with
-   failure traces/screenshots) is only uploaded as an artifact
-   `if: failure()`, since that's the only place trace data exists - console
-   text alone doesn't capture it.
+   `--reporter=line` so pass/fail results print directly in the job log
+   (no HTML report is generated or uploaded). A final step always deletes
+   the E2E test workouts.
 5. **`deploy-production-backend`** / **`deploy-production-frontend`** -
-   gated by `environment: production`. A required reviewer is configured so 
-   these jobs pause for manual approval after `e2e-staging`
-   succeeds.
+   gated by `environment: production`. A required reviewer is configured so
+   these jobs pause for manual approval. They wait for `e2e-staging` to
+   finish but are **not** gated on it passing: they run if it finished with
+   either `success` or `failure`, so a flaky E2E failure doesn't block
+   production. The reviewer is expected to check the E2E results in the
+   job log before approving. They are still skipped if `e2e-staging` was
+   skipped (e.g. a staging deploy failed, or nothing changed) or the run was
+   cancelled.
 
 #### Manually triggering a deploy (`workflow_dispatch`)
 
@@ -159,7 +163,7 @@ Because staging and production are **separate** Render services and
 literally promote one build artifact across projects. Both composite actions
 are always invoked with the same `github.sha`, so what gets built and
 deployed to production is guaranteed to be the identical source commit that
-already passed `e2e-staging` - just rebuilt fresh in each project/service
+already ran through `e2e-staging` - just rebuilt fresh in each project/service
 rather than promoted as one artifact.
 
 ## Required secrets and variables
