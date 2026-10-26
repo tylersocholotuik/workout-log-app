@@ -16,6 +16,8 @@ change behind it.
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-10-25
+
 ### Added
 
 - Added optional target rep and effort ranges per set (`targetRepsMin/Max`, `targetEffortMin/Max`),
@@ -485,7 +487,8 @@ not itemized here — this entry describes the state of the app as of this tag.
   `/health` endpoint for platform health checks.
 - Database migrations and idempotent seed data for local/dev environments.
 
-[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.9.1...HEAD
+[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.10.0...HEAD
+[1.10.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.10.0
 [1.9.1]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.9.1
 [1.9.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.9.0
 [1.8.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.8.0
