@@ -312,7 +312,7 @@ export default function TargetsDrawer({
         const emptyTargets = selectedSetsByTarget.filter((indices) => indices.size === 0).length;
         return unclaimedSets - emptyTargets <= 0;
     }, [selectedSetsByTarget, exercise.sets.length]);
-    
+
     const addTarget = () => {
         const emptyTargetDraft = {
             targetRepsMin: "",
@@ -320,12 +320,12 @@ export default function TargetsDrawer({
             targetEffortMin: "",
             targetEffortMax: "",
         };
-        
+
         setTargetDrafts((prev) => [...prev, emptyTargetDraft]);
 
         setSelectedSetsByTarget((prev) => [...prev, new Set<number>()]);
     }
-    
+
     const removeTarget = (targetIndex: number) => {
         const setIndicesToRemove = Array.from(selectedSetsByTarget[targetIndex]);
         const wasAppliesToAllSets = appliesToAllByTarget[targetIndex];
@@ -382,6 +382,7 @@ export default function TargetsDrawer({
                                         labelPlacement="outside"
                                         size="sm"
                                         value={targetDrafts[targetIndex].targetRepsMin}
+                                        inputMode="decimal"
                                         onValueChange={(value) => {
                                             handleInputChange({
                                                 value,
@@ -399,6 +400,7 @@ export default function TargetsDrawer({
                                         labelPlacement="outside"
                                         size="sm"
                                         value={targetDrafts[targetIndex].targetRepsMax}
+                                        inputMode="decimal"
                                         onValueChange={(value) => {
                                             handleInputChange({
                                                 value,
@@ -418,6 +420,7 @@ export default function TargetsDrawer({
                                         labelPlacement="outside"
                                         size="sm"
                                         value={targetDrafts[targetIndex].targetEffortMin}
+                                        inputMode="decimal"
                                         onValueChange={(value) => {
                                             handleInputChange({
                                                 value,
@@ -435,6 +438,7 @@ export default function TargetsDrawer({
                                         labelPlacement="outside"
                                         size="sm"
                                         value={targetDrafts[targetIndex].targetEffortMax}
+                                        inputMode="decimal"
                                         onValueChange={(value) => {
                                             handleInputChange({
                                                 value,
@@ -490,18 +494,29 @@ export default function TargetsDrawer({
                             >
                                 Remove Target
                             </Button>
-                            <Divider />
+                            <Divider/>
                         </div>)}
+                    <Button
+                        className="shrink-0"
+                        size="md"
+                        variant="solid"
+                        color="primary"
+                        isDisabled={cannotAddTarget}
+                        onPress={addTarget}
+                    >
+                        Add Target
+                    </Button>
+                    <div className="flex justify-center mt-4">
                         <Button
                             className="shrink-0"
                             size="md"
-                            variant="solid"
-                            color="primary"
-                            isDisabled={cannotAddTarget}
-                            onPress={addTarget}
+                            variant="flat"
+                            color="default"
+                            onPress={() => handleDrawerOpenChange(false)}
                         >
-                            Add Target
+                            Done
                         </Button>
+                    </div>
                 </DrawerBody>
                 <DrawerFooter>
                 </DrawerFooter>
