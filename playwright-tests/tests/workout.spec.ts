@@ -326,7 +326,7 @@ test.describe('Set targets', () => {
     const drawer = page.getByRole('dialog');
 
     await drawer.getByRole('button', { name: 'Add Target' }).click();
-    await applyTargetToSets(page, [1]);
+    await waitForAutosave(page, () => applyTargetToSets(page, [1]));
     await drawer.getByRole('textbox', { name: 'Min Reps' }).fill('8');
     await drawer.getByRole('textbox', { name: 'Max Reps' }).fill('10');
     await drawer.getByRole('textbox', { name: 'Min RPE' }).fill('7');
@@ -352,7 +352,7 @@ test.describe('Set targets', () => {
 
     await drawer.getByRole('button', { name: 'Add Target' }).click();
     await drawer.getByRole('textbox', { name: 'Min Reps' }).fill('5');
-    await drawer.getByRole('checkbox', { name: 'Apply to all' }).click();
+    await waitForAutosave(page, () => drawer.getByRole('checkbox', { name: 'Apply to all' }).click());
     await waitForAutosave(page, () => drawer.getByRole('button', { name: 'Close', exact: true }).click());
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(card.getByText('Target: >= 5')).toBeVisible();
@@ -374,15 +374,17 @@ test.describe('Set targets', () => {
     const drawer = page.getByRole('dialog');
 
     await drawer.getByRole('button', { name: 'Add Target' }).click();
-    await applyTargetToSets(page, [1]);
+    await waitForAutosave(page, () => applyTargetToSets(page, [1]));
     await drawer.getByRole('textbox', { name: 'Min Reps' }).fill('8');
     await waitForAutosave(page, () => drawer.getByRole('textbox', { name: 'Min Reps' }).blur());
 
     await drawer.getByRole('button', { name: 'Add Target' }).click();
     await page.getByRole('button', { name: 'Apply to Sets' }).last().click();
     await expect(page.getByRole('option', { name: '1', exact: true })).toBeDisabled();
-    await page.getByRole('option', { name: '2', exact: true }).click();
-    await page.getByText('Set Targets', { exact: true }).click();
+    await waitForAutosave(page, async () => {
+      await page.getByRole('option', { name: '2', exact: true }).click();
+      await page.getByText('Set Targets', { exact: true }).click();
+    });
     // wait out the popover's own close animation (slower on WebKit) so the
     // Escape press below (meant for the TargetsDrawer) isn't instead
     // consumed by this still-closing nested popover.
@@ -407,7 +409,7 @@ test.describe('Set targets', () => {
 
     await drawer.getByRole('button', { name: 'Add Target' }).click();
     await drawer.getByRole('textbox', { name: 'Min Reps' }).fill('5');
-    await drawer.getByRole('checkbox', { name: 'Apply to all' }).click();
+    await waitForAutosave(page, () => drawer.getByRole('checkbox', { name: 'Apply to all' }).click());
     await waitForAutosave(page, () => drawer.getByRole('button', { name: 'Close', exact: true }).click());
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(card.getByText('Target: >= 5')).toBeVisible();
@@ -416,8 +418,12 @@ test.describe('Set targets', () => {
     await expect(page.getByRole('menu')).toBeVisible();
     await page.getByRole('menuitem', { name: 'Set targets' }).click();
     drawer = page.getByRole('dialog');
-    await drawer.getByRole('button', { name: 'Remove Target' }).click();
-    await waitForAutosave(page, () => drawer.getByRole('button', { name: 'Close', exact: true }).click());
+    // Remove Target is the only remaining mutation here - once it clears the
+    // last target row, closing the (now-empty) drawer has nothing left to
+    // commit, so unlike other tests the Close click triggers no further
+    // autosave to wait for.
+    await waitForAutosave(page, () => drawer.getByRole('button', { name: 'Remove Target' }).click());
+    await drawer.getByRole('button', { name: 'Close', exact: true }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
 
     await expect(card.getByText(/Target:/)).toHaveCount(0);
@@ -435,7 +441,7 @@ test.describe('Set targets', () => {
 
     await drawer.getByRole('button', { name: 'Add Target' }).click();
     await drawer.getByRole('textbox', { name: 'Min Reps' }).fill('8');
-    await drawer.getByRole('checkbox', { name: 'Apply to all' }).click();
+    await waitForAutosave(page, () => drawer.getByRole('checkbox', { name: 'Apply to all' }).click());
     await waitForAutosave(page, () => drawer.getByRole('button', { name: 'Close', exact: true }).click());
     await expect(page.getByRole('dialog')).toHaveCount(0);
 
@@ -459,7 +465,7 @@ test.describe('Set targets', () => {
 
     await drawer.getByRole('button', { name: 'Add Target' }).click();
     await drawer.getByRole('textbox', { name: 'Min Reps' }).fill('5');
-    await drawer.getByRole('checkbox', { name: 'Apply to all' }).click();
+    await waitForAutosave(page, () => drawer.getByRole('checkbox', { name: 'Apply to all' }).click());
     await waitForAutosave(page, () => drawer.getByRole('button', { name: 'Close', exact: true }).click());
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(card.getByText('Target: >= 5')).toBeVisible();
@@ -490,7 +496,7 @@ test.describe('Set targets', () => {
     await drawer.getByRole('button', { name: 'Add Target' }).click();
     await drawer.getByRole('textbox', { name: 'Min Reps' }).fill('8');
     await drawer.getByRole('textbox', { name: 'Max Reps' }).fill('10');
-    await drawer.getByRole('checkbox', { name: 'Apply to all' }).click();
+    await waitForAutosave(page, () => drawer.getByRole('checkbox', { name: 'Apply to all' }).click());
     await waitForAutosave(page, () => drawer.getByRole('button', { name: 'Close', exact: true }).click());
     await expect(page.getByRole('dialog')).toHaveCount(0);
 
