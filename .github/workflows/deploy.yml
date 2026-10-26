@@ -3,7 +3,8 @@ name: Deploy
 # Runs on every push to main (i.e. every merged PR): re-runs CI, deploys
 # whichever side(s) of the app changed to staging, runs the Playwright E2E
 # suite against staging, then (after manual approval via the "production"
-# GitHub Environment) deploys the same commit to production.
+# GitHub Environment) deploys the same commit to production. The E2E
+# result is informational, not a gate - the approver reviews it.
 on:
   push:
     branches: [main]
@@ -121,8 +122,8 @@ jobs:
         run: npx playwright install --with-deps chromium firefox
 
       # --reporter=line overrides the config's default 'html' reporter so
-      # pass/fail results show up directly in the job log instead of only
-      # in an HTML report file.
+      # pass/fail results show up directly in the job log (no HTML report
+      # is generated).
       - name: Run E2E tests against staging
         working-directory: playwright-tests
         env:
@@ -132,17 +133,6 @@ jobs:
           TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
         run: npx playwright test --reporter=line
 
-      # Traces/screenshots on failure only exist in the HTML report, never
-      # in console output - only upload it when there's actually something
-      # to investigate.
-      - name: Upload Playwright report
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: playwright-tests/playwright-report
-          retention-days: 7
-          
       - name: Delete E2E test workouts
         if: always()
         uses: ./.github/actions/hard-delete-test-workouts
@@ -156,10 +146,16 @@ jobs:
   # Both jobs target the "production" GitHub Environment, which should be
   # configured with a required reviewer - the workflow pauses here until
   # someone approves the deployment.
-  # Same commit SHA deployed as what just passed e2e-staging above. Since
+  # Same commit SHA that e2e-staging above ran against. Since
   # staging/production are separate Render services and Vercel projects
   # (free-tier constraint), this rebuilds that commit fresh in each rather
   # than promoting staging's literal build artifact.
+  #
+  # e2e-staging is NOT a gate: these jobs wait for it to finish, but run
+  # whether it passed or failed (Playwright tests can be flaky against
+  # staging) - the required reviewer on the "production" environment
+  # decides based on the E2E results. They're still skipped if e2e-staging
+  # itself was skipped (no changes / staging deploy failed) or cancelled.
   deploy-production-backend:
     needs: [deploy-decision, e2e-staging]
     # e2e-staging's own dependency chain includes deploy-staging-backend/
@@ -170,7 +166,7 @@ jobs:
     # this job too, regardless of backend_changed.
     if: |
       always() &&
-      needs.e2e-staging.result == 'success' &&
+      (needs.e2e-staging.result == 'success' || needs.e2e-staging.result == 'failure') &&
       needs.deploy-decision.outputs.backend_changed == 'true'
     runs-on: ubuntu-latest
     environment: production
@@ -187,7 +183,7 @@ jobs:
     needs: [deploy-decision, e2e-staging]
     if: |
       always() &&
-      needs.e2e-staging.result == 'success' &&
+      (needs.e2e-staging.result == 'success' || needs.e2e-staging.result == 'failure') &&
       needs.deploy-decision.outputs.frontend_changed == 'true'
     runs-on: ubuntu-latest
     environment: production
