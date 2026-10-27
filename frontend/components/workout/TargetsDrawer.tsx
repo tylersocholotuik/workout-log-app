@@ -16,7 +16,7 @@ import {
 import {useWorkoutContext} from "@/pages/workout/[workoutId]";
 import {useWorkoutExercise} from "@/components/workout/WorkoutExerciseProvider";
 
-import {Dispatch, SetStateAction, useMemo, useState} from "react";
+import {Dispatch, SetStateAction, useMemo, useRef, useState} from "react";
 
 import {WorkoutExercise, SetTargets} from "@/types";
 import {deriveAppliesToAllSets} from "@/components/workout/ExerciseCard";
@@ -90,6 +90,12 @@ export default function TargetsDrawer({
     const [selectedSetsByTarget, setSelectedSetsByTarget] = useState<Set<number>[]>(() =>
         targets.map((target) => new Set(target.setIndices))
     );
+
+    // guards against the "Apply to all" Checkbox's onValueChange firing twice for a
+    // single tap, a known React/WebKit quirk on mobile Safari and Chrome (iOS). Only
+    // the first dispatch per physical tap is honored; any duplicate arriving before
+    // the next paint is dropped, regardless of which value it reports.
+    const applyToAllTapInFlightRef = useRef(false);
 
     // targets is derived fresh from the exercise's sets, so it's always accurate -
     // reseed the local per-row draft/selection state from it whenever the drawer
@@ -254,6 +260,17 @@ export default function TargetsDrawer({
     // (so it's only enabled when no other row has claims); turning it off just
     // stops future sets from inheriting it - sets already covered keep the target
     const handleApplyToAllChange = (targetIndex: number, checked: boolean) => {
+        // mobile Safari/Chrome (iOS) can dispatch this handler twice for a single tap.
+        // Only the first dispatch per tap is honored; drop any duplicate that arrives
+        // before the next paint, whatever value it reports.
+        if (applyToAllTapInFlightRef.current) {
+            return;
+        }
+        applyToAllTapInFlightRef.current = true;
+        requestAnimationFrame(() => {
+            applyToAllTapInFlightRef.current = false;
+        });
+
         const previousIndices = selectedSetsByTarget[targetIndex];
         const newIndices = checked
             ? new Set(exercise.sets.map((_, setIndex) => setIndex))
