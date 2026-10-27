@@ -504,7 +504,6 @@ export default function ExerciseCard({
                         <SetsTable
                             sets={exercise.sets}
                             weightUnit={exercise.weightUnit}
-                            effortType={exercise.effortType}
                             exerciseIndex={exerciseIndex}
                         />
                         {oneRepMax && showOneRepMax && (

@@ -1,20 +1,21 @@
 import SetsTableRow from "./SetsTableRow";
+import {useWorkoutExercise} from "@/components/workout/WorkoutExerciseProvider";
 
-import {EffortRatingType, Set, WeightUnit} from "@/types";
+import {Set, WeightUnit} from "@/types";
 
 interface SetsTableProps {
     sets: Set[];
     weightUnit: WeightUnit;
-    effortType: EffortRatingType;
     exerciseIndex: number;
 }
 
 export default function SetsTable({
     sets,
     weightUnit,
-    effortType,
     exerciseIndex,
 }: SetsTableProps) {
+    const {effortType} = useWorkoutExercise();
+
     return (
         <div className="grid grid-cols-7 gap-x-2 gap-y-1 justify-items-center items-start">
             <p className="col-span-2 text-sm dark:text-foreground-500 font-semibold mb-1">
@@ -34,7 +35,6 @@ export default function SetsTable({
                     setIndex={setIndex}
                     exerciseIndex={exerciseIndex}
                     weightUnit={weightUnit}
-                    effortType={effortType}
                 />
             ))}
         </div>

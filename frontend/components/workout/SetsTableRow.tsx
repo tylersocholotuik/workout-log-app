@@ -15,7 +15,6 @@ interface SetTableRowProps {
     setIndex: number;
     exerciseIndex: number;
     weightUnit: string;
-    effortType: string;
 }
 
 export default function SetsTableRow({
@@ -23,7 +22,6 @@ export default function SetsTableRow({
                                          setIndex,
                                          exerciseIndex,
                                          weightUnit,
-                                         effortType,
                                      }: SetTableRowProps) {
     // ensuring "null" does not appear in inputs, set to empty string instead
     const weightString = set.weight !== null ? String(set.weight) : "";
@@ -39,7 +37,7 @@ export default function SetsTableRow({
     const [effortRating, setEffortRating] = useState(effortRatingString);
 
     const {workout, setWorkout} = useWorkoutContext();
-    const {showTargets} = useWorkoutExercise();
+    const {showTargets, effortType} = useWorkoutExercise();
 
     // Rules for weight:
     //  min: 0, max: 9999, steps of 0.5, can be empty string, only 1 digit after decimal (0 or 5), only 1 decimal
