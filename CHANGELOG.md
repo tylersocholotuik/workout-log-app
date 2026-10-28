@@ -16,6 +16,8 @@ change behind it.
 
 ## [Unreleased]
 
+## [1.10.1] - 2026-10-27
+
 ### Fixed
 
 - Fixed the "Apply to all" checkbox in the "Set targets" drawer intermittently failing to stay
@@ -23,7 +25,7 @@ change behind it.
   stick. The underlying state was always correct; a mobile WebKit quirk around controlled
   checkboxes was preventing the checked visual from repainting. The checkbox now remounts
   whenever its value changes, forcing the repaint.
-
+  
 ## [1.10.0] - 2026-10-25
 
 ### Added
@@ -495,7 +497,8 @@ not itemized here — this entry describes the state of the app as of this tag.
   `/health` endpoint for platform health checks.
 - Database migrations and idempotent seed data for local/dev environments.
 
-[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.10.0...HEAD
+[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.10.1...HEAD
+[1.10.1]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.10.1
 [1.10.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.10.0
 [1.9.1]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.9.1
 [1.9.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.9.0
