@@ -20,8 +20,9 @@ change behind it.
 
 - Fixed the "Apply to all" checkbox in the "Set targets" drawer intermittently failing to stay
   checked (or unchecked) on mobile browsers (iOS Safari and Chrome), requiring several taps to
-  stick. A known React/WebKit quirk can dispatch the checkbox's change handler twice for a single
-  tap; the handler now ignores any duplicate dispatch arriving before the next paint.
+  stick. The underlying state was always correct; a mobile WebKit quirk around controlled
+  checkboxes was preventing the checked visual from repainting. The checkbox now remounts
+  whenever its value changes, forcing the repaint.
 
 ## [1.10.0] - 2026-10-25
 
