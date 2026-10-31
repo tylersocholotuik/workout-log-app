@@ -1,4 +1,4 @@
-import { expect, Page, Locator, APIRequestContext } from '@playwright/test';
+import { expect, Page, Locator, APIRequestContext, Request } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 
@@ -257,14 +257,87 @@ export async function editWorkoutDetails(
 // registered before the request fires - otherwise a fast local round-trip
 // can complete before a listener set up *after* the action ever attaches,
 // and this would then hang until the test timeout.
+//
+// The app can send more autosave PUTs than the test action that "caused" one
+// (e.g. "Add Target" dirties the workout too, ~300ms before its own PUT goes
+// out), and each PUT's response is merged back into local state when it
+// arrives, overwriting any edit made since it was sent. Matching just "the
+// next PUT response" could therefore pick up a stale, earlier PUT, and the
+// test's next edit would then be lost to a response that was still in flight
+// (a flake that mostly shows up on slow browsers, e.g. Firefox on CI). So:
+//   1. wait for earlier autosaves to go idle before the action,
+//   2. only match a PUT that started *after* the action began, and
+//   3. wait for autosaves to go idle again before returning.
+const AUTOSAVE_URL = /\/api\/workouts\/[^/?]+$/;
+// Autosave debounces 300ms (AUTOSAVE_DELAY_MS in [workoutId].tsx) - leave a
+// margin over that so a not-yet-sent PUT counts as "still pending".
+const AUTOSAVE_QUIET_MS = 500;
+const AUTOSAVE_IDLE_TIMEOUT_MS = 20_000;
+
+type AutosaveTracker = { inFlight: number; lastActivity: number };
+const autosaveTrackers = new WeakMap<Page, AutosaveTracker>();
+
+function trackAutosaves(page: Page): AutosaveTracker {
+  let tracker = autosaveTrackers.get(page);
+  if (tracker) return tracker;
+
+  const t: AutosaveTracker = { inFlight: 0, lastActivity: 0 };
+  const isAutosave = (req: Request) => req.method() === 'PUT' && AUTOSAVE_URL.test(req.url());
+  const done = (req: Request) => {
+    if (!isAutosave(req)) return;
+    t.inFlight = Math.max(0, t.inFlight - 1);
+    t.lastActivity = Date.now();
+  };
+  page.on('request', (req) => {
+    if (!isAutosave(req)) return;
+    t.inFlight++;
+    t.lastActivity = Date.now();
+  });
+  page.on('requestfinished', done);
+  page.on('requestfailed', done);
+
+  autosaveTrackers.set(page, t);
+  return t;
+}
+
+async function waitForAutosaveIdle(page: Page, tracker: AutosaveTracker) {
+  const deadline = Date.now() + AUTOSAVE_IDLE_TIMEOUT_MS;
+  while (tracker.inFlight > 0 || Date.now() - tracker.lastActivity < AUTOSAVE_QUIET_MS) {
+    if (Date.now() > deadline) {
+      throw new Error('Timed out waiting for workout autosaves to go idle.');
+    }
+    await page.waitForTimeout(50);
+  }
+  // The response's body can finish a task or two before the app applies it
+  // (React Query's onSuccess) - let the page drain those before the test
+  // touches the UI again.
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(resolve, 0)))
+      )
+  );
+}
+
 export async function waitForAutosave(page: Page, action: () => Promise<void>): Promise<void> {
-  const [response] = await Promise.all([
-    page.waitForResponse(
-      (res) => /\/api\/workouts\/[^/?]+$/.test(res.url()) && res.request().method() === 'PUT'
-    ),
-    action(),
-  ]);
-  expect(response.ok()).toBeTruthy();
+  const tracker = trackAutosaves(page);
+  await waitForAutosaveIdle(page, tracker);
+
+  const ownRequest = new Promise<Request>((resolve) => {
+    const onRequest = (req: Request) => {
+      if (req.method() === 'PUT' && AUTOSAVE_URL.test(req.url())) {
+        page.off('request', onRequest);
+        resolve(req);
+      }
+    };
+    page.on('request', onRequest);
+  });
+
+  await action();
+
+  const response = await (await ownRequest).response();
+  expect(response?.ok()).toBeTruthy();
+  await waitForAutosaveIdle(page, tracker);
 }
 
 // Clicks "Finish Workout" and waits for the finish request to complete.
