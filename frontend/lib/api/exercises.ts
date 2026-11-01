@@ -1,5 +1,6 @@
 import {apiFetch} from "./client";
 import {throwApiError} from "./apiErrors";
+import {ExerciseType} from "@/types";
 
 // NEXT_PUBLIC_API_URL should be left unset in Vercel (staging/production) so
 // requests are made relative to the frontend's own origin and proxied to the
@@ -24,14 +25,15 @@ export const getExercises = async () => {
 };
 
 export const addUserExercise = async (
-    name: string
+    name: string,
+    exerciseType: ExerciseType
 ) => {
     const res = await apiFetch(`${API_URL}/api/exercises`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name, exerciseType }),
     });
 
     if (!res.ok) {

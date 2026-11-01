@@ -1,4 +1,4 @@
-import { WeightUnit, EffortRatingType } from './common';
+import { WeightUnit, DistanceUnit, EffortRatingType } from './common';
 import { Exercise } from './exercise';
 
 export interface Workout {
@@ -15,6 +15,7 @@ export interface WorkoutExercise {
     id: number;
     notes: string;
     weightUnit: WeightUnit;
+    distanceUnit: DistanceUnit;
     effortType: EffortRatingType;
     exerciseId: number;
     exercise: Exercise;
@@ -28,10 +29,16 @@ export interface Set {
     id: number;
     weight: number | null;
     reps: number | null;
+    distance: number | null;
+    durationSeconds: number | null;
     effortRating: number | null;
     exerciseId: number;
     targetRepsMin: number | null;
     targetRepsMax: number | null;
+    targetDistanceMin: number | null;
+    targetDistanceMax: number | null;
+    targetSecondsMin: number | null;
+    targetSecondsMax: number | null;
     targetEffortMin: number | null;
     targetEffortMax: number | null;
 }
@@ -42,6 +49,10 @@ export interface SetTargets {
     setIndices: number[];
     targetRepsMin: number | null;
     targetRepsMax: number | null;
+    targetDistanceMin: number | null;
+    targetDistanceMax: number | null;
+    targetSecondsMin: number | null;
+    targetSecondsMax: number | null;
     targetEffortMin: number | null;
     targetEffortMax: number | null;
 }
