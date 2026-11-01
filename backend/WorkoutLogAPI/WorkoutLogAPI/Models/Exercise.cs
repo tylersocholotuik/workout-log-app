@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
+using WorkoutLogAPI.Enums;
 
 namespace WorkoutLogAPI.Models;
 
@@ -14,6 +15,9 @@ public class Exercise : IAuditableEntity
 
     [Column("name")]
     public string Name { get; set; } = null!;
+    
+    [Column("exercise_type")]
+    public ExerciseType ExerciseType { get; set; }
 
     [Column("user_id")]
     public string? UserId { get; set; }  // null = system exercise, otherwise = user's custom exercise

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using WorkoutLogAPI.Services;
 using WorkoutLogAPI.DTOs.Workouts;
 using WorkoutLogAPI.Extensions;
@@ -134,6 +135,11 @@ public class WorkoutController : ControllerBase
             _logger.LogWarning(e, "Workout already exists: {Message}", e.Message);
             return Conflict(new { error = e.Message });
         }
+        catch (WorkoutValidationException e)
+        {
+            _logger.LogWarning(e, "Workout failed exercise/set validation: {Errors}", e.Errors);
+            return ValidationProblem(BuildModelState(e.Errors));
+        }
         catch (Exception e)
         {
             _logger.LogError(e, "Error creating workout: {Message}", e.Message);
@@ -157,6 +163,11 @@ public class WorkoutController : ControllerBase
         {
             _logger.LogWarning(e, "Workout already exists: {Message}", e.Message);
             return Conflict(new { error = e.Message });
+        }
+        catch (WorkoutValidationException e)
+        {
+            _logger.LogWarning(e, "Workout failed exercise/set validation: {Errors}", e.Errors);
+            return ValidationProblem(BuildModelState(e.Errors));
         }
         catch (Exception e)
         {
@@ -221,4 +232,23 @@ public class WorkoutController : ControllerBase
         }
     }
     #endregion
+
+    // Converts the per-field error lists collected by WorkoutService into a
+    // ModelStateDictionary so ValidationProblem() can return them in the same
+    // { title, errors: { field: string[] } } shape as automatic model-binding
+    // validation failures, which the frontend already knows how to parse.
+    private static ModelStateDictionary BuildModelState(Dictionary<string, List<string>> errors)
+    {
+        var modelState = new ModelStateDictionary();
+
+        foreach (var (key, messages) in errors)
+        {
+            foreach (var message in messages)
+            {
+                modelState.AddModelError(key, message);
+            }
+        }
+
+        return modelState;
+    }
 }

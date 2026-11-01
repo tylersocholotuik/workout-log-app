@@ -15,9 +15,16 @@ public record SetDto(
     [param: RepsRange] int? TargetRepsMin = null,
     [param: RepsRange] int? TargetRepsMax = null,
     double? TargetEffortMin = null,
-    double? TargetEffortMax = null)
+    double? TargetEffortMax = null,
+    [param: DistanceRange] double? Distance = null,
+    [param: DistanceRange] double? TargetDistanceMin = null,
+    [param: DistanceRange] double? TargetDistanceMax = null,
+    [param: DurationRange] int? DurationSeconds = null,
+    [param: DurationRange] int? TargetSecondsMin = null,
+    [param: DurationRange] int? TargetSecondsMax = null)
 {
     public static SetDto FromSet(Set set) =>
         new(set.Id, set.Weight, set.Reps, set.EffortRating, set.ExerciseId, set.TargetRepsMin, set.TargetRepsMax,
-            set.TargetEffortMin, set.TargetEffortMax);
+            set.TargetEffortMin, set.TargetEffortMax, set.Distance, set.TargetDistanceMin, set.TargetDistanceMax,
+            set.DurationSeconds, set.TargetSecondsMin, set.TargetSecondsMax);
 }
