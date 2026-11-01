@@ -38,7 +38,7 @@ public class AdminControllerTests(PostgresContainerFixture postgres) : Integrati
         var workoutDto = new WorkoutDto(
             null, title, null, DateOnly.FromDateTime(DateTime.UtcNow), null,
             [
-                new WorkoutExerciseDto(null, null, Enums.WeightUnit.Lbs, Enums.EffortRatingType.Rpe, exerciseId, null, null,
+                new WorkoutExerciseDto(null, null, Enums.WeightUnit.Lbs, null, Enums.EffortRatingType.Rpe, exerciseId, null, null,
                     [new SetDto(Id: null, Weight: 100, Reps: 5, EffortRating: 8, ExerciseId: exerciseId)])
             ]);
 
