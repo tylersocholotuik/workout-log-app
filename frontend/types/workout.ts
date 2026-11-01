@@ -14,8 +14,8 @@ export interface Workout {
 export interface WorkoutExercise {
     id: number;
     notes: string;
-    weightUnit: WeightUnit;
-    distanceUnit: DistanceUnit;
+    weightUnit: WeightUnit | null;
+    distanceUnit: DistanceUnit | null;
     effortType: EffortRatingType;
     exerciseId: number;
     exercise: Exercise;

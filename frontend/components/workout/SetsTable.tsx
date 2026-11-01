@@ -5,7 +5,7 @@ import {Set, WeightUnit} from "@/types";
 
 interface SetsTableProps {
     sets: Set[];
-    weightUnit: WeightUnit;
+    weightUnit: WeightUnit | null;
     exerciseIndex: number;
 }
 

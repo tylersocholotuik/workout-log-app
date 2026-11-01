@@ -20,8 +20,8 @@ export const createEmptyWorkout = (): Workout => {
 export const createEmptyWorkoutExercise = (): WorkoutExercise => ({
     id: 0,
     notes: "",
-    weightUnit: "lbs",
-    distanceUnit: "meters",
+    weightUnit: null,
+    distanceUnit: null,
     effortType: "rpe",
     exerciseId: 0,
     exercise: { 

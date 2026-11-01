@@ -14,7 +14,7 @@ interface SetTableRowProps {
     set: Set;
     setIndex: number;
     exerciseIndex: number;
-    weightUnit: string;
+    weightUnit: string | null;
 }
 
 export default function SetsTableRow({
