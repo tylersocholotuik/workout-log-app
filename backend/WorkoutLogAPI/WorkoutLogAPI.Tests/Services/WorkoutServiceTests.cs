@@ -1028,6 +1028,104 @@ public class WorkoutServiceTests
     }
 
     [Fact]
+    public async Task CreateWorkout_WithDistanceExerciseAndOnlyWeightUnit_ThrowsWorkoutValidationException()
+    {
+        var (context, service) = CreateSut();
+        var exercise = SeedExercise(context, exerciseType: ExerciseType.Distance);
+        const string userId = "user-1";
+
+        var dto = BuildWorkoutDto(
+            userId, exercise.Id, weightUnit: WeightUnit.Lbs, distanceUnit: null,
+            set: new SetDto(Id: null, Weight: 50, Reps: null, EffortRating: 8, ExerciseId: 0, Distance: 100));
+
+        var ex = await Assert.ThrowsAsync<WorkoutValidationException>(
+            () => service.CreateWorkout(dto, userId));
+
+        Assert.Contains(
+            $"Exercise '{exercise.Name}' is of type 'Distance' and must have both a weight unit and a distance unit specified.",
+            ex.Errors["Exercises[0]"]);
+    }
+
+    [Fact]
+    public async Task CreateWorkout_WithDistanceExerciseAndOnlyDistanceUnit_ThrowsWorkoutValidationException()
+    {
+        var (context, service) = CreateSut();
+        var exercise = SeedExercise(context, exerciseType: ExerciseType.Distance);
+        const string userId = "user-1";
+
+        var dto = BuildWorkoutDto(
+            userId, exercise.Id, weightUnit: null, distanceUnit: DistanceUnit.Meters,
+            set: new SetDto(Id: null, Weight: null, Reps: null, EffortRating: 8, ExerciseId: 0, Distance: 100));
+
+        var ex = await Assert.ThrowsAsync<WorkoutValidationException>(
+            () => service.CreateWorkout(dto, userId));
+
+        Assert.Contains(
+            $"Exercise '{exercise.Name}' is of type 'Distance' and must have both a weight unit and a distance unit specified.",
+            ex.Errors["Exercises[0]"]);
+    }
+
+    [Fact]
+    public async Task CreateWorkout_WithDistanceExerciseAndSetHavingDurationOrReps_ThrowsWorkoutValidationException()
+    {
+        var (context, service) = CreateSut();
+        var exercise = SeedExercise(context, exerciseType: ExerciseType.Distance);
+        const string userId = "user-1";
+
+        var dto = BuildWorkoutDto(
+            userId, exercise.Id, weightUnit: WeightUnit.Lbs, distanceUnit: DistanceUnit.Meters,
+            set: new SetDto(Id: null, Weight: 50, Reps: null, EffortRating: 8, ExerciseId: 0, Distance: 100, DurationSeconds: 60));
+
+        var ex = await Assert.ThrowsAsync<WorkoutValidationException>(
+            () => service.CreateWorkout(dto, userId));
+
+        Assert.Contains(
+            $"Set 1 of exercise '{exercise.Name}' is of type 'Distance' and should not have duration or reps values specified.",
+            ex.Errors["Exercises[0].Sets[0]"]);
+    }
+
+    [Fact]
+    public async Task CreateWorkout_WithRirEffortTypeOnDistanceExerciseSet_ThrowsWorkoutValidationException()
+    {
+        var (context, service) = CreateSut();
+        var exercise = SeedExercise(context, exerciseType: ExerciseType.Distance);
+        const string userId = "user-1";
+
+        var dto = BuildWorkoutDto(
+            userId, exercise.Id, weightUnit: WeightUnit.Lbs, distanceUnit: DistanceUnit.Meters,
+            effortType: EffortRatingType.Rir,
+            set: new SetDto(Id: null, Weight: 50, Reps: null, EffortRating: 2, ExerciseId: 0, Distance: 100));
+
+        var ex = await Assert.ThrowsAsync<WorkoutValidationException>(
+            () => service.CreateWorkout(dto, userId));
+
+        Assert.Contains(
+            $"Set 1 of exercise '{exercise.Name}' is of type 'Distance' and should not have an RIR effort rating or target effort values specified.",
+            ex.Errors["Exercises[0].Sets[0]"]);
+    }
+
+    [Fact]
+    public async Task CreateWorkout_WithValidDistanceExercise_PersistsWorkoutWithExercisesAndSets()
+    {
+        var (context, service) = CreateSut();
+        var exercise = SeedExercise(context, exerciseType: ExerciseType.Distance);
+        const string userId = "user-1";
+
+        var dto = BuildWorkoutDto(
+            userId, exercise.Id, weightUnit: WeightUnit.Lbs, distanceUnit: DistanceUnit.Meters,
+            set: new SetDto(
+                Id: null, Weight: 45, Reps: null, EffortRating: 8, ExerciseId: 0,
+                Distance: 100, TargetDistanceMin: 50, TargetDistanceMax: 150));
+
+        var result = await service.CreateWorkout(dto, userId);
+
+        Assert.Single(result.Exercises);
+        var set = Assert.Single(result.Exercises.First().Sets);
+        Assert.Equal(45, set.Weight);
+        Assert.Equal(100, set.Distance);
+    }
+
+    [Fact]
     public async Task CreateWorkout_WithMultipleValidationErrors_CollectsAllOfThemBeforeThrowing()
     {
         var (context, service) = CreateSut();
