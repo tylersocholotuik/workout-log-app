@@ -145,7 +145,7 @@ export default function ExerciseCard({
     const [weightUnit, setWeightUnit] = useState(exercise.weightUnit?.toString());
     const [distanceUnit, setDistanceUnit] = useState(exercise.distanceUnit?.toString());
     const [effortType, setEffortType] = useState(exercise.effortType.toString());
-    const [showOneRepMax, setShowOneRepMax] = useState(exerciseType === "reps" );
+    const [showOneRepMax, setShowOneRepMax] = useState(exerciseType === "reps");
     const [showTargets, setShowTargets] = useState(true);
     const targets = useMemo(() => deriveTargets(exercise.sets), [exercise.sets]);
 
@@ -250,7 +250,7 @@ export default function ExerciseCard({
                 })),
             })),
         };
-        
+
         const originalExerciseType = updatedWorkout.exercises[exerciseIndex!].exercise.exerciseType;
 
         // Update the exercise
@@ -357,7 +357,14 @@ export default function ExerciseCard({
 
     return (
         <>
-            <WorkoutExerciseProvider showTargets={showTargets} targets={targets} effortType={effortType}>
+            <WorkoutExerciseProvider
+                showTargets={showTargets}
+                targets={targets}
+                effortType={effortType}
+                weightUnit={exercise.weightUnit}
+                distanceUnit={exercise.distanceUnit}
+                exerciseType={exerciseType}
+            >
                 <Card classNames={{footer: "justify-center py-2"}}>
                     <CardHeader className="flex justify-between items-center">
                         <div className="flex items-center gap-1">
@@ -461,7 +468,27 @@ export default function ExerciseCard({
                                                 Options
                                             </p>
                                             <div className="flex flex-col gap-4 w-full mb-4">
-                                                {exerciseType === "cardio" ?
+                                                {exerciseType !== "cardio" &&
+                                                    <RadioGroup
+                                                        size="sm"
+                                                        label="Weight Unit"
+                                                        id={`exercise-${exerciseIndex}-weight-unit`}
+                                                        orientation="horizontal"
+                                                        value={weightUnit}
+                                                        onValueChange={(newValue) => {
+                                                            setWeightUnit(newValue);
+                                                            saveInputChange(
+                                                                exerciseIndex,
+                                                                "weightUnit",
+                                                                newValue
+                                                            );
+                                                        }}
+                                                    >
+                                                        <Radio value="lbs">lbs</Radio>
+                                                        <Radio value="kg">kg</Radio>
+                                                    </RadioGroup>
+                                                }
+                                                {(exerciseType === "cardio" || exerciseType === "distance") &&
                                                     <RadioGroup
                                                         size="sm"
                                                         label="Distance Unit"
@@ -482,26 +509,7 @@ export default function ExerciseCard({
                                                                 {label}
                                                             </Radio>
                                                         ))}
-                                                    </RadioGroup> :
-                                                    <RadioGroup
-                                                        size="sm"
-                                                        label="Weight Unit"
-                                                        id={`exercise-${exerciseIndex}-weight-unit`}
-                                                        orientation="horizontal"
-                                                        value={weightUnit}
-                                                        onValueChange={(newValue) => {
-                                                            setWeightUnit(newValue);
-                                                            saveInputChange(
-                                                                exerciseIndex,
-                                                                "weightUnit",
-                                                                newValue
-                                                            );
-                                                        }}
-                                                    >
-                                                        <Radio value="lbs">lbs</Radio>
-                                                        <Radio value="kg">kg</Radio>
-                                                    </RadioGroup>
-                                                }
+                                                    </RadioGroup>}
                                                 {exerciseType === "reps" &&
                                                     <RadioGroup
                                                         size="sm"
@@ -568,7 +576,6 @@ export default function ExerciseCard({
                         />
                         <SetsTable
                             sets={exercise.sets}
-                            weightUnit={exercise.weightUnit}
                             exerciseIndex={exerciseIndex}
                         />
                         {oneRepMax && showOneRepMax && (
