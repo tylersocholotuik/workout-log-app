@@ -459,6 +459,12 @@ public class WorkoutService
                     AddError(errors, exerciseKey,
                         $"Exercise '{exerciseName}' is of type 'Cardio' and should not have a weight unit specified.");
                 }
+                
+                if (exerciseType == ExerciseType.Distance && (exercise.WeightUnit == null || exercise.DistanceUnit == null))
+                {
+                    AddError(errors, exerciseKey,
+                        $"Exercise '{exerciseName}' is of type 'Distance' and must have both a weight unit and a distance unit specified.");
+                }
 
                 if (exercise.Sets != null && exercise.Sets.Count > 0)
                 {
