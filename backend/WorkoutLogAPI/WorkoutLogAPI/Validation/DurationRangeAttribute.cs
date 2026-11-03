@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 namespace WorkoutLogAPI.Validation;
 
 /// <summary>
-/// Validates that a nullable duration value matches the rules enforced on the frontend: min 0, max 86399 and must be a whole number.
+/// Validates that a nullable duration value matches the rules enforced on the frontend: min 0, max 599999 and must be a whole number.
 /// Null values are considered valid since duration is optional.
 /// </summary>
 public class DurationRangeAttribute : ValidationAttribute
