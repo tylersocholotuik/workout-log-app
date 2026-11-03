@@ -11,10 +11,10 @@ public class DurationRangeAttribute : ValidationAttribute
     private const int Min = 0;
     // 9999 minutes and 59 seconds in seconds
     // The frontend minutes input field is limited to 4 digits, so the max duration is 9999 minutes and 59 seconds.
-    private const int Max = 10058; 
+    private const int Max = 9999 * 60 + 59; 
 
     public DurationRangeAttribute()
-        : base("Duration must be a whole number between 0 and 10058") { }
+        : base("Duration must be a whole number between 0 and 599999") { }
 
     public override bool IsValid(object? value)
     {
