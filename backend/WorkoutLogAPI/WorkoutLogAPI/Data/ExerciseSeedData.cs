@@ -226,6 +226,19 @@ public static class ExerciseSeedData
             new Exercise { Name = "Hollow Hold", ExerciseType = ExerciseType.Time },
             new Exercise { Name = "Dead Hang", ExerciseType = ExerciseType.Time },
             new Exercise { Name = "L-Sit", ExerciseType = ExerciseType.Time },
+            // Distance-based exercises
+            new Exercise { Name = "Farmers Walk", ExerciseType = ExerciseType.Distance },
+            new Exercise { Name = "Suitcase Carry", ExerciseType = ExerciseType.Distance },
+            new Exercise { Name = "Overhead Carry", ExerciseType = ExerciseType.Distance },
+            new Exercise { Name = "Rack Carry", ExerciseType = ExerciseType.Distance },
+            new Exercise { Name = "Bear Hug Carry", ExerciseType = ExerciseType.Distance },
+            new Exercise { Name = "Sled Push", ExerciseType = ExerciseType.Distance },
+            new Exercise { Name = "Sled Pull", ExerciseType = ExerciseType.Distance },
+            new Exercise { Name = "Sled Drag", ExerciseType = ExerciseType.Distance },
+            new Exercise { Name = "Prowler Push", ExerciseType = ExerciseType.Distance },
+            new Exercise { Name = "Ruck Walk", ExerciseType = ExerciseType.Distance },
+            new Exercise { Name = "Weighted Vest Walk", ExerciseType = ExerciseType.Distance },
+            new Exercise { Name = "Yolk Walk", ExerciseType = ExerciseType.Distance },
         ];
     }
 }

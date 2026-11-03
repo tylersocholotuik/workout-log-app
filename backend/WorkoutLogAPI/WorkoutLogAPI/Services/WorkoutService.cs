@@ -393,7 +393,7 @@ public class WorkoutService
             }
         }
     }
-    
+
     // Enforces that the weight/distance/reps/duration/effort fields supplied for each
     // exercise and set are consistent with that exercise's ExerciseType
     //   - Reps:   weight/reps/effort allowed; distance and duration fields must be empty.
@@ -488,6 +488,15 @@ public class WorkoutService
                                 $"Set {setNumber} of exercise '{exerciseName}' is of type 'Time' and should not have distance or reps values specified.");
                         }
 
+                        if (exerciseType == ExerciseType.Distance && (
+                                set.DurationSeconds != null || set.TargetSecondsMax != null ||
+                                set.TargetSecondsMin != null || set.Reps != null || set.TargetRepsMax != null ||
+                                set.TargetRepsMin != null))
+                        {
+                            AddError(errors, setKey,
+                                $"Set {setNumber} of exercise '{exerciseName}' is of type 'Distance' and should not have duration or reps values specified.");
+                        }
+
                         if (
                             exerciseType == ExerciseType.Cardio &&
                             (set.Weight != null || set.Reps != null ||
@@ -497,7 +506,8 @@ public class WorkoutService
                                 $"Set {setNumber} of exercise '{exerciseName}' is of type 'Cardio' and should not have weight or reps values specified.");
                         }
 
-                        if ((exerciseType == ExerciseType.Time || exerciseType == ExerciseType.Cardio) &&
+                        if ((exerciseType == ExerciseType.Time || exerciseType == ExerciseType.Cardio ||
+                             exerciseType == ExerciseType.Distance) &&
                             exercise.EffortType == EffortRatingType.Rir &&
                             (set.EffortRating != null ||
                              set.TargetEffortMax != null ||
@@ -513,7 +523,7 @@ public class WorkoutService
 
         return errors;
     }
-    
+
     private static void AddError(Dictionary<string, List<string>> errors, string key, string message)
     {
         if (!errors.TryGetValue(key, out var messages))
