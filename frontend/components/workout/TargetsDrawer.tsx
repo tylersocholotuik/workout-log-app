@@ -22,6 +22,15 @@ import {WorkoutExercise, SetTargets} from "@/types";
 import {deriveAppliesToAllSets} from "@/components/workout/ExerciseCard";
 
 import {handleInputChange, sanitizeDisplayValues} from "@/utils/inputHandlers";
+import {
+    REPS_REGEX,
+    REPS_MIN,
+    REPS_MAX,
+    RPE_REGEX,
+    RIR_REGEX,
+    EFFORT_RATING_MIN,
+    EFFORT_RATING_MAX,
+} from "@/lib/constants/validation";
 
 interface TargetsDrawerProps {
     isOpen: boolean;
@@ -66,15 +75,7 @@ export default function TargetsDrawer({
         return effortType === "rpe" ? "RPE" : "RIR";
     }, [effortType]);
 
-    // reps: whole numbers 0-9999; effort: 0-10, 0.5 steps for RPE, whole for RIR
-    const REPS_REGEX = /^(?:[0-9]{1,4})?$/;
-    const REPS_MIN = 0;
-    const REPS_MAX = 9999;
-    const RPE_REGEX = /^(10|[0-9](\.\d{0,1})?)?$/;
-    const RIR_REGEX = /^(10|[0-9])?$/;
     const effortRegex = effortType === "rpe" ? RPE_REGEX : RIR_REGEX;
-    const EFFORT_MIN = 0;
-    const EFFORT_MAX = 10;
     const effortIsInteger = effortType === "rir";
 
     // local draft strings per target row, so handleInputChange (which
@@ -426,8 +427,8 @@ export default function TargetsDrawer({
                                                 value,
                                                 regex: effortRegex,
                                                 isInteger: effortIsInteger,
-                                                minValue: EFFORT_MIN,
-                                                maxValue: EFFORT_MAX,
+                                                minValue: EFFORT_RATING_MIN,
+                                                maxValue: EFFORT_RATING_MAX,
                                                 setter: makeDraftSetter(targetIndex, "targetEffortMin"),
                                             });
                                         }}
@@ -444,8 +445,8 @@ export default function TargetsDrawer({
                                                 value,
                                                 regex: effortRegex,
                                                 isInteger: effortIsInteger,
-                                                minValue: EFFORT_MIN,
-                                                maxValue: EFFORT_MAX,
+                                                minValue: EFFORT_RATING_MIN,
+                                                maxValue: EFFORT_RATING_MAX,
                                                 setter: makeDraftSetter(targetIndex, "targetEffortMax"),
                                             });
                                         }}

@@ -6,6 +6,27 @@ import {useWorkoutExercise} from "@/components/workout/WorkoutExerciseProvider";
 import {Set} from "@/types";
 
 import {DISTANCE_UNIT_LABELS} from "@/lib/constants/labels";
+import {
+    WEIGHT_REGEX,
+    WEIGHT_MIN,
+    WEIGHT_MAX,
+    REPS_REGEX,
+    REPS_MIN,
+    REPS_MAX,
+    DISTANCE_REGEX,
+    DISTANCE_MIN,
+    DISTANCE_MAX,
+    DURATION_MINUTES_REGEX,
+    DURATION_MINUTES_MIN,
+    DURATION_MINUTES_MAX,
+    DURATION_SECONDS_REGEX,
+    DURATION_SECONDS_MIN,
+    DURATION_SECONDS_MAX,
+    RPE_REGEX,
+    RIR_REGEX,
+    EFFORT_RATING_MIN,
+    EFFORT_RATING_MAX,
+} from "@/lib/constants/validation";
 
 import {Input, Tooltip, Button} from "@heroui/react";
 import {DeleteIcon} from "@/icons/DeleteIcon";
@@ -63,38 +84,7 @@ export default function SetsTableRow({
         exerciseType
     } = useWorkoutExercise();
 
-    // Rules for weight:
-    //  min: 0, max: 9999, steps of 0.5, can be empty string, only 1 digit after decimal (0 or 5), only 1 decimal
-    const WEIGHT_REGEX = /^(\d{0,4})(\.([05]?)?)?$/;
-    const WEIGHT_MIN = 0;
-    const WEIGHT_MAX = 9999;
-    // Rules for reps:
-    //  min: 0, max: 9999, must be an integer, can be empty string
-    const REPS_REGEX = /^(?:[0-9]{1,4})?$/;
-    const REPS_MIN = 0;
-    const REPS_MAX = 9999;
-    // Rules for distance:
-    //  min: 0, max: 9999, steps of 0.1, can be empty string, only 1 decimal
-    const DISTANCE_REGEX = /^(\d{0,4})(\.(\d{0,1})?)?$/;
-    const DISTANCE_MIN = 0;
-    const DISTANCE_MAX = 9999;
-    // Rules for duration (minutes):
-    //  min: 0, max: 9999, must be an integer, can be empty string
-    const DURATION_MINUTES_REGEX = /^(?:[0-9]{1,4})?$/;
-    const DURATION_MINUTES_MIN = 0;
-    const DURATION_MINUTES_MAX = 9999;
-    // Rules for duration (seconds):
-    //  min: 0, max: 59, must be an integer, can be empty string
-    const DURATION_SECONDS_REGEX = /^(?:[0-9]{1,2})?$/;
-    const DURATION_SECONDS_MIN = 0;
-    const DURATION_SECONDS_MAX = 59;
-    // Rules for effort rating:
-    //  min: 0, max: 10, steps of 0.5 (RPE only), can be empty string, only 1 digit after decimal (0 or 5) (RPE only), only 1 decimal
-    const RPE_REGEX = /^(10|[0-9](\.\d{0,1})?)?$/;
-    const RIR_REGEX = /^(10|[0-9])?$/;
     const effortRatingRegex = effortType === "rpe" ? RPE_REGEX : RIR_REGEX;
-    const EFFORT_RATING_MIN = 0;
-    const EFFORT_RATING_MAX = 10;
     const effortRatingIsInteger = effortType === "rir";
 
     // Resyncs displayed weight, reps, and effort rating whenever the underlying set
