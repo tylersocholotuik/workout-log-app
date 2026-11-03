@@ -343,8 +343,9 @@ export default function WorkoutLog() {
         newWorkoutExercise.exerciseId = exercise.id;
         newWorkoutExercise.exercise = exercise;
         newWorkoutExercise.workoutId = workout.id;
-        newWorkoutExercise.weightUnit = exercise.exerciseType === "reps" || exercise.exerciseType === "time" ? "lbs" : null;
-        newWorkoutExercise.distanceUnit = exercise.exerciseType === "cardio" ? "meters" : null;
+        newWorkoutExercise.weightUnit = exercise.exerciseType !== "cardio" ? "lbs" : null;
+        newWorkoutExercise.distanceUnit = 
+            exercise.exerciseType === "cardio" || exercise.exerciseType === "distance" ? "meters" : null;
         // automatically add an empty set when adding a new exercise
         const newSet = createEmptySet();
         newWorkoutExercise.sets.push(newSet);

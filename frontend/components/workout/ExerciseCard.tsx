@@ -266,7 +266,7 @@ export default function ExerciseCard({
                         exerciseId: newExercise.id,
                         ...(originalExerciseType !== newExercise.exerciseType && {
                             weightUnit: newExercise.exerciseType === "cardio" ? null : exercise.weightUnit ?? "lbs",
-                            distanceUnit: newExercise.exerciseType === "cardio" ? exercise.distanceUnit ?? "meters" : null,
+                            distanceUnit: newExercise.exerciseType === "cardio" || newExercise.exerciseType === "distance" ? exercise.distanceUnit ?? "meters" : null,
                         }),
                         sets: exercise.sets.map((set) =>
                             originalExerciseType !== newExercise.exerciseType ? createEmptySet() : {...set}
