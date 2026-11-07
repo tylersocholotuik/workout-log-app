@@ -367,80 +367,76 @@ export default function ExerciseCard({
             >
                 <Card classNames={{footer: "justify-center py-2"}}>
                     <CardHeader className="flex justify-between items-center">
-                        <div className="flex items-center gap-1">
-                            <h3 className="text-md text-primary">
-                                {exercise.exercise.name}
-                            </h3>
-                            <div>
-                                <Dropdown>
-                                    <DropdownTrigger>
-                                        <Button
-                                            aria-label="Actions"
-                                            variant="light"
-                                            size="sm"
-                                            isIconOnly
-                                        >
-                                            <Tooltip content="Actions" offset={12}>
-                                                <Icon
-                                                    icon="tabler:dots"
-                                                    width="16"
-                                                    height="16"
-                                                />
-                                            </Tooltip>
-                                        </Button>
-                                    </DropdownTrigger>
-                                    <DropdownMenu aria-label="Static Actions">
-                                        <DropdownItem
-                                            key="change"
-                                            onPress={changeExerciseDrawer.onOpen}
-                                            startContent={
-                                                <Icon
-                                                    icon="material-symbols:change-circle-rounded"
-                                                    width="18"
-                                                    height="18"
-                                                />
-                                            }
-                                        >
-                                            Change exercise
-                                        </DropdownItem>
-                                        <DropdownItem
-                                            key="history"
-                                            onPress={exerciseHistoryModal.onOpen}
-                                            startContent={
-                                                <Icon
-                                                    icon="material-symbols:history"
-                                                    width="18"
-                                                    height="18"
-                                                />
-                                            }
-                                        >
-                                            Exercise history
-                                        </DropdownItem>
-                                        <DropdownItem
-                                            key="targets"
-                                            onPress={targetsDrawer.onOpenChange}
-                                            startContent={<Icon
-                                                icon="boxicons:target"
+                        <h3 className="text-md text-primary">
+                            {exercise.exercise.name}
+                        </h3>
+                        <div className="flex gap-1 items-center">
+                            <Dropdown>
+                                <DropdownTrigger>
+                                    <Button
+                                        aria-label="Actions"
+                                        variant="light"
+                                        size="sm"
+                                        isIconOnly
+                                    >
+                                        <Tooltip content="Actions" offset={12}>
+                                            <Icon
+                                                icon="tabler:dots"
+                                                width="16"
+                                                height="16"
+                                            />
+                                        </Tooltip>
+                                    </Button>
+                                </DropdownTrigger>
+                                <DropdownMenu aria-label="Static Actions">
+                                    <DropdownItem
+                                        key="change"
+                                        onPress={changeExerciseDrawer.onOpen}
+                                        startContent={
+                                            <Icon
+                                                icon="material-symbols:change-circle-rounded"
                                                 width="18"
                                                 height="18"
-                                            />}
-                                        >
-                                            Set targets
-                                        </DropdownItem>
-                                        <DropdownItem
-                                            key="delete"
-                                            color="danger"
-                                            className="text-danger"
-                                            onPress={deleteExercise}
-                                            startContent={<DeleteIcon/>}
-                                        >
-                                            Delete exercise
-                                        </DropdownItem>
-                                    </DropdownMenu>
-                                </Dropdown>
-                            </div>
-                        </div>
-                        <div className="flex gap-1 items-center">
+                                            />
+                                        }
+                                    >
+                                        Change exercise
+                                    </DropdownItem>
+                                    <DropdownItem
+                                        key="history"
+                                        onPress={exerciseHistoryModal.onOpen}
+                                        startContent={
+                                            <Icon
+                                                icon="material-symbols:history"
+                                                width="18"
+                                                height="18"
+                                            />
+                                        }
+                                    >
+                                        Exercise history
+                                    </DropdownItem>
+                                    <DropdownItem
+                                        key="targets"
+                                        onPress={targetsDrawer.onOpenChange}
+                                        startContent={<Icon
+                                            icon="boxicons:target"
+                                            width="18"
+                                            height="18"
+                                        />}
+                                    >
+                                        Set targets
+                                    </DropdownItem>
+                                    <DropdownItem
+                                        key="delete"
+                                        color="danger"
+                                        className="text-danger"
+                                        onPress={deleteExercise}
+                                        startContent={<DeleteIcon/>}
+                                    >
+                                        Delete exercise
+                                    </DropdownItem>
+                                </DropdownMenu>
+                            </Dropdown>
                             <Popover showArrow offset={10} placement="left-start">
                                 <PopoverTrigger>
                                     <Button
