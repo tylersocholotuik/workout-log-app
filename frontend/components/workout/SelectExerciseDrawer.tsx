@@ -25,7 +25,9 @@ import {
     addToast,
     Spinner,
     CheckboxGroup,
-    Checkbox
+    Checkbox,
+    Accordion,
+    AccordionItem
 } from "@heroui/react";
 
 import {SearchIcon} from "@/icons/SearchIcon";
@@ -282,20 +284,27 @@ export default function SelectExerciseModal({
                             </h2>
                             {!isCreating &&
                                 <div className="w-full mt-4">
-                                    <CheckboxGroup
-                                        classNames={{label: "text-sm"}}
-                                        label="Exercise Types"
-                                        orientation="horizontal"
-                                        size="sm"
-                                        value={checkedExerciseTypes}
-                                        onValueChange={setCheckedExerciseTypes}
-                                    >
-                                        {Object.entries(EXERCISE_TYPE_LABELS).map(([key, label]) => (
-                                            <Checkbox key={key} value={key} classNames={{label: "text-tiny"}}>
-                                                {label}
-                                            </Checkbox>
-                                        ))}
-                                    </CheckboxGroup>
+                                    <Accordion isCompact>
+                                        <AccordionItem
+                                            classNames={{ title: "text-tiny" }}
+                                            key="1"
+                                            title="Exercise Types"
+                                        >
+                                            <CheckboxGroup
+                                                aria-label="Exercise Types"
+                                                orientation="horizontal"
+                                                size="sm"
+                                                value={checkedExerciseTypes}
+                                                onValueChange={setCheckedExerciseTypes}
+                                            >
+                                                {Object.entries(EXERCISE_TYPE_LABELS).map(([key, label]) => (
+                                                    <Checkbox key={key} value={key} classNames={{label: "text-tiny"}}>
+                                                        {label}
+                                                    </Checkbox>
+                                                ))}
+                                            </CheckboxGroup>
+                                        </AccordionItem>
+                                    </Accordion>
                                     <Input
                                         className="w-full mt-4"
                                         placeholder="Search exercises..."
