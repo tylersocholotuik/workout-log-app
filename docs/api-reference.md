@@ -132,6 +132,9 @@ loading `[workoutId].tsx` or app startup.
   {
     "notes": "Felt strong",
     "weightUnit": "lbs",
+    "distanceUnit": null,
+    "effortType": "rpe",
+    "exerciseType": "reps",
     "workout": { "date": "2026-09-20" },
     "sets": [ { "id": 1, "weight": 135, "reps": 5, "effortRating": 8, "exerciseId": 7 } ]
   }
@@ -193,7 +196,10 @@ user) plus any custom exercises the current user has created.
 
 #### `POST /`
 
-Request body: `{ "name": string }` (≤ 100 chars, required)
+Request body: `{ "name": string, "exerciseType": string }` (`name` ≤ 100
+chars, required; `exerciseType` one of `"reps"`/`"time"`/`"distance"`/
+`"cardio"`, required, fixed for the life of the exercise — see
+[Why is exercise type stored on exercises, not workout_exercises or sets?](database-design.md#why-is-exercise-type-stored-on-exercises-not-workout_exercises-or-sets))
 
 - `201 Created` → `ExerciseDto`
 - Duplicate names (case-insensitive, against system + the user's own
@@ -249,9 +255,11 @@ validation attributes).
 
 **`ExerciseDto`**
 ```json
-{ "id": 7, "name": "Barbell Bench Press", "userId": null }
+{ "id": 7, "name": "Barbell Bench Press", "exerciseType": "reps", "userId": null }
 ```
 `userId: null` = system exercise; otherwise the owning user's ID.
+`exerciseType` is one of `"reps"`, `"time"`, `"distance"`, or `"cardio"` —
+see [Why is exercise type stored on exercises, not workout_exercises or sets?](database-design.md#why-is-exercise-type-stored-on-exercises-not-workout_exercises-or-sets).
 
 **`WorkoutDto`**
 ```json
@@ -271,6 +279,7 @@ validation attributes).
   "id": 12,
   "notes": "optional, \u2264 100 chars",
   "weightUnit": "lbs",
+  "distanceUnit": null,
   "effortType": "rpe",
   "exerciseId": 7,
   "workoutId": "guid",
@@ -278,9 +287,15 @@ validation attributes).
   "sets": [ /* SetDto */ ]
 }
 ```
-`weightUnit` is `"lbs"` or `"kg"`; `effortType` is `"rpe"` or `"rir"` and
-determines the range/step validation applied to every set's `effortRating`
-below.
+`weightUnit` is `"lbs"` or `"kg"`, nullable — `null` for `Cardio`
+exercises, which have no weight. `distanceUnit` is `"meters"`,
+`"kilometers"`, or `"miles"`, nullable — only populated for `Distance` and
+`Cardio` exercises. `effortType` is `"rpe"` or `"rir"` and determines the
+range/step validation applied to every set's `effortRating` below (RIR is
+only valid on `Reps` exercises). Which of `weightUnit`/`distanceUnit` must
+be set, and which of each set's fields are allowed, is enforced
+server-side based on the parent exercise's `exerciseType` — see
+`WorkoutService.GetExerciseAndSetValidationErrors`.
 
 **`SetDto`**
 ```json
@@ -288,33 +303,50 @@ below.
   "id": 1,
   "weight": 135,
   "reps": 5,
+  "distance": null,
+  "durationSeconds": null,
   "effortRating": 8,
   "exerciseId": 12,
   "targetRepsMin": 5,
   "targetRepsMax": 8,
+  "targetDistanceMin": null,
+  "targetDistanceMax": null,
+  "targetSecondsMin": null,
+  "targetSecondsMax": null,
   "targetEffortMin": 7,
   "targetEffortMax": 9
 }
 ```
 Despite the name, `exerciseId` here is the parent `workout_exercises.id`
 (see [database-design.md](database-design.md#table-reference)).
-Validation: `weight` 0–9999 in steps of 0.5 (`Validation/WeightRangeAttribute.cs`),
+Validation: `weight` 0–9999 in steps of 0.5 (`Validation/WeightRangeAttribute.cs`);
 `reps`/`targetRepsMin`/`targetRepsMax` share the same range check
-(`Validation/RepsRangeAttribute.cs`);
+(`Validation/RepsRangeAttribute.cs`); `distance`/`targetDistanceMin`/
+`targetDistanceMax` are 0–9999 in steps of 0.1
+(`Validation/DistanceRangeAttribute.cs`); `durationSeconds`/
+`targetSecondsMin`/`targetSecondsMax` are 0–599999 (9999 min 59 sec) and
+must be a whole number (`Validation/DurationRangeAttribute.cs`);
 `effortRating`, `targetEffortMin`, and `targetEffortMax` are each 0–10, and
 must be in steps of 0.5 if the parent `WorkoutExerciseDto.effortType` is
 `"rpe"`, or a whole number if `"rir"` — enforced via `WorkoutExerciseDto`'s
 `IValidatableObject.Validate` rather than a `[ValidationAttribute]`, since
 the rule depends on a sibling field. All of a set's fields are nullable and
-optional; the four target fields don't have to be set in matched pairs,
-but if both a min and max are supplied for either reps or effort, min must
-not be greater than max.
+optional; the four pairs of target fields don't have to be set in matched
+pairs, but if both a min and max are supplied for reps, distance, duration,
+or effort, min must not be greater than max (also enforced in
+`WorkoutExerciseDto.Validate`). Which fields a set is actually expected to
+populate depends on the parent exercise's `exerciseType` (e.g. a `Cardio`
+set has no `reps`/`weight`) — see [database-design.md's `sets` table reference](database-design.md#sets)
+for the full per-type breakdown.
 
 **`ExerciseHistoryDto`**
 ```json
 {
   "notes": "string?",
   "weightUnit": "lbs",
+  "distanceUnit": null,
+  "effortType": "rpe",
+  "exerciseType": "reps",
   "workout": { "date": "2026-09-20" },
   "sets": [ /* SetDto */ ]
 }
