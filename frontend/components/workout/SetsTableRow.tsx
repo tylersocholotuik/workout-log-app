@@ -129,64 +129,27 @@ export default function SetsTableRow({
     }, [set.effortRating]);
 
     // below the minimum is always bad; above the maximum is only "good" when
-    // both bounds are set (a deliberate range, not just a floor)
-    const getRepsTextColor = () => {
-        if (set.reps === null) {
+    // both bounds are set (a deliberate range, not just a floor). Shared by
+    // reps, distance, and duration, which all follow this same semantics.
+    const getTargetRangeTextColor = (value: number | null, min: number | null, max: number | null) => {
+        if (value === null) {
             return "";
         }
 
-        if (set.targetRepsMin !== null && set.reps < set.targetRepsMin) {
+        if (min !== null && value < min) {
             return "text-danger";
         }
 
-        if (set.targetRepsMax !== null && set.targetRepsMin !== null && set.reps > set.targetRepsMax) {
+        if (max !== null && min !== null && value > max) {
             return "text-success";
         }
 
         return "";
     };
 
-    const repsTextColor = getRepsTextColor();
-
-    // same semantics as reps: below the minimum is always bad; above the
-    // maximum is only "good" when both bounds are set
-    const getDistanceTextColor = () => {
-        if (set.distance === null) {
-            return "";
-        }
-
-        if (set.targetDistanceMin !== null && set.distance < set.targetDistanceMin) {
-            return "text-danger";
-        }
-
-        if (set.targetDistanceMax !== null && set.targetDistanceMin !== null && set.distance > set.targetDistanceMax) {
-            return "text-success";
-        }
-
-        return "";
-    };
-
-    const distanceTextColor = getDistanceTextColor();
-
-    // same semantics as reps/distance: below the minimum is always bad; above
-    // the maximum is only "good" when both bounds are set
-    const getDurationTextColor = () => {
-        if (set.durationSeconds === null) {
-            return "";
-        }
-
-        if (set.targetSecondsMin !== null && set.durationSeconds < set.targetSecondsMin) {
-            return "text-danger";
-        }
-
-        if (set.targetSecondsMax !== null && set.targetSecondsMin !== null && set.durationSeconds > set.targetSecondsMax) {
-            return "text-success";
-        }
-
-        return "";
-    };
-
-    const durationTextColor = getDurationTextColor();
+    const repsTextColor = getTargetRangeTextColor(set.reps, set.targetRepsMin, set.targetRepsMax);
+    const distanceTextColor = getTargetRangeTextColor(set.distance, set.targetDistanceMin, set.targetDistanceMax);
+    const durationTextColor = getTargetRangeTextColor(set.durationSeconds, set.targetSecondsMin, set.targetSecondsMax);
 
     // direction of "good" vs "bad" depends on training goal, so outside the
     // target range is just flagged as a warning rather than good/bad
