@@ -1,5 +1,5 @@
-import {EffortRatingType, ExerciseType, WeightUnit} from './common';
-import { WorkoutExercise } from './workout';
+import {EffortRatingType, ExerciseType, WeightUnit, DistanceUnit} from './common';
+import { WorkoutExercise, Set } from './workout';
 
 export interface Exercise {
     id: number;
@@ -12,16 +12,11 @@ export interface Exercise {
 export interface ExerciseHistory {
     notes: string;
     weightUnit: WeightUnit;
+    distanceUnit: DistanceUnit;
     effortType: EffortRatingType;
     exerciseType: ExerciseType;
     workout: {
         date: string;
     };
-    sets: [
-        {
-            weight: number;
-            reps: number;
-            effortRating: number;
-        }
-    ];
+    sets: Set[];
 }
