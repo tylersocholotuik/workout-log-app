@@ -80,7 +80,8 @@ Authorization: Bearer {{Access_Token}}
 X-Requested-With: XMLHttpRequest
 
 {
-    "name": "Bulgarian Split Squat"
+    "name": "Bulgarian Split Squat",
+    "exerciseType": "reps"
 }
 
 ### Get all of the logged-in user's workouts
@@ -117,10 +118,11 @@ X-Requested-With: XMLHttpRequest
         {
             "notes": "Warm up with 2 easy sets",
             "weightUnit": "lbs",
+            "effortType": "rpe",
             "exerciseId": {{Exercise_Id}},
             "sets": [
-                { "weight": 135, "reps": 8, "rpe": 7 },
-                { "weight": 155, "reps": 6, "rpe": 8.5 }
+                { "weight": 135, "reps": 8, "effortRating": 7 },
+                { "weight": 155, "reps": 6, "effortRating": 8.5 }
             ]
         }
     ]
@@ -142,9 +144,10 @@ X-Requested-With: XMLHttpRequest
             "id": 1,
             "notes": "Warm up with 2 easy sets",
             "weightUnit": "lbs",
+            "effortType": "rpe",
             "exerciseId": {{Exercise_Id}},
             "sets": [
-                { "id": 1, "weight": 145, "reps": 8, "rpe": 7 }
+                { "id": 1, "weight": 145, "reps": 8, "effortRating": 7 }
             ]
         }
     ]
