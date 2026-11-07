@@ -56,7 +56,7 @@ export default function SetsTableRow({
     const targetDistanceMinString = set.targetDistanceMin !== null ? String(set.targetDistanceMin) : "";
     const targetDistanceMaxString = set.targetDistanceMax !== null ? String(set.targetDistanceMax) : "";
     const durationMinutesString = set.durationSeconds !== null ? String(Math.floor(set.durationSeconds / 60)) : "";
-    const durationSecondsString = set.durationSeconds !== null ? String(set.durationSeconds % 60) : "";
+    const durationSecondsString = set.durationSeconds !== null ? String(set.durationSeconds % 60).padStart(2, "0") : "";
 
 
     const [weight, setWeight] = useState(weightString);
@@ -125,7 +125,7 @@ export default function SetsTableRow({
 
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setDurationMinutes(minutes !== null ? String(minutes) : "");
-        setDurationSeconds(seconds !== null ? String(seconds) : "");
+        setDurationSeconds(seconds !== null ? String(seconds).padStart(2, "0") : "");
     }, [set.durationSeconds]);
 
     useEffect(() => {
@@ -274,9 +274,12 @@ export default function SetsTableRow({
             {value: reps, setter: setReps, stripLeadingZero: true},
             {value: distance, setter: setDistance, stripTrailingDecimal: true, stripLeadingZero: true},
             {value: durationMinutes, setter: setDurationMinutes, stripLeadingZero: true},
-            {value: durationSeconds, setter: setDurationSeconds, stripLeadingZero: true},
+            {value: durationSeconds, setter: setDurationSeconds},
             {value: effortRating, setter: setEffortRating, stripTrailingDecimal: true},
         ]);
+        
+        setDurationSeconds(prev => prev !== "" ? String(parseInt(prev)).padStart(2, "0") : "");
+        
         saveChanges();
     };
 
