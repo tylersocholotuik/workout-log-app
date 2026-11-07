@@ -49,12 +49,6 @@ export default function SetsTableRow({
     const repsString = set.reps !== null ? String(set.reps) : "";
     const distanceString = set.distance !== null ? String(set.distance) : "";
     const effortRatingString = set.effortRating !== null ? String(set.effortRating) : "";
-    const targetRepsMinString = set.targetRepsMin !== null ? String(set.targetRepsMin) : "";
-    const targetRepsMaxString = set.targetRepsMax !== null ? String(set.targetRepsMax) : "";
-    const targetEffortMinString = set.targetEffortMin !== null ? String(set.targetEffortMin) : "";
-    const targetEffortMaxString = set.targetEffortMax !== null ? String(set.targetEffortMax) : "";
-    const targetDistanceMinString = set.targetDistanceMin !== null ? String(set.targetDistanceMin) : "";
-    const targetDistanceMaxString = set.targetDistanceMax !== null ? String(set.targetDistanceMax) : "";
     const durationMinutesString = set.durationSeconds !== null ? String(Math.floor(set.durationSeconds / 60)) : "";
     const durationSecondsString = set.durationSeconds !== null ? String(set.durationSeconds % 60).padStart(2, "0") : "";
 
@@ -77,7 +71,6 @@ export default function SetsTableRow({
     const {workout, setWorkout} = useWorkoutContext();
 
     const {
-        showTargets,
         effortType,
         weightUnit,
         distanceUnit,
@@ -155,6 +148,46 @@ export default function SetsTableRow({
 
     const repsTextColor = getRepsTextColor();
 
+    // same semantics as reps: below the minimum is always bad; above the
+    // maximum is only "good" when both bounds are set
+    const getDistanceTextColor = () => {
+        if (set.distance === null) {
+            return "";
+        }
+
+        if (set.targetDistanceMin !== null && set.distance < set.targetDistanceMin) {
+            return "text-danger";
+        }
+
+        if (set.targetDistanceMax !== null && set.targetDistanceMin !== null && set.distance > set.targetDistanceMax) {
+            return "text-success";
+        }
+
+        return "";
+    };
+
+    const distanceTextColor = getDistanceTextColor();
+
+    // same semantics as reps/distance: below the minimum is always bad; above
+    // the maximum is only "good" when both bounds are set
+    const getDurationTextColor = () => {
+        if (set.durationSeconds === null) {
+            return "";
+        }
+
+        if (set.targetSecondsMin !== null && set.durationSeconds < set.targetSecondsMin) {
+            return "text-danger";
+        }
+
+        if (set.targetSecondsMax !== null && set.targetSecondsMin !== null && set.durationSeconds > set.targetSecondsMax) {
+            return "text-success";
+        }
+
+        return "";
+    };
+
+    const durationTextColor = getDurationTextColor();
+
     // direction of "good" vs "bad" depends on training goal, so outside the
     // target range is just flagged as a warning rather than good/bad
     const getEffortTextColor = () => {
@@ -173,46 +206,6 @@ export default function SetsTableRow({
     };
 
     const effortTextColor = getEffortTextColor();
-
-    const isFixedRepsTarget = set.targetRepsMin !== null && set.targetRepsMax !== null && set.targetRepsMin === set.targetRepsMax;
-    const isFixedEffortTarget = set.targetEffortMin !== null && set.targetEffortMax !== null && set.targetEffortMin === set.targetEffortMax;
-    const hasTargets = set.targetRepsMin !== null || set.targetRepsMax !== null || set.targetEffortMin !== null || set.targetEffortMax !== null;
-
-    const getRepsTargetDescription = () => {
-        if (!showTargets || !hasTargets || (set.targetRepsMin === null && set.targetRepsMax === null)) {
-            return undefined;
-        }
-
-        if (isFixedRepsTarget) {
-            return `Target: ${targetRepsMinString}`;
-        } else if (set.targetRepsMin === null && set.targetRepsMax !== null) {
-            return `Target: <= ${targetRepsMaxString}`;
-        } else if (set.targetRepsMin !== null && set.targetRepsMax === null) {
-            return `Target: >= ${targetRepsMinString}`;
-        } else {
-            return `Target: ${targetRepsMinString}-${targetRepsMaxString}`;
-        }
-    };
-
-    const repsTargetDescription = getRepsTargetDescription();
-
-    const getEffortTargetDescription = () => {
-        if (!showTargets || !hasTargets || (set.targetEffortMin === null && set.targetEffortMax === null)) {
-            return undefined;
-        }
-
-        if (isFixedEffortTarget) {
-            return `Target: ${targetEffortMinString}`;
-        } else if (set.targetEffortMin === null && set.targetEffortMax !== null) {
-            return `Target: <= ${targetEffortMaxString}`;
-        } else if (set.targetEffortMin !== null && set.targetEffortMax === null) {
-            return `Target: >= ${targetEffortMinString}`;
-        } else {
-            return `Target: ${targetEffortMinString}-${targetEffortMaxString}`;
-        }
-    };
-
-    const effortTargetDescription = getEffortTargetDescription();
 
     // called on focus blur for all inputs
     // updates the state of the workout with the set
@@ -306,10 +299,10 @@ export default function SetsTableRow({
 
     return (
         <>
-            <div className="col-span-2">
+            <div className="col-span-2 min-w-0">
                 {exerciseType === "cardio" ?
                     <Input
-                        classNames={{input: "text-center"}}
+                        classNames={{input: `text-center ${distanceTextColor}`}}
                         id={`exercise-${exerciseIndex}-set-${setIndex}-distance`}
                         inputMode="decimal"
                         variant="bordered"
@@ -318,9 +311,9 @@ export default function SetsTableRow({
                         color="primary"
                         endContent={
                             <div className="pointer-events-none flex items-center">
-                            <span className="text-default-400 text-small">
-                                {DISTANCE_UNIT_LABELS[distanceUnit || "meters"]}
-                            </span>
+                                <span className="text-default-400 text-small">
+                                    {DISTANCE_UNIT_LABELS[distanceUnit || "meters"]}
+                                </span>
                             </div>
                         }
                         value={distance}
@@ -367,10 +360,10 @@ export default function SetsTableRow({
                     />
                 }
             </div>
-            <div className={exerciseType === "reps" || exerciseType ==="distance" ? "col-span-2" : "col-span-3"}>
+            <div className={exerciseType === "reps" || exerciseType ==="distance" ? "col-span-2 min-w-0" : "col-span-3 min-w-0"}>
                 {exerciseType === "reps" ?
                     <Input
-                        classNames={{input: `text-center ${repsTextColor}`, description: "text-center"}}
+                        classNames={{input: `text-center ${repsTextColor}`}}
                         id={`exercise-${exerciseIndex}-set-${setIndex}-reps`}
                         inputMode="decimal"
                         variant="bordered"
@@ -378,7 +371,6 @@ export default function SetsTableRow({
                         aria-label="reps"
                         color="primary"
                         value={reps}
-                        description={repsTargetDescription}
                         onValueChange={(value) => {
                             handleInputChange({
                                 value,
@@ -392,7 +384,7 @@ export default function SetsTableRow({
                         onBlur={handleBlur}
                     /> : exerciseType === "distance" ?
                         <Input
-                            classNames={{input: "text-center"}}
+                            classNames={{input: `text-center ${distanceTextColor}`}}
                             id={`exercise-${exerciseIndex}-set-${setIndex}-distance`}
                             inputMode="decimal"
                             variant="bordered"
@@ -401,9 +393,9 @@ export default function SetsTableRow({
                             color="primary"
                             endContent={
                                 <div className="pointer-events-none flex items-center">
-                            <span className="text-default-400 text-small">
-                                {DISTANCE_UNIT_LABELS[distanceUnit || "meters"]}
-                            </span>
+                                    <span className="text-default-400 text-small">
+                                        {DISTANCE_UNIT_LABELS[distanceUnit || "meters"]}
+                                    </span>
                                 </div>
                             }
                             value={distance}
@@ -420,59 +412,57 @@ export default function SetsTableRow({
                             }}
                             onBlur={handleBlur}
                         /> :
-                        <div className="flex gap-1 justify-center items-center">
-                            <Input
-                                classNames={{input: `text-center ${repsTextColor}`, description: "text-center"}}
-                                id={`exercise-${exerciseIndex}-set-${setIndex}-minutes`}
-                                inputMode="decimal"
-                                variant="bordered"
-                                size="sm"
-                                aria-label="minutes"
-                                color="primary"
-                                value={durationMinutes}
-                                description={undefined}
-                                onValueChange={(value) => {
-                                    handleInputChange({
-                                        value,
-                                        regex: DURATION_MINUTES_REGEX,
-                                        isInteger: true,
-                                        minValue: DURATION_MINUTES_MIN,
-                                        maxValue: DURATION_MINUTES_MAX,
-                                        setter: setDurationMinutes,
-                                    });
-                                }}
-                                onBlur={handleBlur}
-                            />
-                            <span>:</span>
-                            <Input
-                                classNames={{input: `text-center ${repsTextColor}`, description: "text-center"}}
-                                id={`exercise-${exerciseIndex}-set-${setIndex}-seconds`}
-                                inputMode="decimal"
-                                variant="bordered"
-                                size="sm"
-                                aria-label="seconds"
-                                color="primary"
-                                value={durationSeconds}
-                                description={undefined}
-                                onValueChange={(value) => {
-                                    handleInputChange({
-                                        value,
-                                        regex: DURATION_SECONDS_REGEX,
-                                        isInteger: true,
-                                        minValue: DURATION_SECONDS_MIN,
-                                        maxValue: DURATION_SECONDS_MAX,
-                                        setter: setDurationSeconds,
-                                    });
-                                }}
-                                onBlur={handleBlur}
-                            />
+                        <div className="flex gap-1 justify-center items-center min-w-0">
+                                <Input
+                                    classNames={{input: `text-center ${durationTextColor}`}}
+                                    id={`exercise-${exerciseIndex}-set-${setIndex}-minutes`}
+                                    inputMode="decimal"
+                                    variant="bordered"
+                                    size="sm"
+                                    aria-label="minutes"
+                                    color="primary"
+                                    value={durationMinutes}
+                                    onValueChange={(value) => {
+                                        handleInputChange({
+                                            value,
+                                            regex: DURATION_MINUTES_REGEX,
+                                            isInteger: true,
+                                            minValue: DURATION_MINUTES_MIN,
+                                            maxValue: DURATION_MINUTES_MAX,
+                                            setter: setDurationMinutes,
+                                        });
+                                    }}
+                                    onBlur={handleBlur}
+                                />
+                                <span>:</span>
+                                <Input
+                                    classNames={{input: `text-center ${durationTextColor}`}}
+                                    id={`exercise-${exerciseIndex}-set-${setIndex}-seconds`}
+                                    inputMode="decimal"
+                                    variant="bordered"
+                                    size="sm"
+                                    aria-label="seconds"
+                                    color="primary"
+                                    value={durationSeconds}
+                                    onValueChange={(value) => {
+                                        handleInputChange({
+                                            value,
+                                            regex: DURATION_SECONDS_REGEX,
+                                            isInteger: true,
+                                            minValue: DURATION_SECONDS_MIN,
+                                            maxValue: DURATION_SECONDS_MAX,
+                                            setter: setDurationSeconds,
+                                        });
+                                    }}
+                                    onBlur={handleBlur}
+                                />
                         </div>
                 }
             </div>
-            <div className={exerciseType === "reps" || exerciseType ==="distance" ? "col-span-2" : "col-span-1"}>
+            <div className={exerciseType === "reps" || exerciseType ==="distance" ? "col-span-2 min-w-0" : "col-span-1 min-w-0"}>
                 <Input
                     className=""
-                    classNames={{input: `text-center ${effortTextColor}`, description: "text-center"}}
+                    classNames={{input: `text-center ${effortTextColor}`}}
                     id={`exercise-${exerciseIndex}-set-${setIndex}-effort-rating`}
                     inputMode="decimal"
                     variant="bordered"
@@ -480,7 +470,6 @@ export default function SetsTableRow({
                     aria-label="effort rating"
                     color="primary"
                     value={effortRating}
-                    description={effortTargetDescription}
                     onValueChange={(value) => {
                         handleInputChange({
                             value,
