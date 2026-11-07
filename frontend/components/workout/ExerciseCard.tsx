@@ -240,23 +240,12 @@ export default function ExerciseCard({
         newExercise: Exercise,
         exerciseIndex?: number
     ) => {
-        // create deep copy of workout
-        let updatedWorkout = {
-            ...workout,
-            exercises: workout.exercises.map((exercise) => ({
-                ...exercise,
-                sets: exercise.sets.map((set) => ({
-                    ...set,
-                })),
-            })),
-        };
-
-        const originalExerciseType = updatedWorkout.exercises[exerciseIndex!].exercise.exerciseType;
+        const originalExerciseType = workout.exercises[exerciseIndex!].exercise.exerciseType;
 
         // Update the exercise
         // If the exercise type has changed, reset the weightUnit and distanceUnit accordingly
         // If the exercise type has changed, reset all sets to empty sets since the previous sets may not be relevant to the new exercise type
-        updatedWorkout = {
+        const updatedWorkout = {
             ...workout,
             exercises: workout.exercises.map((exercise, index) =>
                 index === exerciseIndex
