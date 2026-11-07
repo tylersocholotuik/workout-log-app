@@ -87,14 +87,14 @@ export default function ExerciseHistoryModal({
                                                                 if (set.weight === null && set.durationSeconds === null) {
                                                                     setDescription = "Empty Set";
                                                                 } else {
-                                                                    setDescription = `${weightDisplay} x ${formattedDuration} ${effortRatingDisplay}`;
+                                                                    setDescription = `${weightDisplay} x ${durationDisplay || "-"} ${effortRatingDisplay}`;
                                                                 }
                                                                 break;
                                                             case "cardio":
                                                                 if (set.distance === null && set.durationSeconds === null) {
                                                                     setDescription = "Empty Set";
                                                                 } else {
-                                                                    setDescription = `${cardioDistance} ${durationDisplay} ${effortRatingDisplay}`.trimStart();
+                                                                    setDescription = `${cardioDistance}${durationDisplay} ${effortRatingDisplay}`.trimStart();
                                                                 }
                                                                 break;
                                                         }
