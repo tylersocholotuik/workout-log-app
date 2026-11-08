@@ -55,26 +55,79 @@ persistence into workout history.
   non-empty exercise list.
 - **search filters the exercise list** — type "bench press" in the search
   box → only matching exercises (case-insensitive) remain.
+- **exercise type filter narrows the list** — expand the "Exercise Types"
+  accordion above the search box (all four types are checked by default)
+  and uncheck all but one type (e.g. leave only "Distance/Time" checked) →
+  only exercises of the remaining checked type(s) are shown; re-checking a
+  type brings its exercises back.
 - **adding an exercise creates a card with one empty set** — select an
   exercise, click Add → a card with that exercise's name appears, containing
-  exactly one set row.
+  exactly one set row whose fields match the exercise's type (see
+  **Exercise types** below).
 - **creating a brand-new exercise adds it to the list and workout** — in the
-  Select Exercise drawer, switch to "create new," enter a unique name, Create
-  → success toast with an "Add" action; clicking it adds the new exercise to
-  the workout.
+  Select Exercise drawer, switch to "create new," enter a unique name,
+  choose an Exercise Type from the dropdown (Weight/Reps, Weight/Time,
+  Weight/Distance, or Distance/Time — defaults to Weight/Reps), Create →
+  success toast with an "Add" action; clicking it adds the new exercise to
+  the workout with a card matching the chosen type.
 - **duplicate exercise names are rejected** — try to create a new exercise
   using an existing exercise's name → "Exercise name '<name>' already
   exists." shown.
 - **exercise can be swapped** — open the exercise card's actions menu →
-  "Change exercise" → select a different exercise → card header updates to
-  the new exercise, sets are preserved.
+  "Change exercise" → select a different exercise of the *same* type → card
+  header updates to the new exercise, sets are preserved. Swapping to an
+  exercise of a *different* type instead resets every set on the card to
+  empty (its old set data may not apply to the new type) and resets the
+  weight/distance unit to the new type's defaults.
 - **exercise can be removed** — open the actions menu → "Delete exercise" →
   card is removed from the workout.
 - **exercise history is viewable** — open the actions menu → "Exercise
   history" → modal opens showing past performances (or "You have not
-  performed this exercise before." if none exist), with each past set's
-  effort rating labeled RPE or RIR to match whatever type that historical
-  exercise instance used.
+  performed this exercise before." if none exist); each past set's
+  description matches the historical exercise's type (e.g. "135 lbs x 8
+  reps @ RPE 8" for `reps`, "500 m @ RPE 6" for `distance`, "0:45 @ RPE 7"
+  for `time`, "1.5 km, 10:00 @ RPE 5" for `cardio`), with effort rating
+  labeled RPE or RIR to match whatever type that historical exercise
+  instance used.
+
+### Exercise types
+
+Every exercise has one of four types, fixed at creation (see **Exercises**
+above), which determines which fields appear on its sets, targets, and
+history:
+
+| Type (label) | Set fields | Weight unit | Distance unit |
+| --- | --- | --- | --- |
+| `reps` (Weight/Reps) | Weight, Reps | lbs/kg | — |
+| `time` (Weight/Time) | Weight, Duration (mm:ss) | lbs/kg | — |
+| `distance` (Weight/Distance) | Weight, Distance | lbs/kg | m/km/mi |
+| `cardio` (Distance/Time) | Distance, Duration (mm:ss) | — | m/km/mi |
+
+Every type also has an effort rating (RPE or RIR) field and column.
+
+- **set rows and column headers match the exercise's type** — add one
+  exercise of each type (e.g. a `reps` exercise like "Bench Press", a
+  `time` exercise like "Plank", a `distance` exercise like "Farmers Walk",
+  and a `cardio` exercise like "Running") → each card's column headers and
+  set inputs match the table above - a `cardio` exercise has no Weight
+  input (its first column is Distance instead), and `time`/`cardio`
+  exercises show a single Duration input split into minutes and seconds
+  rather than Weight/Distance's single numeric field.
+- **invalid characters are rejected across set input types** — attempt to
+  type a non-numeric character into the Weight, Reps, Distance, Duration,
+  and effort rating inputs (whichever apply to the exercise's type) → the
+  character is not accepted (representative check only — exhaustive regex
+  boundary cases belong in a component test).
+- **RIR is only available as an effort rating type for `reps` exercises**
+  — in the Options popover for a `time`, `distance`, or `cardio` exercise,
+  there's no Effort Rating Type control at all (effort rating is always
+  RPE); for a `reps` exercise it's present and still toggles RPE/RIR (see
+  **Weight unit, distance unit, effort rating type, & notes** below).
+- **weight/distance unit controls match the type** — in the Options
+  popover, `reps`/`time`/`distance` exercises show a Weight Unit toggle
+  (lbs/kg); `distance`/`cardio` exercises also show a Distance Unit toggle
+  (m/km/mi); a `cardio` exercise has no Weight Unit toggle at all (it has
+  no weight field).
 
 ### Sets
 
@@ -82,14 +135,13 @@ persistence into workout history.
   appears.
 - **sets can be removed** — click the delete icon on a set row → that row is
   removed.
-- **invalid characters are rejected in Weight/Reps/effort rating** — attempt
-  to type a non-numeric character into each input → the character is not
-  accepted (representative check only — exhaustive regex boundary cases
-  belong in a component test).
-- **estimated one-rep max is calculated and displayed** — enter a
-  Weight/Reps/effort rating combination within the eligible range (reps
-  1-10, and RPE ≥ 6 or RIR ≤ 4 depending on the exercise's effort rating
-  type) → "e1RM: <value>" appears under the set rows.
+- **estimated one-rep max is calculated and displayed for `reps`
+  exercises** — on a `reps` exercise, enter a Weight/Reps/effort rating
+  combination within the eligible range (reps 1-10, and RPE ≥ 6 or RIR ≤ 4
+  depending on the exercise's effort rating type) → "e1RM: <value>" appears
+  under the set rows. `time`, `distance`, and `cardio` exercises never show
+  an e1RM (their Options popover doesn't even offer the "Show e1RM" toggle
+  — see **Exercise types** above).
 
   > Note: unlike the calculator page, a set row's effort rating input isn't
   > restricted to the e1RM-eligible range — RPE accepts 0-10 in steps of
@@ -99,50 +151,76 @@ persistence into workout history.
 
 ### Set targets
 
-Targets (a rep range and/or effort rating range) are set in bulk via the
-"Set targets" drawer rather than per-set inputs, so a single target can
-cover several sets at once.
+Targets (a reps/distance/duration range depending on the exercise's type,
+and/or an effort rating range) are set in bulk via the "Set targets" drawer
+rather than per-set inputs, so a single target can cover several sets at
+once. Which range field(s) appear in the drawer depends on the exercise's
+type - Min/Max Reps for `reps`, Min/Max Distance for `distance`, Min/Max
+Duration (mm:ss) for `time`, and both Min/Max Distance and Min/Max Duration
+for `cardio` - every type also gets a Min/Max effort rating field (labelled
+RPE or RIR to match the exercise's effort type). Rather than a per-row text
+description, a set's assigned target is surfaced as a small target icon
+next to the relevant column's header (Reps/Distance/Duration, and effort
+rating); hovering or clicking it opens a tooltip listing the range per
+group of sets, e.g. "Set 1: 8-10", "Sets 2-4: >= 5".
 
-- **a target can be applied to specific sets** — open the exercise's
+- **a target can be applied to specific sets** — open a `reps` exercise's
   actions menu → "Set targets" → in the drawer, enter min/max reps and
   min/max effort rating, select one set from "Apply to Sets", close the
-  drawer → that set's row shows a "Target: <range>" description under its
-  Reps and effort inputs; other sets are unaffected.
+  drawer → the target icon next to the Reps and effort rating column
+  headers shows a tooltip with that set's range (e.g. "Set 1: 8-10"); sets
+  not covered by any target aren't included in the tooltip.
 - **"Apply to all" covers every set, including ones added later** — check
-  "Apply to all" on a target → every existing set shows the target
-  description; click "Add Set" afterward → the new set inherits the same
-  target automatically.
+  "Apply to all" on a target → the tooltip shows one line covering every
+  existing set; click "Add Set" afterward → the new set inherits the same
+  target automatically and is included in that line.
 - **adding a second target claims the remaining sets** — with one target
   already applied to some sets, click "Add Target", enter different
-  values, and apply it to the remaining set(s) → each set shows its own
-  target's range, and sets already claimed by the first target aren't
-  selectable for the second.
+  values, and apply it to the remaining set(s) → the tooltip shows a
+  separate line per target's sets and range, and sets already claimed by
+  the first target aren't selectable for the second.
 - **removing a target clears it from its sets** — click "Remove Target" on
-  a target row → the row disappears and the sets it covered no longer show
-  a target description.
+  a target row → the row disappears and the target icon's tooltip no
+  longer lists the sets it covered (the icon disappears entirely once no
+  target remains for that column).
 - **a value outside its target range is visually flagged** — enter reps
   below a set's target minimum → the Reps input is shown in a different
   color (representative check only; the full red/green/amber color rules
-  for reps vs. effort rating belong in a component test).
-- **"Show Targets" hides/shows the target descriptions** — in the
-  exercise's Options popover, toggle "Show Targets" off → the
-  "Target: ..." descriptions under Reps/effort rating disappear; toggle it
-  back on → they reappear.
+  for reps/distance/duration vs. effort rating belong in a component
+  test).
+- **"Show Targets" hides/shows the target icons** — in the exercise's
+  Options popover, toggle "Show Targets" off → the target icons next to
+  the column headers disappear; toggle it back on → they reappear.
 - **targets persist after reload** — set a target, wait for the autosave
   to complete (or navigate away to flush it), reload the page → the same
-  target values and set assignments are still shown.
+  target values and set assignments are still shown in the tooltip.
+- **non-`reps` exercises get distance/duration targets instead of reps**
+  — open a `cardio` exercise's "Set targets" drawer → Min/Max Distance and
+  Min/Max Duration fields are shown instead of Min/Max Reps; apply a
+  distance and duration target to a set → the target icons next to the
+  Distance and Duration column headers both show that set's respective
+  range (representative check only — `time` and `distance` exercises
+  follow the same pattern with just one of the two fields).
 
-### Weight unit, effort rating type, & notes
+### Weight unit, distance unit, effort rating type, & notes
 
 - **weight unit can be switched between lbs and kg** — open the exercise's
   Options popover, toggle the unit → the selected unit persists after
-  saving.
-- **effort rating type can be switched between RPE and RIR** — open the
-  exercise's Options popover, select "RIR" in the Effort Rating Type radio
-  group → the sets table's column header changes from "RPE" to "RIR", and
-  any effort rating already entered on that exercise's sets is
-  automatically converted (e.g. RPE 8 → RIR 2) and reflected in the set
-  rows; the new type and converted values persist after saving.
+  saving. Not shown for `cardio` exercises, which have no weight field
+  (see **Exercise types** above).
+- **distance unit can be switched between m/km/mi** — on a `distance` or
+  `cardio` exercise, open the Options popover, toggle the Distance Unit
+  radio group → the selected unit persists after saving and is reflected
+  next to the Distance input. Not shown for `reps` or `time` exercises,
+  which have no distance field.
+- **effort rating type can be switched between RPE and RIR (`reps`
+  exercises only)** — open a `reps` exercise's Options popover, select
+  "RIR" in the Effort Rating Type radio group → the sets table's column
+  header changes from "RPE" to "RIR", and any effort rating already
+  entered on that exercise's sets is automatically converted (e.g. RPE 8 →
+  RIR 2) and reflected in the set rows; the new type and converted values
+  persist after saving. `time`, `distance`, and `cardio` exercises have no
+  Effort Rating Type control at all - their effort rating is always RPE.
 - **exercise notes are saved** — type in the exercise's Notes field, blur
   → autosave persists the change; notes are still present after reload.
 
