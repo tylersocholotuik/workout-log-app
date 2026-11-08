@@ -16,6 +16,13 @@ change behind it.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed a bug in `SelectExerciseDrawer` where the exercise-type checkboxes would not update their 
+  checked state correctly on mobile WebKit browsers (iOS Safari and Chrome). The underlying state 
+  was always correct; a mobile WebKit quirk around controlled checkboxes was preventing the checked 
+  visual from repainting.
+
 ## [1.11.0] - 2026-11-08
 
 ### Added
