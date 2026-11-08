@@ -298,7 +298,12 @@ export default function SelectExerciseModal({
                                                 onValueChange={setCheckedExerciseTypes}
                                             >
                                                 {Object.entries(EXERCISE_TYPE_LABELS).map(([key, label]) => (
-                                                    <Checkbox key={key} value={key} classNames={{label: "text-tiny"}}>
+                                                    <Checkbox
+                                                        // Hack for mobile WebKit bug where the checkbox state doesn't update correctly when the label is clicked.
+                                                        key={`${key}-${checkedExerciseTypes.includes(key) ? "checked" : "unchecked"}`}
+                                                        value={key}
+                                                        classNames={{label: "text-tiny"}}
+                                                    >
                                                         {label}
                                                     </Checkbox>
                                                 ))}
