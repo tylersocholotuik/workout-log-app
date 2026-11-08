@@ -9,6 +9,7 @@ interface InputChangeOptions {
     isInteger: boolean;
     minValue: number;
     maxValue: number;
+    step?: number;
     setter: Dispatch<SetStateAction<string>>;
 }
 
@@ -22,6 +23,7 @@ export const handleInputChange = ({
     isInteger,
     minValue,
     maxValue,
+    step = 0.5,
     setter,
 }: InputChangeOptions) => {
     const isValidFormat = regex.test(value);
@@ -31,7 +33,9 @@ export const handleInputChange = ({
     const isInRange =
         !isNaN(parsedValue) && parsedValue >= minValue && parsedValue <= maxValue;
     
-    const isValidStep = isInteger || parsedValue % 0.5 === 0;
+    const isValidStep = 
+        isInteger || 
+        Math.abs(Math.round(parsedValue / step) * step - parsedValue) < 1e-9;
 
     // allows partial input toward maxValue (e.g. "1" while typing "10") even
     // though it's below minValue on its own

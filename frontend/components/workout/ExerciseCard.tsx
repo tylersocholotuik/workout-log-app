@@ -1,6 +1,6 @@
 import {useState, useMemo} from "react";
 
-import { useQuery } from "@tanstack/react-query";
+import {useQuery} from "@tanstack/react-query";
 
 import {
     Button,
@@ -24,8 +24,8 @@ import {
     DropdownItem,
 } from "@heroui/react";
 
-import { Icon } from "@iconify/react";
-import { DeleteIcon } from "@/icons/DeleteIcon";
+import {Icon} from "@iconify/react";
+import {DeleteIcon} from "@/icons/DeleteIcon";
 
 import SetsTable from "./SetsTable";
 
@@ -36,16 +36,18 @@ import {
     SetTargets,
 } from "@/types";
 
-import { createEmptySet } from "@/lib/factories";
+import {DISTANCE_UNIT_LABELS} from "@/lib/constants/labels";
+
+import {createEmptySet} from "@/lib/factories";
 
 import SelectExerciseDrawer from "./SelectExerciseDrawer";
 import ExerciseHistoryModal from "./ExerciseHistoryModal";
 import TargetsDrawer from "@/components/workout/TargetsDrawer";
 import WorkoutExerciseProvider from "@/components/workout/WorkoutExerciseProvider";
 
-import { useWorkoutContext } from "@/pages/workout/[workoutId]";
+import {useWorkoutContext} from "@/pages/workout/[workoutId]";
 
-import { calculateOneRepMax, convertEffortRating } from "@/utils/calculator/calculator";
+import {calculateOneRepMax, convertEffortRating} from "@/utils/calculator/calculator";
 
 
 import {getExerciseHistory} from "@/lib/api/workouts";
@@ -64,13 +66,21 @@ function deriveTargets(sets: WorkoutExercise["sets"]): SetTargets[] {
             targetRepsMax,
             targetEffortMin,
             targetEffortMax,
+            targetDistanceMin,
+            targetDistanceMax,
+            targetSecondsMin,
+            targetSecondsMax
         } = set;
 
         if (
             targetRepsMin === null &&
             targetRepsMax === null &&
             targetEffortMin === null &&
-            targetEffortMax === null
+            targetEffortMax === null &&
+            targetDistanceMin === null &&
+            targetDistanceMax === null &&
+            targetSecondsMin === null &&
+            targetSecondsMax === null
         ) {
             return;
         }
@@ -80,7 +90,11 @@ function deriveTargets(sets: WorkoutExercise["sets"]): SetTargets[] {
                 target.targetRepsMin === targetRepsMin &&
                 target.targetRepsMax === targetRepsMax &&
                 target.targetEffortMin === targetEffortMin &&
-                target.targetEffortMax === targetEffortMax
+                target.targetEffortMax === targetEffortMax &&
+                target.targetDistanceMin === targetDistanceMin &&
+                target.targetDistanceMax === targetDistanceMax &&
+                target.targetSecondsMin === targetSecondsMin &&
+                target.targetSecondsMax === targetSecondsMax
         );
 
         if (existing) {
@@ -92,6 +106,10 @@ function deriveTargets(sets: WorkoutExercise["sets"]): SetTargets[] {
                 targetRepsMax,
                 targetEffortMin,
                 targetEffortMax,
+                targetDistanceMin,
+                targetDistanceMax,
+                targetSecondsMin,
+                targetSecondsMax
             });
         }
     });
@@ -115,15 +133,18 @@ interface ExerciseCardProps {
 }
 
 export default function ExerciseCard({
-    exercise,
-    exerciseIndex,
-}: ExerciseCardProps) {
-    const { workout, setWorkout } = useWorkoutContext();
+                                         exercise,
+                                         exerciseIndex,
+                                     }: ExerciseCardProps) {
+    const {workout, setWorkout} = useWorkoutContext();
+
+    const exerciseType = exercise.exercise.exerciseType;
 
     const [notes, setNotes] = useState(exercise.notes);
-    const [weightUnit, setWeightUnit] = useState(exercise.weightUnit.toString());
+    const [weightUnit, setWeightUnit] = useState(exercise.weightUnit?.toString());
+    const [distanceUnit, setDistanceUnit] = useState(exercise.distanceUnit?.toString());
     const [effortType, setEffortType] = useState(exercise.effortType.toString());
-    const [showOneRepMax, setShowOneRepMax] = useState(true);
+    const [showOneRepMax, setShowOneRepMax] = useState(exerciseType === "reps");
     const [showTargets, setShowTargets] = useState(true);
     const targets = useMemo(() => deriveTargets(exercise.sets), [exercise.sets]);
 
@@ -135,6 +156,9 @@ export default function ExerciseCard({
     // this rule is due to there only being data for these values
     // see utils/calculator/rpeData.ts
     const oneRepMax = useMemo(() => {
+        // only calculate e1RM for exercises that are reps-based
+        if (exerciseType !== "reps") return null;
+
         const eligibleSets = exercise.sets.filter((set) => {
             // must explicitly check for as 0 is falsy
             if (
@@ -152,9 +176,9 @@ export default function ExerciseCard({
             // calculate e1RM for each set and use the highest value
             const maxList = eligibleSets.map((set) => {
                 return calculateOneRepMax({
-                    weight: set.weight!, 
-                    reps: set.reps!, 
-                    effortType: exercise.effortType, 
+                    weight: set.weight!,
+                    reps: set.reps!,
+                    effortType: exercise.effortType,
                     effortRating: set.effortRating!
                 });
             });
@@ -180,6 +204,10 @@ export default function ExerciseCard({
                 targetRepsMax: inheritedTarget.targetRepsMax,
                 targetEffortMin: inheritedTarget.targetEffortMin,
                 targetEffortMax: inheritedTarget.targetEffortMax,
+                targetDistanceMin: inheritedTarget.targetDistanceMin,
+                targetDistanceMax: inheritedTarget.targetDistanceMax,
+                targetSecondsMin: inheritedTarget.targetSecondsMin,
+                targetSecondsMax: inheritedTarget.targetSecondsMax,
             }),
         };
 
@@ -190,9 +218,9 @@ export default function ExerciseCard({
             exercises: workout.exercises.map((exercise, index) =>
                 index === exerciseIndex
                     ? {
-                          ...exercise,
-                          sets: [...exercise.sets, newSet],
-                      }
+                        ...exercise,
+                        sets: [...exercise.sets, newSet],
+                    }
                     : exercise
             ),
         };
@@ -211,30 +239,27 @@ export default function ExerciseCard({
         newExercise: Exercise,
         exerciseIndex?: number
     ) => {
-        // create deep copy of workout
-        let updatedWorkout = {
-            ...workout,
-            exercises: workout.exercises.map((exercise) => ({
-                ...exercise,
-                sets: exercise.sets.map((set) => ({
-                    ...set,
-                })),
-            })),
-        };
+        const originalExerciseType = workout.exercises[exerciseIndex!].exercise.exerciseType;
 
         // Update the exercise
-        updatedWorkout = {
+        // If the exercise type has changed, reset the weightUnit and distanceUnit accordingly
+        // If the exercise type has changed, reset all sets to empty sets since the previous sets may not be relevant to the new exercise type
+        const updatedWorkout = {
             ...workout,
             exercises: workout.exercises.map((exercise, index) =>
                 index === exerciseIndex
                     ? {
-                          ...exercise,
-                          exercise: newExercise,
-                          exerciseId: newExercise.id,
-                          sets: exercise.sets.map((set) => ({
-                              ...set,
-                          })),
-                      }
+                        ...exercise,
+                        exercise: newExercise,
+                        exerciseId: newExercise.id,
+                        ...(originalExerciseType !== newExercise.exerciseType && {
+                            weightUnit: newExercise.exerciseType === "cardio" ? null : exercise.weightUnit ?? "lbs",
+                            distanceUnit: newExercise.exerciseType === "cardio" || newExercise.exerciseType === "distance" ? exercise.distanceUnit ?? "meters" : null,
+                        }),
+                        sets: exercise.sets.map((set) =>
+                            originalExerciseType !== newExercise.exerciseType ? createEmptySet() : {...set}
+                        ),
+                    }
                     : exercise
             ),
         };
@@ -252,13 +277,13 @@ export default function ExerciseCard({
             exercises: workout.exercises.map((exercise, index) =>
                 index === exerciseIndex
                     ? {
-                          ...exercise,
-                          [field]: value,
-                      }
+                        ...exercise,
+                        [field]: value,
+                    }
                     : exercise
             ),
         };
-        
+
         setWorkout(updatedWorkout);
     };
 
@@ -269,6 +294,9 @@ export default function ExerciseCard({
         // RadioGroup only emits "rpe" or "rir".
         const newValue = value as EffortRatingType;
 
+        // If the exercise type is not "reps", RIR is not a valid option, so ignore any attempt to switch to it.
+        if (exerciseType !== "reps" && newValue === "rir") return;
+
         setEffortType(newValue);
 
         const updatedWorkout = {
@@ -276,16 +304,16 @@ export default function ExerciseCard({
             exercises: workout.exercises.map((ex, index) =>
                 index === exerciseIndex
                     ? {
-                          ...ex,
-                          effortType: newValue,
-                          sets: ex.sets.map((set) => {
-                                const updatedSet = { ...set };
+                        ...ex,
+                        effortType: newValue,
+                        sets: ex.sets.map((set) => {
+                                const updatedSet = {...set};
                                 if (set.effortRating !== null) {
                                     updatedSet.effortRating = convertEffortRating(set.effortRating);
                                 }
                                 if (set.targetEffortMin !== null) {
                                     if (set.targetEffortMax !== null) {
-                                        updatedSet.targetEffortMin = convertEffortRating(set.targetEffortMax);    
+                                        updatedSet.targetEffortMin = convertEffortRating(set.targetEffortMax);
                                     } else {
                                         updatedSet.targetEffortMin = null;
                                     }
@@ -298,9 +326,9 @@ export default function ExerciseCard({
                                     }
                                 }
                                 return updatedSet;
-                              }
-                          ),
-                      }
+                            }
+                        ),
+                    }
                     : ex
             ),
         };
@@ -310,90 +338,93 @@ export default function ExerciseCard({
 
     // gets a list including the date, notes, and sets for the selected exercise
     // for each time the user performed that exercise.
-    const { data: exerciseHistory = [], isLoading: isLoadingExerciseHistory } = useQuery({
+    const {data: exerciseHistory = [], isLoading: isLoadingExerciseHistory} = useQuery({
         queryKey: ["exerciseHistory", exercise.exerciseId],
         queryFn: () => getExerciseHistory(exercise.exerciseId),
     });
-    
+
     return (
         <>
-            <WorkoutExerciseProvider showTargets={showTargets} targets={targets} effortType={effortType}>
-                <Card classNames={{ footer: "justify-center py-2" }}>
+            <WorkoutExerciseProvider
+                showTargets={showTargets}
+                targets={targets}
+                effortType={effortType}
+                weightUnit={exercise.weightUnit}
+                distanceUnit={exercise.distanceUnit}
+                exerciseType={exerciseType}
+            >
+                <Card classNames={{footer: "justify-center py-2"}}>
                     <CardHeader className="flex justify-between items-center">
-                        <div className="flex items-center gap-1">
-                            <h3 className="text-md text-primary">
-                                {exercise.exercise.name}
-                            </h3>
-                            <div>
-                                <Dropdown>
-                                    <DropdownTrigger>
-                                        <Button
-                                            aria-label="Actions"
-                                            variant="light"
-                                            size="sm"
-                                            isIconOnly
-                                        >
-                                            <Tooltip content="Actions" offset={12}>
-                                                <Icon
-                                                    icon="tabler:dots"
-                                                    width="16"
-                                                    height="16"
-                                                />
-                                            </Tooltip>
-                                        </Button>
-                                    </DropdownTrigger>
-                                    <DropdownMenu aria-label="Static Actions">
-                                        <DropdownItem
-                                            key="change"
-                                            onPress={changeExerciseDrawer.onOpen}
-                                            startContent={
-                                                <Icon
-                                                    icon="material-symbols:change-circle-rounded"
-                                                    width="18"
-                                                    height="18"
-                                                />
-                                            }
-                                        >
-                                            Change exercise
-                                        </DropdownItem>
-                                        <DropdownItem
-                                            key="history"
-                                            onPress={exerciseHistoryModal.onOpen}
-                                            startContent={
-                                                <Icon
-                                                    icon="material-symbols:history"
-                                                    width="18"
-                                                    height="18"
-                                                />
-                                            }
-                                        >
-                                            Exercise history
-                                        </DropdownItem>
-                                        <DropdownItem
-                                            key="targets"
-                                            onPress={targetsDrawer.onOpenChange}
-                                            startContent={<Icon
-                                                icon="boxicons:target"
+                        <h3 className="text-md text-primary">
+                            {exercise.exercise.name}
+                        </h3>
+                        <div className="flex gap-1 items-center">
+                            <Dropdown>
+                                <DropdownTrigger>
+                                    <Button
+                                        aria-label="Actions"
+                                        variant="light"
+                                        size="sm"
+                                        isIconOnly
+                                    >
+                                        <Tooltip content="Actions" offset={12}>
+                                            <Icon
+                                                icon="tabler:dots"
+                                                width="16"
+                                                height="16"
+                                            />
+                                        </Tooltip>
+                                    </Button>
+                                </DropdownTrigger>
+                                <DropdownMenu aria-label="Static Actions">
+                                    <DropdownItem
+                                        key="change"
+                                        onPress={changeExerciseDrawer.onOpen}
+                                        startContent={
+                                            <Icon
+                                                icon="material-symbols:change-circle-rounded"
                                                 width="18"
                                                 height="18"
-                                            />}
-                                        >
-                                            Set targets
-                                        </DropdownItem>
-                                        <DropdownItem
-                                            key="delete"
-                                            color="danger"
-                                            className="text-danger"
-                                            onPress={deleteExercise}
-                                            startContent={<DeleteIcon />}
-                                        >
-                                            Delete exercise
-                                        </DropdownItem>
-                                    </DropdownMenu>
-                                </Dropdown>
-                            </div>
-                        </div>
-                        <div className="flex gap-1 items-center">
+                                            />
+                                        }
+                                    >
+                                        Change exercise
+                                    </DropdownItem>
+                                    <DropdownItem
+                                        key="history"
+                                        onPress={exerciseHistoryModal.onOpen}
+                                        startContent={
+                                            <Icon
+                                                icon="material-symbols:history"
+                                                width="18"
+                                                height="18"
+                                            />
+                                        }
+                                    >
+                                        Exercise history
+                                    </DropdownItem>
+                                    <DropdownItem
+                                        key="targets"
+                                        onPress={targetsDrawer.onOpenChange}
+                                        startContent={<Icon
+                                            icon="boxicons:target"
+                                            width="18"
+                                            height="18"
+                                        />}
+                                    >
+                                        Set targets
+                                    </DropdownItem>
+                                    <DropdownItem
+                                        key="delete"
+                                        color="danger"
+                                        className="text-danger"
+                                        onPress={deleteExercise}
+                                        startContent={<DeleteIcon/>}
+                                    >
+                                        Delete exercise
+                                    </DropdownItem>
+                                </DropdownMenu>
+                            </Dropdown>
                             <Popover showArrow offset={10} placement="left-start">
                                 <PopoverTrigger>
                                     <Button
@@ -421,54 +452,80 @@ export default function ExerciseCard({
                                                 Options
                                             </p>
                                             <div className="flex flex-col gap-4 w-full mb-4">
-                                                <RadioGroup
-                                                    size="sm"
-                                                    label="Weight Unit"
-                                                    id={`exercise-${exerciseIndex}-weight-unit`}
-                                                    orientation="horizontal"
-                                                    value={weightUnit}
-                                                    onValueChange={(newValue) => {
-                                                        setWeightUnit(newValue);
-                                                        saveInputChange(
-                                                            exerciseIndex,
-                                                            "weightUnit",
-                                                            newValue
-                                                        );
-                                                    }}
-                                                >
-                                                    <Radio value="lbs">lbs</Radio>
-                                                    <Radio value="kg">kg</Radio>
-                                                </RadioGroup>
-                                                <RadioGroup
-                                                    size="sm"
-                                                    label="Effort Rating Type"
-                                                    id={`exercise-${exerciseIndex}-effort-type`}
-                                                    orientation="vertical"
-                                                    value={effortType}
-                                                    onValueChange={handleEffortTypeChange}
-                                                >
-                                                    <Radio
-                                                        value="rpe" 
-                                                        description="Rate of Perceived Exertion"
+                                                {exerciseType !== "cardio" &&
+                                                    <RadioGroup
+                                                        size="sm"
+                                                        label="Weight Unit"
+                                                        id={`exercise-${exerciseIndex}-weight-unit`}
+                                                        orientation="horizontal"
+                                                        value={weightUnit}
+                                                        onValueChange={(newValue) => {
+                                                            setWeightUnit(newValue);
+                                                            saveInputChange(
+                                                                exerciseIndex,
+                                                                "weightUnit",
+                                                                newValue
+                                                            );
+                                                        }}
                                                     >
-                                                        RPE
-                                                    </Radio>
-                                                    <Radio 
-                                                        value="rir" 
-                                                        description="Reps In Reserve"
+                                                        <Radio value="lbs">lbs</Radio>
+                                                        <Radio value="kg">kg</Radio>
+                                                    </RadioGroup>
+                                                }
+                                                {(exerciseType === "cardio" || exerciseType === "distance") &&
+                                                    <RadioGroup
+                                                        size="sm"
+                                                        label="Distance Unit"
+                                                        id={`exercise-${exerciseIndex}-distance-unit`}
+                                                        orientation="horizontal"
+                                                        value={distanceUnit}
+                                                        onValueChange={(newValue) => {
+                                                            setDistanceUnit(newValue);
+                                                            saveInputChange(
+                                                                exerciseIndex,
+                                                                "distanceUnit",
+                                                                newValue
+                                                            );
+                                                        }}
                                                     >
-                                                        RIR
-                                                    </Radio>
-                                                </RadioGroup>
+                                                        {Object.entries(DISTANCE_UNIT_LABELS).map(([key, label]) => (
+                                                            <Radio key={key} value={key}>
+                                                                {label}
+                                                            </Radio>
+                                                        ))}
+                                                    </RadioGroup>}
+                                                {exerciseType === "reps" &&
+                                                    <RadioGroup
+                                                        size="sm"
+                                                        label="Effort Rating Type"
+                                                        id={`exercise-${exerciseIndex}-effort-type`}
+                                                        orientation="vertical"
+                                                        value={effortType}
+                                                        onValueChange={handleEffortTypeChange}
+                                                    >
+                                                        <Radio
+                                                            value="rpe"
+                                                            description="Rate of Perceived Exertion"
+                                                        >
+                                                            RPE
+                                                        </Radio>
+                                                        <Radio
+                                                            value="rir"
+                                                            description="Reps In Reserve"
+                                                        >
+                                                            RIR
+                                                        </Radio>
+                                                    </RadioGroup>}
                                             </div>
                                             <div className="mb-2">
-                                                <Switch
-                                                    size="sm"
-                                                    isSelected={showOneRepMax}
-                                                    onValueChange={setShowOneRepMax}
-                                                >
-                                                    Show e1RM
-                                                </Switch>
+                                                {exerciseType === "reps" &&
+                                                    <Switch
+                                                        size="sm"
+                                                        isSelected={showOneRepMax}
+                                                        onValueChange={setShowOneRepMax}
+                                                    >
+                                                        Show e1RM
+                                                    </Switch>}
                                             </div>
                                             <div>
                                                 <Switch
@@ -485,7 +542,7 @@ export default function ExerciseCard({
                             </Popover>
                         </div>
                     </CardHeader>
-                    <Divider />
+                    <Divider/>
                     <CardBody className="pt-0">
                         <Textarea
                             className="mb-4"
@@ -503,7 +560,6 @@ export default function ExerciseCard({
                         />
                         <SetsTable
                             sets={exercise.sets}
-                            weightUnit={exercise.weightUnit}
                             exerciseIndex={exerciseIndex}
                         />
                         {oneRepMax && showOneRepMax && (
@@ -528,7 +584,7 @@ export default function ExerciseCard({
                         </Button>
                     </CardFooter>
                 </Card>
-    
+
                 <SelectExerciseDrawer
                     isOpen={changeExerciseDrawer.isOpen}
                     onOpenChange={changeExerciseDrawer.onOpenChange}
@@ -536,7 +592,7 @@ export default function ExerciseCard({
                     exerciseIndex={exerciseIndex}
                     update={true}
                 />
-    
+
                 <ExerciseHistoryModal
                     isOpen={exerciseHistoryModal.isOpen}
                     onOpenChange={exerciseHistoryModal.onOpenChange}
@@ -546,7 +602,7 @@ export default function ExerciseCard({
                         exercise.exercise.name
                     }
                 />
-                
+
                 <TargetsDrawer
                     isOpen={targetsDrawer.isOpen}
                     onOpenChange={targetsDrawer.onOpenChange}

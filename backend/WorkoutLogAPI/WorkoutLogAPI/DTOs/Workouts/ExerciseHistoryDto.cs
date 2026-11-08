@@ -5,8 +5,10 @@ namespace WorkoutLogAPI.DTOs.Workouts;
 
 public record ExerciseHistoryDto(
     string? Notes,
-    WeightUnit WeightUnit,
+    WeightUnit? WeightUnit,
+    DistanceUnit? DistanceUnit,
     EffortRatingType EffortType,
+    ExerciseType ExerciseType,
     ExerciseHistoryWorkoutDto Workout,
     List<SetDto> Sets)
 {
@@ -14,7 +16,9 @@ public record ExerciseHistoryDto(
         new(
             workoutExercise.Notes,
             workoutExercise.WeightUnit,
+            workoutExercise.DistanceUnit,
             workoutExercise.EffortType,
+            workoutExercise.Exercise.ExerciseType,
             new ExerciseHistoryWorkoutDto(workoutExercise.Workout.Date),
             workoutExercise.Sets
                 .Select(SetDto.FromSet)

@@ -36,7 +36,7 @@ public class WorkoutControllerTests(PostgresContainerFixture postgres) : Integra
         var workoutDto = new WorkoutDto(
             null, title, null, DateOnly.FromDateTime(DateTime.UtcNow), "Some notes",
             [
-                new WorkoutExerciseDto(null, "3x5", Enums.WeightUnit.Lbs, effortType, exerciseId, null, null,
+                new WorkoutExerciseDto(null, "3x5", Enums.WeightUnit.Lbs, null, effortType, exerciseId, null, null,
                     [new SetDto(Id: null, Weight: 100, Reps: 5, EffortRating: effortRating, ExerciseId: exerciseId)])
             ]);
 
@@ -213,7 +213,7 @@ public class WorkoutControllerTests(PostgresContainerFixture postgres) : Integra
         var workoutDto = new WorkoutDto(
             null, "Test Workout", null, DateOnly.FromDateTime(DateTime.UtcNow), null,
             [
-                new WorkoutExerciseDto(null, null, Enums.WeightUnit.Lbs, Enums.EffortRatingType.Rpe, exerciseId, null, null,
+                new WorkoutExerciseDto(null, null, Enums.WeightUnit.Lbs, null, Enums.EffortRatingType.Rpe, exerciseId, null, null,
                     [new SetDto(Id: null, Weight: 100, Reps: 5, EffortRating: 8, ExerciseId: exerciseId,
                         TargetRepsMin: 5, TargetRepsMax: 8, TargetEffortMin: 7, TargetEffortMax: 8.5)])
             ]);

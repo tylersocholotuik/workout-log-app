@@ -16,6 +16,53 @@ change behind it.
 
 ## [Unreleased]
 
+### Added
+
+- Added exercise types (`exerciseType`: Reps, Time, Distance, Cardio), letting an exercise record
+  weight+reps, weight+duration, weight+distance, or distance+duration (no weight) instead of only
+  reps. `exerciseType` is required when creating an exercise and is fixed for its lifetime.
+- Added `distance`/`durationSeconds` fields (and matching `targetDistanceMin/Max`/
+  `targetSecondsMin/Max`) to sets, alongside the existing reps/effort fields, populated/validated
+  according to the parent exercise's type.
+- Added a `distanceUnit` (meters/kilometers/miles) per exercise, shown alongside the existing
+  `weightUnit` for exercise types that record a distance; `weightUnit` is now nullable and omitted
+  for Cardio exercises, which have no weight.
+- Added exercise-type filtering (grouped in a collapsible accordion) and a required exercise-type
+  picker for new custom exercises in `SelectExerciseDrawer`.
+- Added conditional weight/distance/duration inputs to the sets grid (`SetsTableRow`) based on the
+  exercise's type, including mm:ss minute/second inputs for durations (seconds always padded to 2
+  digits).
+- Added target-range support for distance and duration to `TargetsDrawer`, with per-exercise-type
+  grid layouts (including a dedicated wider grid for Cardio's three target pairs).
+- Added a target icon next to each sets-table column header (Weight/Distance, Reps/Distance/
+  Duration, Effort) when any set in the exercise has a target set for that column; pressing it opens
+  a tooltip listing the target for every set, grouped by range (e.g. "Set 1: 1" / "Sets 2-4: 5-8").
+- Added distance and duration display (and distance/duration unit) to `ExerciseHistoryModal`'s set
+  descriptions.
+- Added distance- and duration-range validation attributes (`DistanceRangeAttribute`: 0-9999 in
+  steps of 0.1; `DurationRangeAttribute`: 0-599999 seconds, whole numbers), and backend cross-field
+  validation ensuring a set's populated fields match its exercise's type (e.g. a Cardio set can't
+  have `reps`; RIR is only allowed on Reps exercises).
+- Seeded several new cardio and time-based system exercises.
+
+### Changed
+
+- Increased JWT access token expiration from 3 hours to 7 days, since the app stores no sensitive
+  data and frequent re-logins weren't worth the extra security margin.
+- Refactored `getRepsTextColor`/`getDistanceTextColor`/`getDurationTextColor` in `SetsTableRow` into
+  a single shared `getTargetRangeTextColor` helper; `getEffortTextColor` remains separate since its
+  colour-coding logic differs.
+- Centralized weight/reps/effort-rating validation regex/constants into a new
+  `lib/constants/validation.ts` module, now shared with the new distance/duration rules.
+- Moved the exercise card's "actions" button (change exercise / exercise history / set targets /
+  delete exercise) next to the options button for more consistent placement.
+- Updated `CalculatorForm` and `WorkoutExerciseProvider` to account for exercise type when
+  calculating/estimating one-rep max (Reps exercises only).
+
+### Fixed
+
+- Fixed `SetsTableRow`'s minutes input not being zero-padded to match the seconds input's padding.
+
 ## [1.10.1] - 2026-10-27
 
 ### Fixed

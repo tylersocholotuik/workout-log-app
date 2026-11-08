@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using WorkoutLogAPI.Data;
 using WorkoutLogAPI.DTOs.Exercises;
 using WorkoutLogAPI.Models;
+using WorkoutLogAPI.Enums;
 
 namespace WorkoutLogAPI.Services;
 
@@ -40,16 +41,16 @@ public class ExerciseService
             .ToListAsync();
     }
 
-    public async Task<Exercise> CreateUserExercise(string userId, string name)
+    public async Task<Exercise> CreateUserExercise(string userId, ExerciseDto exerciseDto)
     {
-        if (string.IsNullOrWhiteSpace(name.Trim()))
+        if (string.IsNullOrWhiteSpace(exerciseDto.Name.Trim()))
         {
             throw new ArgumentException("Exercise name cannot be empty.");
         }
         
         // Check if an exercise with the same name already exists for the user or is a system exercise
         var exerciseExists = await _context.Exercises.Where(e =>
-            e.Name.ToLower() == name.ToLower() && (e.UserId == userId || e.UserId == null)
+            e.Name.ToLower() == exerciseDto.Name.ToLower() && (e.UserId == userId || e.UserId == null)
         ).AnyAsync();
 
         if (exerciseExists)
@@ -59,8 +60,9 @@ public class ExerciseService
 
         var newExercise = new Exercise
         {
-            Name = name.Trim(),
+            Name = exerciseDto.Name.Trim(),
             UserId = userId,
+            ExerciseType = exerciseDto.ExerciseType
         };
 
         _context.Exercises.Add(newExercise);

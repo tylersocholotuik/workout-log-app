@@ -265,7 +265,7 @@ that is, at three scopes:
 The workout editor (`pages/workout/[workoutId].tsx`) autosaves the
 in-progress workout rather than requiring an explicit "Save" action -
 every edit (adding/removing an exercise or set, editing notes, weight,
-reps, effort rating (RPE/RIR), workout details) is persisted to the backend
+reps/distance/duration, effort rating (RPE/RIR), workout details) is persisted to the backend
 automatically after a short debounce. Finishing a workout just sets
 `finishedAt`; it doesn't need its own separate "save everything" step,
 since autosave already keeps the backend caught up.
@@ -321,7 +321,7 @@ the moment it *schedules* a timer, not when the timer *fires* - so
 not just `isDirtyRef.current` alone. This is wired up to two triggers:
 - `router.events.on("routeChangeStart", ...)` flushes on any client-side
   navigation. It also force-blurs `document.activeElement` first, since
-  the Notes/Weight/Reps/Effort Rating inputs only commit their value to
+  the Notes/Weight/Reps (or Distance/Duration)/Effort Rating inputs only commit their value to
   `WorkoutContext` on blur (not on every keystroke) - without this, a
   value typed but never blurred (e.g. the user clicks a nav link while
   still focused in the field) wouldn't be in `workout` yet for
@@ -353,16 +353,20 @@ after the debounce delay and network round trip.
 
 ## Set targets
 
-Each set can optionally have a target rep range (`targetRepsMin`/`Max`)
-and target effort range (`targetEffortMin`/`Max`, RPE or RIR depending on
-the exercise). Targets are edited in bulk via `TargetsDrawer`, opened from
-`ExerciseCard`'s options menu, rather than per-set inputs in the sets
-table - a common use case is applying the same target to several sets at
-once (e.g. three backoff sets all targeting 8-10 reps).
+Each set can optionally have target ranges for whichever fields its
+exercise type actually uses: reps (`targetRepsMin`/`Max`, `Reps`
+exercises), distance (`targetDistanceMin`/`Max`, `Distance`/`Cardio`),
+duration (`targetSecondsMin`/`Max`, `Time`/`Cardio`), and always effort
+(`targetEffortMin`/`Max`, RPE or RIR depending on the exercise). Targets
+are edited in bulk via `TargetsDrawer`, opened from `ExerciseCard`'s
+options menu, rather than per-set inputs in the sets table - a common use
+case is applying the same target to several sets at once (e.g. three
+backoff sets all targeting 8-10 reps).
 
 **Grouping sets into target rows:** `ExerciseCard`'s `deriveTargets(sets)`
 groups the exercise's sets by identical target values into a `SetTargets[]`
-(`{ setIndices, targetRepsMin, targetRepsMax, targetEffortMin,
+(`{ setIndices, targetRepsMin, targetRepsMax, targetDistanceMin,
+targetDistanceMax, targetSecondsMin, targetSecondsMax, targetEffortMin,
 targetEffortMax }`, defined in `types/workout.ts`) - sets with no target
 values at all are omitted. This is recomputed fresh from `sets` on every
 render (`useMemo`) rather than kept as independent state, so it can never
@@ -384,17 +388,59 @@ inferring it (a single target row currently covering every set) in that
 case. Only one target row may claim "apply to all" at a time, since it's
 mutually exclusive with any other row having its own sets claimed.
 
-**Colour-coding actual vs. target values** (`SetsTableRow`): reps below
-`targetRepsMin` are always shown in red, since falling short of a minimum
-is unambiguous regardless of training goal; exceeding `targetRepsMax` is
-shown in green, but only when both a min and max are set (a deliberate
-range) - an exceeded max with no min set is left uncoloured, since that's
-genuinely ambiguous (bonus reps vs. a soft ceiling the lifter meant to
-enforce). Effort rating outside its target range (in either direction) is
-shown in amber/warning rather than red or green, since whether higher or
-lower effort is "better" depends on the lifter's goal (e.g. a bodybuilder
-training close to failure vs. a powerlifter leaving more in the tank) -
-unlike reps, there's no universally "good" direction to color-code.
+**`TargetsDrawer`'s per-exercise-type inputs:** which target-range inputs
+a drawer row shows (and how they're laid out) depends on
+`WorkoutExercise.exerciseType`, mirroring the same per-type field split
+used in the sets table itself (see below): `Reps` shows min/max reps and
+min/max effort (a 5-column grid on desktop, one full-width row per pair on
+mobile); `Time` additionally swaps reps for a min/max duration pair (an mm:ss
+label sitting above its own minutes/seconds input pair, since a floating
+label can't sensibly describe two stacked inputs at once); `Distance`
+swaps reps for min/max distance; and `Cardio` needs three pairs at once
+(distance, duration, effort) rather than two, so it gets its own wider
+grid (an 8-column grid on desktop fitting distance+duration on one row and
+effort+the apply-to-all/apply-to-sets controls split half-and-half on a
+second row; one full-width row per control on mobile, same as the other
+three types). The distance inputs' end content (the unit label, e.g.
+"m"/"km"/"mi") can visually collide with the floating label when the
+input is empty and the label hasn't moved outside yet - HeroUI 2.7.8
+doesn't expose a `labelPlacement="outside-top"` option (that's a v2.8+
+API), so this is currently accepted as a minor, value-dependent visual
+quirk rather than solved outright.
+
+**Displaying targets in the sets table (`SetsTable`/`SetsTableRow`):**
+targets are *not* shown as extra text next to each input - that approach
+was tried and discarded because long ranges (e.g. a duration range like
+"1:30-2:45") would either wrap the row's layout or get clipped depending
+on how it was positioned, and this app is used primarily on mobile where
+vertical/horizontal space is especially tight. Instead, each of
+`SetsTable`'s three column headers (Weight/Distance, Reps/Distance/Duration,
+Effort) gets a small `TargetIcon` button next to its label whenever *any*
+set in the exercise has a target for that column's field(s); pressing it
+opens a `Tooltip` listing the target for every set, grouped and labelled
+by set range (e.g. a single top set plus three backoffs targeting 5-8 reps
+renders as "Set 1: 1" / "Sets 2-4: 5-8"). This keeps the table itself
+exactly as wide as the actual input values, at the cost of the target no
+longer being visible inline without opening the tooltip. Values are still
+colour-coded against their own set's target without needing the tooltip
+open (see below) - the tooltip exists to answer "what *is* the target?",
+not "is this value within it?".
+
+**Colour-coding actual vs. target values** (`SetsTableRow`): reps,
+distance, and duration all share one helper,
+`getTargetRangeTextColor(value, min, max)` - the value is shown in red
+when it falls below a set minimum (unambiguous regardless of training
+goal), in green when it exceeds a set maximum but *only* when both a min
+and max are set (a deliberate range - an exceeded max with no min set is
+left uncoloured, since that's genuinely ambiguous, e.g. bonus reps vs. a
+soft ceiling the lifter meant to enforce), and left uncoloured otherwise.
+Effort rating has its own `getEffortTextColor`, kept separate rather than
+folded into the shared helper: it colours any out-of-range value (in
+either direction) amber/warning rather than red or green, since whether
+higher or lower effort is "better" depends on the lifter's goal (e.g. a
+bodybuilder training close to failure vs. a powerlifter leaving more in
+the tank) - unlike reps/distance/duration, there's no universally "good"
+direction to color-code.
 
 
 ## Types & factories
@@ -419,10 +465,13 @@ mirrors the same rules for a responsive UX — e.g.
 block keystrokes that would produce an invalid weight (not 0–9999, not in
 steps of 0.5) before the value is even committed to state, and `login.tsx`
 does manual required-field/length checks before calling the API.
-`TargetsDrawer` reuses the same reps/effort regexes for the four target
-fields, plus a min-must-not-exceed-max check on blur (clamping the max
-down to the min rather than rejecting the edit) mirroring the backend's
-`WorkoutExerciseDto.Validate` rule. The comments in the frontend
+`TargetsDrawer` reuses the same reps/distance/duration/effort regexes used
+for each exercise type's set inputs for the matching target fields, plus a
+min-must-not-exceed-max check on blur (clamping the max down to the min
+rather than rejecting the edit) mirroring the backend's
+`WorkoutExerciseDto.Validate` rule — this now covers all four target
+pairs (reps, distance, duration, effort), not just reps/effort. The
+comments in the frontend
 validation code explicitly reference which backend rule they're
 mirroring, which is a handy pattern if this ever grows into a shared
 validation schema (e.g. Zod) down the line.
@@ -446,7 +495,9 @@ validation schema (e.g. Zod) down the line.
 - **Icons** come from two sources: `@iconify/react`'s `<Icon icon="..." />`
   for most icons (loaded by name from Iconify's icon sets), and a handful
   of hand-written SVG components in `icons/` for icons used adjacent to
-  HeroUI form controls (e.g. `DeleteIcon`, `EditIcon`).
+  HeroUI form controls (e.g. `DeleteIcon`, `EditIcon`, and `TargetIcon`,
+  used in `SetsTable`'s column headers to indicate a column has a target
+  set — see [Set targets](#set-targets)).
 - **Scrollable `Drawer`/`Modal` bodies with a dynamic list of items:** wrap
   each repeated block in a real element (e.g. `<div>`), never a
   `<Fragment>`. A `Fragment`-wrapped group renders its children as direct
@@ -459,6 +510,20 @@ validation schema (e.g. Zod) down the line.
   buttons silently disappeared past the third target on mobile). Wrapping
   each block in its own `<div>` makes that div the flex item instead, so
   its own min-content size protects the whole group from being shrunk.
+- **HeroUI `Tooltip` doesn't offer a "toggle on click" mode:** by default,
+  pressing the trigger while the tooltip is already open re-opens it
+  instantly rather than closing it, because HeroUI's internal
+  pointerdown-outside handler closes the tooltip *before* the press event
+  that reopens it is processed, so a naive `onPress={() => setIsOpen(!isOpen)}`
+  always observes the stale "still open" state. `SetsTable`'s
+  `renderTargetIndicator` works around this by driving `isOpen` manually
+  (controlled `Tooltip`, no built-in trigger toggling) and toggling it
+  from the trigger `Button`'s `onPointerDown` instead of `onPress` — that
+  fires before HeroUI's own close-on-outside-pointerdown handler, so the
+  toggle sees the up-to-date `isOpen` value. `onPress` is still used, but
+  only as a keyboard/screen-reader fallback (guarded to fire solely for
+  `pointerType === "keyboard" | "virtual"`), since synthetic activations
+  don't go through `onPointerDown`.
 
 ## Dependency notes
 

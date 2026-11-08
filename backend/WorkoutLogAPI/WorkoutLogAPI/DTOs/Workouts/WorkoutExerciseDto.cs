@@ -9,7 +9,8 @@ public record WorkoutExerciseDto(
     int? Id,
     [param: StringLength(100, ErrorMessage = "Notes must be less than 100 characters")]
     string? Notes,
-    WeightUnit WeightUnit,
+    WeightUnit? WeightUnit,
+    DistanceUnit? DistanceUnit,
     EffortRatingType EffortType,
     int ExerciseId,
     string? WorkoutId,
@@ -21,6 +22,7 @@ public record WorkoutExerciseDto(
             workoutExercise.Id,
             workoutExercise.Notes,
             workoutExercise.WeightUnit,
+            workoutExercise.DistanceUnit,
             workoutExercise.EffortType,
             workoutExercise.ExerciseId,
             workoutExercise.WorkoutId,
@@ -77,6 +79,22 @@ public record WorkoutExerciseDto(
                 yield return new ValidationResult(
                     "Target reps min must not be greater than target reps max",
                     [$"{nameof(Sets)}[{i}].{nameof(SetDto.TargetRepsMin)}"]);
+            }
+            
+            if (set.TargetDistanceMin is not null && set.TargetDistanceMax is not null &&
+                set.TargetDistanceMin > set.TargetDistanceMax)
+            {
+                yield return new ValidationResult(
+                    "Target distance min must not be greater than target distance max",
+                    [$"{nameof(Sets)}[{i}].{nameof(SetDto.TargetDistanceMin)}"]);
+            }
+            
+            if (set.TargetSecondsMin is not null && set.TargetSecondsMax is not null &&
+                set.TargetSecondsMin > set.TargetSecondsMax)
+            {
+                yield return new ValidationResult(
+                    "Target seconds min must not be greater than target seconds max",
+                    [$"{nameof(Sets)}[{i}].{nameof(SetDto.TargetSecondsMin)}"]);
             }
         }
     }

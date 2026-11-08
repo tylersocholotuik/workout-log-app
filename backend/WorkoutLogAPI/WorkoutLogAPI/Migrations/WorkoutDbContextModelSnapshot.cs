@@ -39,6 +39,13 @@ namespace WorkoutLogAPI.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("deleted");
 
+                    b.Property<string>("ExerciseType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("reps")
+                        .HasColumnName("exercise_type");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text")
@@ -141,6 +148,14 @@ namespace WorkoutLogAPI.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("deleted");
 
+                    b.Property<double?>("Distance")
+                        .HasColumnType("double precision")
+                        .HasColumnName("distance");
+
+                    b.Property<int?>("DurationSeconds")
+                        .HasColumnType("integer")
+                        .HasColumnName("duration_seconds");
+
                     b.Property<double?>("EffortRating")
                         .HasColumnType("double precision")
                         .HasColumnName("effort_rating");
@@ -152,6 +167,14 @@ namespace WorkoutLogAPI.Migrations
                     b.Property<int?>("Reps")
                         .HasColumnType("integer")
                         .HasColumnName("reps");
+
+                    b.Property<double?>("TargetDistanceMax")
+                        .HasColumnType("double precision")
+                        .HasColumnName("target_distance_max");
+
+                    b.Property<double?>("TargetDistanceMin")
+                        .HasColumnType("double precision")
+                        .HasColumnName("target_distance_min");
 
                     b.Property<double?>("TargetEffortMax")
                         .HasColumnType("double precision")
@@ -168,6 +191,14 @@ namespace WorkoutLogAPI.Migrations
                     b.Property<int?>("TargetRepsMin")
                         .HasColumnType("integer")
                         .HasColumnName("target_reps_min");
+
+                    b.Property<int?>("TargetSecondsMax")
+                        .HasColumnType("integer")
+                        .HasColumnName("target_seconds_max");
+
+                    b.Property<int?>("TargetSecondsMin")
+                        .HasColumnType("integer")
+                        .HasColumnName("target_seconds_min");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -318,6 +349,10 @@ namespace WorkoutLogAPI.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("deleted");
 
+                    b.Property<string>("DistanceUnit")
+                        .HasColumnType("text")
+                        .HasColumnName("distance_unit");
+
                     b.Property<string>("EffortType")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -338,7 +373,6 @@ namespace WorkoutLogAPI.Migrations
                         .HasColumnName("updated_at");
 
                     b.Property<string>("WeightUnit")
-                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("weight_unit");
 

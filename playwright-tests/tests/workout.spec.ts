@@ -7,6 +7,8 @@ import {
   exerciseCard,
   addExercise,
   fillSet,
+  selectExerciseType,
+  readTargetTooltip,
   applyTargetToSets,
   editWorkoutDetails,
   waitForAutosave,
@@ -134,6 +136,24 @@ test.describe('Exercises', () => {
     await expect(page.getByRole('row', { name: 'Ab Wheel', exact: true })).toHaveCount(0);
   });
 
+  test('exercise type filter narrows the list', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
+    await page.getByRole('button', { name: 'Add Exercise' }).click();
+    // all four types are checked by default - expand the accordion and
+    // uncheck everything but Distance/Time (cardio)
+    await page.getByRole('button', { name: 'Exercise Types' }).click();
+    await page.getByRole('checkbox', { name: 'Weight/Reps' }).click();
+    await page.getByRole('checkbox', { name: 'Weight/Time' }).click();
+    await page.getByRole('checkbox', { name: 'Weight/Distance' }).click();
+
+    await expect(page.getByRole('row', { name: 'Running', exact: true })).toBeVisible();
+    await expect(page.getByRole('row', { name: 'Ab Wheel', exact: true })).toHaveCount(0);
+
+    // re-checking a type brings its exercises back
+    await page.getByRole('checkbox', { name: 'Weight/Reps' }).click();
+    await expect(page.getByRole('row', { name: 'Ab Wheel', exact: true })).toBeVisible();
+  });
+
   test('adding an exercise creates a card with one empty set', async ({ page, trackWorkout }) => {
     await startNewWorkout(page, trackWorkout);
     await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
@@ -154,6 +174,9 @@ test.describe('Exercises', () => {
     const drawer = page.getByRole('dialog');
     await drawer.getByRole('button', { name: 'Create New' }).click();
     await drawer.getByLabel('Exercise Name').fill(exerciseName);
+    // defaults to "Weight/Reps" - pick a different type to confirm the
+    // dropdown actually drives which fields the new exercise gets
+    await selectExerciseType(page, 'Weight/Time');
     await drawer.getByRole('button', { name: 'Create', exact: true }).click();
 
     await expect(page.getByText(`Exercise '${exerciseName}' was created!`)).toBeVisible();
@@ -166,10 +189,16 @@ test.describe('Exercises', () => {
     // it first).
     await drawer.getByRole('button', { name: 'Back' }).click();
     await drawer.getByPlaceholder('Search exercises...').fill(exerciseName);
+    await expect(drawer.getByRole('row', { name: exerciseName, exact: true })).toContainText('Weight/Time');
     await drawer.getByRole('row', { name: exerciseName, exact: true }).click();
     await waitForAutosave(page, () => drawer.getByRole('button', { name: 'Add', exact: true }).click());
 
-    await expect(exerciseCard(page, exerciseName)).toBeVisible();
+    const card = exerciseCard(page, exerciseName);
+    await expect(card).toBeVisible();
+    // a "Weight/Time" exercise logs Weight + Duration (mm:ss), not Reps
+    await expect(card.getByRole('textbox', { name: 'weight' })).toHaveCount(1);
+    await expect(card.getByRole('textbox', { name: 'minutes' })).toHaveCount(1);
+    await expect(card.getByRole('textbox', { name: 'reps' })).toHaveCount(0);
   });
 
   test('duplicate exercise names are rejected', async ({ page, trackWorkout }) => {
@@ -200,6 +229,33 @@ test.describe('Exercises', () => {
 
     await expect(exerciseCard(page, 'Back Extension')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Ab Wheel', exact: true })).toHaveCount(0);
+  });
+
+  test('swapping to a different exercise type resets its sets', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel')); // reps
+    await waitForAutosave(page, () =>
+      fillSet(exerciseCard(page, 'Ab Wheel'), { weight: '100', reps: '5', effortRating: '8' })
+    );
+
+    await pressIconTrigger(
+      exerciseCard(page, 'Ab Wheel').getByRole('button', { name: 'Actions', exact: true })
+    );
+    await expect(page.getByRole('menu')).toBeVisible();
+    await page.getByRole('menuitem', { name: 'Change exercise' }).click();
+
+    await page.getByPlaceholder('Search exercises...').fill('Running');
+    await page.getByRole('row', { name: 'Running', exact: true }).click();
+    await waitForAutosave(page, () => page.getByRole('button', { name: 'Update' }).click());
+
+    const card = exerciseCard(page, 'Running');
+    await expect(card).toBeVisible();
+    // the old reps-type set data no longer applies, so its fields (and
+    // values) are gone entirely, replaced by cardio's distance/duration
+    await expect(card.getByRole('textbox', { name: 'reps' })).toHaveCount(0);
+    await expect(card.getByRole('textbox', { name: 'weight' })).toHaveCount(0);
+    await expect(card.getByRole('textbox', { name: 'distance' })).toHaveValue('');
+    await expect(card.getByRole('textbox', { name: 'effort rating' })).toHaveValue('');
   });
 
   test('exercise can be removed', async ({ page, trackWorkout }) => {
@@ -271,6 +327,103 @@ test.describe('Exercises', () => {
   });
 });
 
+test.describe('Exercise types', () => {
+  test('set rows and column headers match the exercise\u2019s type', async ({
+    page,
+    trackWorkout,
+  }) => {
+    await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => addExercise(page, 'Bench Press')); // reps
+    await waitForAutosave(page, () => addExercise(page, 'Plank')); // time
+    await waitForAutosave(page, () => addExercise(page, 'Farmers Walk')); // distance
+    await waitForAutosave(page, () => addExercise(page, 'Running')); // cardio
+
+    const repsCard = exerciseCard(page, 'Bench Press');
+    await expect(repsCard.getByText('Weight', { exact: true })).toBeVisible();
+    await expect(repsCard.getByText('Reps', { exact: true })).toBeVisible();
+    await expect(repsCard.getByRole('textbox', { name: 'weight' })).toHaveCount(1);
+    await expect(repsCard.getByRole('textbox', { name: 'reps' })).toHaveCount(1);
+
+    const timeCard = exerciseCard(page, 'Plank');
+    await expect(timeCard.getByText('Weight', { exact: true })).toBeVisible();
+    await expect(timeCard.getByText('Duration (mm:ss)', { exact: true })).toBeVisible();
+    await expect(timeCard.getByRole('textbox', { name: 'weight' })).toHaveCount(1);
+    await expect(timeCard.getByRole('textbox', { name: 'minutes' })).toHaveCount(1);
+    await expect(timeCard.getByRole('textbox', { name: 'seconds' })).toHaveCount(1);
+
+    const distanceCard = exerciseCard(page, 'Farmers Walk');
+    await expect(distanceCard.getByText('Weight', { exact: true })).toBeVisible();
+    await expect(distanceCard.getByText('Distance', { exact: true })).toBeVisible();
+    await expect(distanceCard.getByRole('textbox', { name: 'weight' })).toHaveCount(1);
+    await expect(distanceCard.getByRole('textbox', { name: 'distance' })).toHaveCount(1);
+
+    const cardioCard = exerciseCard(page, 'Running');
+    await expect(cardioCard.getByText('Distance', { exact: true })).toBeVisible();
+    await expect(cardioCard.getByText('Duration (mm:ss)', { exact: true })).toBeVisible();
+    // no Weight column/input at all for cardio
+    await expect(cardioCard.getByText('Weight', { exact: true })).toHaveCount(0);
+    await expect(cardioCard.getByRole('textbox', { name: 'weight' })).toHaveCount(0);
+    await expect(cardioCard.getByRole('textbox', { name: 'distance' })).toHaveCount(1);
+    await expect(cardioCard.getByRole('textbox', { name: 'minutes' })).toHaveCount(1);
+  });
+
+  test('invalid characters are rejected across set input types', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => addExercise(page, 'Running')); // cardio
+    const card = exerciseCard(page, 'Running');
+
+    await card.getByRole('textbox', { name: 'distance' }).pressSequentially('abc');
+    await expect(card.getByRole('textbox', { name: 'distance' })).toHaveValue('');
+
+    await card.getByRole('textbox', { name: 'minutes' }).pressSequentially('abc');
+    await expect(card.getByRole('textbox', { name: 'minutes' })).toHaveValue('');
+  });
+
+  test('RIR is only available as an effort rating type for reps exercises', async ({
+    page,
+    trackWorkout,
+  }) => {
+    await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel')); // reps
+    await waitForAutosave(page, () => addExercise(page, 'Plank')); // time
+
+    await pressIconTrigger(
+      exerciseCard(page, 'Ab Wheel').getByRole('button', { name: 'exercise options' })
+    );
+    await expect(page.getByRole('radiogroup', { name: 'Effort Rating Type' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    await pressIconTrigger(
+      exerciseCard(page, 'Plank').getByRole('button', { name: 'exercise options' })
+    );
+    await expect(page.getByRole('radiogroup', { name: 'Effort Rating Type' })).toHaveCount(0);
+  });
+
+  test('weight/distance unit controls match the exercise\u2019s type', async ({
+    page,
+    trackWorkout,
+  }) => {
+    await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => addExercise(page, 'Running')); // cardio
+    await waitForAutosave(page, () => addExercise(page, 'Farmers Walk')); // distance
+
+    await pressIconTrigger(
+      exerciseCard(page, 'Running').getByRole('button', { name: 'exercise options' })
+    );
+    await expect(page.getByRole('radiogroup', { name: 'Weight Unit' })).toHaveCount(0);
+    await expect(page.getByRole('radiogroup', { name: 'Distance Unit' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    await pressIconTrigger(
+      exerciseCard(page, 'Farmers Walk').getByRole('button', { name: 'exercise options' })
+    );
+    await expect(page.getByRole('radiogroup', { name: 'Weight Unit' })).toBeVisible();
+    await expect(page.getByRole('radiogroup', { name: 'Distance Unit' })).toBeVisible();
+  });
+});
+
 test.describe('Sets', () => {
   test('sets can be added', async ({ page, trackWorkout }) => {
     await startNewWorkout(page, trackWorkout);
@@ -311,9 +464,27 @@ test.describe('Sets', () => {
 
     await expect(card.getByText(/e1RM:/)).toBeVisible();
   });
+
+  test('e1RM is only calculated for reps exercises', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => addExercise(page, 'Running')); // cardio
+    const card = exerciseCard(page, 'Running');
+
+    await waitForAutosave(page, () =>
+      fillSet(card, { distance: '5000', durationMinutes: '20', effortRating: '9' })
+    );
+
+    await expect(card.getByText(/e1RM:/)).toHaveCount(0);
+    await pressIconTrigger(card.getByRole('button', { name: 'exercise options' }));
+    await expect(page.getByRole('switch', { name: 'Show e1RM' })).toHaveCount(0);
+  });
 });
 
 test.describe('Set targets', () => {
+  const REPS_TARGET_ICON = 'reps, distance, or duration targets';
+  const EFFORT_TARGET_ICON = 'effort targets';
+  const DISTANCE_TARGET_ICON = 'distance targets';
+
   test('a target can be applied to specific sets', async ({ page, trackWorkout }) => {
     await startNewWorkout(page, trackWorkout);
     await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
@@ -334,8 +505,8 @@ test.describe('Set targets', () => {
     await waitForAutosave(page, () => drawer.getByRole('button', { name: 'Close', exact: true }).click());
     await expect(page.getByRole('dialog')).toHaveCount(0);
 
-    await expect(card.getByText('Target: 8-10')).toBeVisible();
-    await expect(card.getByText('Target: 7-8')).toBeVisible();
+    expect(await readTargetTooltip(card, REPS_TARGET_ICON)).toEqual(['Set 1: 8-10']);
+    expect(await readTargetTooltip(card, EFFORT_TARGET_ICON)).toEqual(['Set 1: 7-8']);
     // the second set wasn't selected, so it stays untouched
     await expect(card.getByRole('textbox', { name: 'reps' }).nth(1)).toHaveValue('');
   });
@@ -355,11 +526,12 @@ test.describe('Set targets', () => {
     await waitForAutosave(page, () => drawer.getByRole('checkbox', { name: 'Apply to all' }).click());
     await waitForAutosave(page, () => drawer.getByRole('button', { name: 'Close', exact: true }).click());
     await expect(page.getByRole('dialog')).toHaveCount(0);
-    await expect(card.getByText('Target: >= 5')).toBeVisible();
+    expect(await readTargetTooltip(card, REPS_TARGET_ICON)).toEqual(['Set 1: >= 5']);
 
     await waitForAutosave(page, () => card.getByRole('button', { name: 'Add Set' }).click());
 
-    await expect(card.getByText('Target: >= 5')).toHaveCount(2);
+    // the new set inherits the same target, collapsing into one grouped line
+    expect(await readTargetTooltip(card, REPS_TARGET_ICON)).toEqual(['Sets 1-2: >= 5']);
   });
 
   test('adding a second target claims the remaining sets', async ({ page, trackWorkout }) => {
@@ -393,8 +565,9 @@ test.describe('Set targets', () => {
     await waitForAutosave(page, () => drawer.getByRole('button', { name: 'Close', exact: true }).click());
     await expect(page.getByRole('dialog')).toHaveCount(0);
 
-    await expect(card.getByText('Target: >= 8')).toBeVisible();
-    await expect(card.getByText('Target: >= 3')).toBeVisible();
+    const lines = await readTargetTooltip(card, REPS_TARGET_ICON);
+    expect(lines).toContain('Set 1: >= 8');
+    expect(lines).toContain('Set 2: >= 3');
   });
 
   test('removing a target clears it from its sets', async ({ page, trackWorkout }) => {
@@ -412,7 +585,7 @@ test.describe('Set targets', () => {
     await waitForAutosave(page, () => drawer.getByRole('checkbox', { name: 'Apply to all' }).click());
     await waitForAutosave(page, () => drawer.getByRole('button', { name: 'Close', exact: true }).click());
     await expect(page.getByRole('dialog')).toHaveCount(0);
-    await expect(card.getByText('Target: >= 5')).toBeVisible();
+    expect(await readTargetTooltip(card, REPS_TARGET_ICON)).toEqual(['Set 1: >= 5']);
 
     await pressIconTrigger(card.getByRole('button', { name: 'Actions', exact: true }));
     await expect(page.getByRole('menu')).toBeVisible();
@@ -426,7 +599,8 @@ test.describe('Set targets', () => {
     await drawer.getByRole('button', { name: 'Close', exact: true }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
 
-    await expect(card.getByText(/Target:/)).toHaveCount(0);
+    // the icon itself disappears entirely once no target remains
+    await expect(card.getByRole('button', { name: REPS_TARGET_ICON })).toHaveCount(0);
   });
 
   test('a value outside its target range is visually flagged', async ({ page, trackWorkout }) => {
@@ -453,7 +627,7 @@ test.describe('Set targets', () => {
     await expect(card.getByRole('textbox', { name: 'reps' })).toHaveClass(/text-danger/);
   });
 
-  test('"Show Targets" hides/shows the target descriptions', async ({ page, trackWorkout }) => {
+  test('"Show Targets" hides/shows the target icons', async ({ page, trackWorkout }) => {
     await startNewWorkout(page, trackWorkout);
     await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
     const card = exerciseCard(page, 'Ab Wheel');
@@ -468,19 +642,25 @@ test.describe('Set targets', () => {
     await waitForAutosave(page, () => drawer.getByRole('checkbox', { name: 'Apply to all' }).click());
     await waitForAutosave(page, () => drawer.getByRole('button', { name: 'Close', exact: true }).click());
     await expect(page.getByRole('dialog')).toHaveCount(0);
-    await expect(card.getByText('Target: >= 5')).toBeVisible();
+    await expect(card.getByRole('button', { name: REPS_TARGET_ICON })).toBeVisible();
+
+    await pressIconTrigger(card.getByRole('button', { name: 'exercise options' }));
+    await page.getByRole('switch', { name: 'Show Targets' }).click();
+    await page.keyboard.press('Escape');
+    // Wait out the popover's own close animation before reopening the same
+    // trigger - the target-icon check below is unrelated local state that
+    // updates instantly, so it doesn't confirm the popover itself has
+    // actually finished unmounting. Reopening too soon (still mid-exit
+    // transition) can hang the whole page rather than fail cleanly.
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    await expect(card.getByRole('button', { name: REPS_TARGET_ICON })).toHaveCount(0);
 
     await pressIconTrigger(card.getByRole('button', { name: 'exercise options' }));
     await page.getByRole('switch', { name: 'Show Targets' }).click();
     await page.keyboard.press('Escape');
 
-    await expect(card.getByText('Target: >= 5')).toHaveCount(0);
-
-    await pressIconTrigger(card.getByRole('button', { name: 'exercise options' }));
-    await page.getByRole('switch', { name: 'Show Targets' }).click();
-    await page.keyboard.press('Escape');
-
-    await expect(card.getByText('Target: >= 5')).toBeVisible();
+    await expect(card.getByRole('button', { name: REPS_TARGET_ICON })).toBeVisible();
   });
 
   test('targets persist after reload', async ({ page, trackWorkout }) => {
@@ -502,7 +682,39 @@ test.describe('Set targets', () => {
 
     await page.reload();
 
-    await expect(exerciseCard(page, 'Ab Wheel').getByText('Target: 8-10')).toBeVisible();
+    expect(await readTargetTooltip(exerciseCard(page, 'Ab Wheel'), REPS_TARGET_ICON)).toEqual([
+      'Set 1: 8-10',
+    ]);
+  });
+
+  test('non-reps exercises get distance/duration targets instead of reps', async ({
+    page,
+    trackWorkout,
+  }) => {
+    await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => addExercise(page, 'Running')); // cardio
+    const card = exerciseCard(page, 'Running');
+
+    await pressIconTrigger(card.getByRole('button', { name: 'Actions', exact: true }));
+    await expect(page.getByRole('menu')).toBeVisible();
+    await page.getByRole('menuitem', { name: 'Set targets' }).click();
+    const drawer = page.getByRole('dialog');
+
+    await drawer.getByRole('button', { name: 'Add Target' }).click();
+    await expect(drawer.getByRole('textbox', { name: 'Min Reps' })).toHaveCount(0);
+    await drawer.getByRole('textbox', { name: 'Min Distance' }).fill('5');
+    await drawer.getByRole('textbox', { name: 'Max Distance' }).fill('10');
+    // Min Duration's minutes input - leave seconds/Max Duration blank
+    await drawer.getByRole('textbox', { name: 'minutes' }).first().fill('20');
+    await waitForAutosave(page, () => drawer.getByRole('checkbox', { name: 'Apply to all' }).click());
+    await waitForAutosave(page, () => drawer.getByRole('button', { name: 'Close', exact: true }).click());
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    // cardio's distance target shows on the first column's icon, and its
+    // duration target shares the second column's (generic) icon with reps
+    // and distance targets on other exercise types
+    expect(await readTargetTooltip(card, DISTANCE_TARGET_ICON)).toEqual(['Set 1: 5-10']);
+    expect(await readTargetTooltip(card, REPS_TARGET_ICON)).toEqual(['Set 1: >= 20:00']);
   });
 });
 
@@ -518,6 +730,19 @@ test.describe('Weight unit, effort rating type, & notes', () => {
 
     await page.reload();
     await expect(exerciseCard(page, 'Ab Wheel').getByText('kg')).toBeVisible();
+  });
+
+  test('distance unit can be switched between m/km/mi', async ({ page, trackWorkout }) => {
+    await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => addExercise(page, 'Running')); // cardio
+    const card = exerciseCard(page, 'Running');
+
+    await pressIconTrigger(card.getByRole('button', { name: 'exercise options' }));
+    await waitForAutosave(page, () => page.getByRole('radio', { name: 'km' }).click());
+    await page.keyboard.press('Escape');
+
+    await page.reload();
+    await expect(exerciseCard(page, 'Running').getByText('km')).toBeVisible();
   });
 
   test('effort rating type can be switched between RPE and RIR', async ({ page, trackWorkout }) => {

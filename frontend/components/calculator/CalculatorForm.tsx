@@ -9,6 +9,20 @@ import { handleInputChange, sanitizeDisplayValues } from "@/utils/inputHandlers"
 
 import { SetDataType } from "@/pages/calculator";
 import { EffortRatingType, WeightUnit} from "@/types";
+import {
+    WEIGHT_REGEX,
+    WEIGHT_MIN,
+    WEIGHT_MAX,
+    CALCULATOR_REPS_REGEX,
+    CALCULATOR_REPS_MIN,
+    CALCULATOR_REPS_MAX,
+    CALCULATOR_RPE_REGEX,
+    CALCULATOR_RPE_MIN,
+    CALCULATOR_RPE_MAX,
+    CALCULATOR_RIR_REGEX,
+    CALCULATOR_RIR_MIN,
+    CALCULATOR_RIR_MAX,
+} from "@/lib/constants/validation";
 
 interface CalculatorFormProps {
     setSetData: Dispatch<SetStateAction<SetDataType>>;
@@ -28,24 +42,9 @@ export default function CalculatorForm({
     const [reps, setReps] = useState("");
     const [effortRating, setEffortRating] = useState("");
 
-    // Rules for weight:
-    //  min: 0, max: 9999, steps of 0.5, can be empty string, only 1 digit after decimal (0 or 5), only 1 decimal
-    const WEIGHT_REGEX = /^(\d{0,4})(\.([05]?)?)?$/;
-    // Rules for reps:
-    //  min: 1, max: 10, must be an integer, can be empty string
-    const REPS_REGEX = /^(10|[1-9])?$/;
-    // Rules for RPE: min: 6, max: 10, steps of 0.5, can be empty string
-    const RPE_REGEX = /^(\d{0,2})(\.([05]?)?)?$/;
-    const RPE_MIN = 6;
-    const RPE_MAX = 10;
-    // Rules for RIR: min: 0, max: 4, must be an integer, can be empty string
-    const RIR_REGEX = /^[0-4]?$/;
-    const RIR_MIN = 0;
-    const RIR_MAX = 4;
-    
-    const effortRatingRegex = effortType === "rpe" ? RPE_REGEX : RIR_REGEX;
-    const effortRatingMin = effortType === "rpe" ? RPE_MIN : RIR_MIN;
-    const effortRatingMax = effortType === "rpe" ? RPE_MAX : RIR_MAX;
+    const effortRatingRegex = effortType === "rpe" ? CALCULATOR_RPE_REGEX : CALCULATOR_RIR_REGEX;
+    const effortRatingMin = effortType === "rpe" ? CALCULATOR_RPE_MIN : CALCULATOR_RIR_MIN;
+    const effortRatingMax = effortType === "rpe" ? CALCULATOR_RPE_MAX : CALCULATOR_RIR_MAX;
 
     const updateOneRepMax = useCallback(
         (weight: string, reps: string, effortRating: string) => {
@@ -54,7 +53,7 @@ export default function CalculatorForm({
             
             // Handles the case where RPE is entered as 1 to allow the user to enter 10, 
             // but does not allow 1 to be used in the calculation.
-            if (effortType === "rpe" && effortRatingNumber < RPE_MIN) {
+            if (effortType === "rpe" && effortRatingNumber < CALCULATOR_RPE_MIN) {
                 isValidEffortRating = false;
             }
             
@@ -190,8 +189,8 @@ export default function CalculatorForm({
                                     value,
                                     regex: WEIGHT_REGEX,
                                     isInteger: false,
-                                    minValue: 0,
-                                    maxValue: 9999,
+                                    minValue: WEIGHT_MIN,
+                                    maxValue: WEIGHT_MAX,
                                     setter: setWeight,
                                 })
                             }
@@ -217,10 +216,10 @@ export default function CalculatorForm({
                             onValueChange={(value) =>
                                 handleInputChange({
                                     value,
-                                    regex: REPS_REGEX,
+                                    regex: CALCULATOR_REPS_REGEX,
                                     isInteger: true,
-                                    minValue: 1,
-                                    maxValue: 10,
+                                    minValue: CALCULATOR_REPS_MIN,
+                                    maxValue: CALCULATOR_REPS_MAX,
                                     setter: setReps,
                                 })
                             }

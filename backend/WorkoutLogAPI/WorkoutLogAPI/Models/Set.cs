@@ -30,6 +30,24 @@ public class Set : IAuditableEntity
 
     [Column("target_effort_max")]
     public double? TargetEffortMax { get; set; }
+    
+    [Column("distance")]
+    public double? Distance { get; set; }
+    
+    [Column("target_distance_min")]
+    public double? TargetDistanceMin { get; set; }
+
+    [Column("target_distance_max")]
+    public double? TargetDistanceMax { get; set; }
+
+    [Column("duration_seconds")]
+    public int? DurationSeconds { get; set; }
+    
+    [Column("target_seconds_min")]
+    public int? TargetSecondsMin { get; set; }
+
+    [Column("target_seconds_max")]
+    public int? TargetSecondsMax { get; set; }
 
     [Column("exercise_id")]
     public int ExerciseId { get; set; }

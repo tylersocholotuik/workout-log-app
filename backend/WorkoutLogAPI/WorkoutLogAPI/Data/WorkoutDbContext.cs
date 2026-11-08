@@ -64,6 +64,12 @@ public class WorkoutDbContext : DbContext
                 .WithMany(u => u.Exercises)
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+            
+            entity.Property(e => e.ExerciseType)
+                .HasConversion(
+                    type => type.ToString().ToLowerInvariant(),
+                    value => Enum.Parse<ExerciseType>(value, ignoreCase: true))
+                .HasDefaultValue(ExerciseType.Reps);
 
             // Prevent deleting system exercises (UserId = null)
             entity.ToTable(t => t.HasCheckConstraint(
@@ -98,6 +104,11 @@ public class WorkoutDbContext : DbContext
                 .HasConversion(
                     unit => unit.ToString().ToLowerInvariant(),
                     value => Enum.Parse<WeightUnit>(value, ignoreCase: true));
+            
+            entity.Property(we => we.DistanceUnit)
+                .HasConversion(
+                    unit => unit.ToString().ToLowerInvariant(),
+                    value => Enum.Parse<DistanceUnit>(value, ignoreCase: true));
 
             entity.Property(we => we.EffortType)
                 .HasConversion(

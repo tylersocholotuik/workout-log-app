@@ -1,10 +1,13 @@
 import {createContext, useContext, ReactNode} from "react";
-import {SetTargets} from "@/types";
+import {SetTargets, WeightUnit, DistanceUnit, ExerciseType} from "@/types";
 
 interface WorkoutExerciseContextType {
     showTargets: boolean;
     targets: SetTargets[];
     effortType: string;
+    weightUnit: WeightUnit | null;
+    distanceUnit: DistanceUnit | null;
+    exerciseType: ExerciseType;
 }
 
 interface WorkoutExerciseProviderProps extends WorkoutExerciseContextType {
@@ -26,13 +29,17 @@ export const useWorkoutExercise = () => {
 };
 
 export default function WorkoutExerciseProvider({
-    showTargets,
-    targets,
-    effortType,
-    children,
-}: WorkoutExerciseProviderProps) {
+                                                    showTargets,
+                                                    targets,
+                                                    effortType,
+                                                    weightUnit,
+                                                    distanceUnit,
+                                                    exerciseType,
+                                                    children,
+                                                }: WorkoutExerciseProviderProps) {
     return (
-        <WorkoutExerciseContext.Provider value={{ showTargets, targets, effortType }}>
+        <WorkoutExerciseContext.Provider
+            value={{showTargets, targets, effortType, weightUnit, distanceUnit, exerciseType}}>
             {children}
         </WorkoutExerciseContext.Provider>
     );

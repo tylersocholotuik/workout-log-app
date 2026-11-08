@@ -1,4 +1,5 @@
 using WorkoutLogAPI.Models;
+using WorkoutLogAPI.Enums;
 
 namespace WorkoutLogAPI.Data;
 
@@ -6,8 +7,9 @@ public static class ExerciseSeedData
 {
     public static List<Exercise> GetSeedExercises()
     {
-        return new List<Exercise>
-        {
+        return
+        [
+            // Reps based exercises
             new Exercise { Name = "Ab Wheel" },
             new Exercise { Name = "Back Extension" },
             new Exercise { Name = "Belt Squat" },
@@ -196,7 +198,47 @@ public static class ExerciseSeedData
             new Exercise { Name = "Triceps Pushdown (Single-Arm)" },
             new Exercise { Name = "V-Situp" },
             new Exercise { Name = "Wrist Curl" },
-            new Exercise { Name = "Wrist Extension" }
-        };
+            new Exercise { Name = "Wrist Extension" },
+            // Cardio exercises
+            new Exercise { Name = "Treadmill (Walking)", ExerciseType = ExerciseType.Cardio },
+            new Exercise { Name = "Treadmill (Walking, Incline)", ExerciseType = ExerciseType.Cardio },
+            new Exercise { Name = "Treadmill (Running)", ExerciseType = ExerciseType.Cardio },
+            new Exercise { Name = "Walking", ExerciseType = ExerciseType.Cardio },
+            new Exercise { Name = "Running", ExerciseType = ExerciseType.Cardio },
+            new Exercise { Name = "Sprint", ExerciseType = ExerciseType.Cardio },
+            new Exercise { Name = "Stationary Bike", ExerciseType = ExerciseType.Cardio },
+            new Exercise { Name = "Air Bike", ExerciseType = ExerciseType.Cardio },
+            new Exercise { Name = "Assault Bike", ExerciseType = ExerciseType.Cardio },
+            new Exercise { Name = "Cycling", ExerciseType = ExerciseType.Cardio },
+            new Exercise { Name = "Elliptical", ExerciseType = ExerciseType.Cardio },
+            new Exercise { Name = "Rowing Machine", ExerciseType = ExerciseType.Cardio },
+            new Exercise { Name = "Stair Climber", ExerciseType = ExerciseType.Cardio },
+            new Exercise { Name = "Ski Erg", ExerciseType = ExerciseType.Cardio },
+            new Exercise { Name = "Skipping", ExerciseType = ExerciseType.Cardio },
+            new Exercise { Name = "Swimming", ExerciseType = ExerciseType.Cardio },
+            new Exercise { Name = "Jumping Jacks", ExerciseType = ExerciseType.Cardio },
+            // Time-based exercises
+            new Exercise { Name = "Plank", ExerciseType = ExerciseType.Time },
+            new Exercise { Name = "Side Plank", ExerciseType = ExerciseType.Time },
+            new Exercise { Name = "Wall Sit", ExerciseType = ExerciseType.Time },
+            new Exercise { Name = "Glute Bridge Hold", ExerciseType = ExerciseType.Time },
+            new Exercise { Name = "Superman Hold", ExerciseType = ExerciseType.Time },
+            new Exercise { Name = "Hollow Hold", ExerciseType = ExerciseType.Time },
+            new Exercise { Name = "Dead Hang", ExerciseType = ExerciseType.Time },
+            new Exercise { Name = "L-Sit", ExerciseType = ExerciseType.Time },
+            // Distance-based exercises
+            new Exercise { Name = "Farmers Walk", ExerciseType = ExerciseType.Distance },
+            new Exercise { Name = "Suitcase Carry", ExerciseType = ExerciseType.Distance },
+            new Exercise { Name = "Overhead Carry", ExerciseType = ExerciseType.Distance },
+            new Exercise { Name = "Rack Carry", ExerciseType = ExerciseType.Distance },
+            new Exercise { Name = "Bear Hug Carry", ExerciseType = ExerciseType.Distance },
+            new Exercise { Name = "Sled Push", ExerciseType = ExerciseType.Distance },
+            new Exercise { Name = "Sled Pull", ExerciseType = ExerciseType.Distance },
+            new Exercise { Name = "Sled Drag", ExerciseType = ExerciseType.Distance },
+            new Exercise { Name = "Prowler Push", ExerciseType = ExerciseType.Distance },
+            new Exercise { Name = "Ruck Walk", ExerciseType = ExerciseType.Distance },
+            new Exercise { Name = "Weighted Vest Walk", ExerciseType = ExerciseType.Distance },
+            new Exercise { Name = "Yolk Walk", ExerciseType = ExerciseType.Distance },
+        ];
     }
 }

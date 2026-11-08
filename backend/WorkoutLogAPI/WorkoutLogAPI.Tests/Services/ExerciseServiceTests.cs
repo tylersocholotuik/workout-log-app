@@ -1,4 +1,6 @@
 using WorkoutLogAPI.Data;
+using WorkoutLogAPI.DTOs.Exercises;
+using WorkoutLogAPI.Enums;
 using WorkoutLogAPI.Models;
 using WorkoutLogAPI.Services;
 using WorkoutLogAPI.Tests.TestHelpers;
@@ -19,7 +21,7 @@ public class ExerciseServiceTests
     {
         var (_, service) = CreateSut();
 
-        var result = await service.CreateUserExercise("user-1", "Deadlift");
+        var result = await service.CreateUserExercise("user-1", new ExerciseDto(null, "Deadlift", ExerciseType.Reps, null));
 
         Assert.Equal("Deadlift", result.Name);
         Assert.Equal("user-1", result.UserId);
@@ -30,7 +32,7 @@ public class ExerciseServiceTests
     {
         var (_, service) = CreateSut();
 
-        var result = await service.CreateUserExercise("user-1", "  Deadlift  ");
+        var result = await service.CreateUserExercise("user-1", new ExerciseDto(null, "  Deadlift  ", ExerciseType.Reps, null));
 
         Assert.Equal("Deadlift", result.Name);
     }
@@ -41,7 +43,7 @@ public class ExerciseServiceTests
         var (_, service) = CreateSut();
 
         await Assert.ThrowsAsync<ArgumentException>(
-            () => service.CreateUserExercise("user-1", "   "));
+            () => service.CreateUserExercise("user-1", new ExerciseDto(null, "   ", ExerciseType.Reps, null)));
     }
 
     [Theory]
@@ -55,7 +57,7 @@ public class ExerciseServiceTests
         await context.SaveChangesAsync();
 
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => service.CreateUserExercise("user-1", newName));
+            () => service.CreateUserExercise("user-1", new ExerciseDto(null, newName, ExerciseType.Reps, null)));
     }
 
     [Fact]
@@ -68,7 +70,7 @@ public class ExerciseServiceTests
         await context.SaveChangesAsync();
 
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => service.CreateUserExercise("user-1", "Squat"));
+            () => service.CreateUserExercise("user-1", new ExerciseDto(null, "Squat", ExerciseType.Reps, null)));
     }
 
     [Fact]

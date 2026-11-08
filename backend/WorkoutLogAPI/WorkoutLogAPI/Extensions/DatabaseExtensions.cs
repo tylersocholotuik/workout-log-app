@@ -26,14 +26,22 @@ public static class DatabaseExtensions
             Console.WriteLine($"Seeded test users to the database: {testUserList}");
         }
         
-        // Seed stock exercises if they don't exist
-        if (!await context.Exercises.AnyAsync())
+        // Seed system exercises if they don't exist
+        var existingExerciseNames = await context.Exercises
+            .Where(e => e.UserId == null)
+            .Select(e => e.Name)
+            .ToHashSetAsync();
+        
+        var seedExercises = ExerciseSeedData.GetSeedExercises()
+            .Where(e => !existingExerciseNames.Contains(e.Name))
+            .ToList();
+        
+        if (seedExercises.Count > 0)
         {
-            var exercises = ExerciseSeedData.GetSeedExercises();
-            await context.Exercises.AddRangeAsync(exercises);
+            await context.Exercises.AddRangeAsync(seedExercises);
             await context.SaveChangesAsync();
             
-            Console.WriteLine($"Seeded {exercises.Count} exercises to the database.");
+            Console.WriteLine($"Seeded {seedExercises.Count} exercises to the database.");
         }
         
         // Seed test user workouts if they don't exist

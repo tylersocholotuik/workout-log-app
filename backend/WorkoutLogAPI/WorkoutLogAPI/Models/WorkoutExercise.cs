@@ -15,7 +15,10 @@ public class WorkoutExercise : IAuditableEntity
     public string? Notes { get; set; }
 
     [Column("weight_unit")]
-    public WeightUnit WeightUnit { get; set; }
+    public WeightUnit? WeightUnit { get; set; }
+    
+    [Column("distance_unit")]
+    public DistanceUnit? DistanceUnit { get; set; }
 
     [Column("effort_type")] 
     public EffortRatingType EffortType { get; set; } = EffortRatingType.Rpe;

@@ -1,4 +1,5 @@
 using WorkoutLogAPI.Data;
+using WorkoutLogAPI.Enums;
 using WorkoutLogAPI.Models;
 using WorkoutLogAPI.DTOs.Workouts;
 using WorkoutLogAPI.Exceptions;
@@ -50,7 +51,7 @@ public class WorkoutService
 
         return workout;
     }
-    
+
     // Fetches the active workout for a user, which is defined as a workout that has not been marked as finished
     public async Task<Workout?> GetActiveWorkout(string userId)
     {
@@ -70,6 +71,7 @@ public class WorkoutService
             .Where(we => we.ExerciseId == exerciseId && !we.Deleted && we.Workout.UserId == userId &&
                          !we.Workout.Deleted)
             .Include(we => we.Workout)
+            .Include(we => we.Exercise)
             .Include(we => we.Sets.Where(s => !s.Deleted).OrderBy(s => s.Id))
             .OrderByDescending(we => we.Workout.Date)
             .ToListAsync();
@@ -79,12 +81,13 @@ public class WorkoutService
     {
         var hasUnfinishedWorkout =
             await _context.Workouts.AnyAsync(w => w.UserId == userId && !w.Deleted && w.FinishedAt == null);
-        
+
         if (hasUnfinishedWorkout)
         {
-            throw new ActiveWorkoutExistsException("You already have an unfinished workout. Please finish it before creating a new one.");
+            throw new ActiveWorkoutExistsException(
+                "You already have an unfinished workout. Please finish it before creating a new one.");
         }
-        
+
         var workoutExists = await _context.Workouts.Where(w =>
                 w.Title.ToLower() == workoutDto.Title.ToLower() &&
                 w.Date == workoutDto.Date &&
@@ -95,6 +98,13 @@ public class WorkoutService
         if (workoutExists)
         {
             throw new DuplicateWorkoutException("A workout with this title and date already exists.");
+        }
+
+        var errors = await GetExerciseAndSetValidationErrors(workoutDto);
+
+        if (errors.Count > 0)
+        {
+            throw new WorkoutValidationException(errors);
         }
 
         var workout = new Workout
@@ -109,6 +119,7 @@ public class WorkoutService
                 {
                     Notes = e.Notes,
                     WeightUnit = e.WeightUnit,
+                    DistanceUnit = e.DistanceUnit,
                     EffortType = e.EffortType,
                     ExerciseId = e.ExerciseId,
                     Sets = e.Sets?.Select(s => new Set
@@ -120,6 +131,12 @@ public class WorkoutService
                         EffortRating = s.EffortRating,
                         TargetEffortMin = s.TargetEffortMin,
                         TargetEffortMax = s.TargetEffortMax,
+                        Distance = s.Distance,
+                        TargetDistanceMin = s.TargetDistanceMin,
+                        TargetDistanceMax = s.TargetDistanceMax,
+                        DurationSeconds = s.DurationSeconds,
+                        TargetSecondsMin = s.TargetSecondsMin,
+                        TargetSecondsMax = s.TargetSecondsMax,
                     }).ToList() ?? new List<Set>(),
                 }).ToList() ?? new List<WorkoutExercise>(),
         };
@@ -146,6 +163,13 @@ public class WorkoutService
             throw new DuplicateWorkoutException("A workout with this title and date already exists.");
         }
 
+        var errors = await GetExerciseAndSetValidationErrors(workoutDto);
+
+        if (errors.Count > 0)
+        {
+            throw new WorkoutValidationException(errors);
+        }
+
         // Update the top-level properties of the workout
         workout.Title = workoutDto.Title;
         workout.Date = workoutDto.Date;
@@ -153,7 +177,7 @@ public class WorkoutService
 
         // Add, update, or soft delete exercises and sets based on the provided DTO
         SyncExercises(workout, workoutDto.Exercises);
-        
+
         if (workout.FinishedAt == null)
         {
             // If the workout is unfinished, we hard-delete any exercises/sets that were removed in the update request.
@@ -173,16 +197,16 @@ public class WorkoutService
 
         return await GetWorkoutById(workout.Id, userId);
     }
-    
+
     public async Task FinishWorkout(string id, string userId)
     {
         var workout = await GetWorkoutById(id, userId);
-        
+
         if (workout.FinishedAt != null)
         {
             throw new InvalidOperationException("This workout has already been finished.");
         }
-        
+
         workout.FinishedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
     }
@@ -214,7 +238,7 @@ public class WorkoutService
 
         await _context.SaveChangesAsync();
     }
-    
+
     // Hard delete a given user's workouts and all associated exercises and sets from the database.
     // Primarily used for cleaning up Playwright test workouts.
     public async Task HardDeleteUserWorkouts(string userId)
@@ -223,7 +247,7 @@ public class WorkoutService
             .Include(w => w.Exercises)
             .ThenInclude(e => e.Sets)
             .Where(w => w.UserId == userId).ToListAsync();
-        
+
         // If there are no workouts for the user, there's nothing to delete.
         if (workouts.Count == 0)
         {
@@ -232,7 +256,7 @@ public class WorkoutService
 
         var sets = workouts.SelectMany(w => w.Exercises).SelectMany(e => e.Sets).ToList();
         var exercises = workouts.SelectMany(w => w.Exercises).ToList();
-        
+
         // Due to foreign key constraints, we need to delete the sets, then workout exercises, then workouts.
         _context.Sets.RemoveRange(sets);
         _context.WorkoutExercises.RemoveRange(exercises);
@@ -271,6 +295,7 @@ public class WorkoutService
                 existingExercise.ExerciseId = exerciseDto.ExerciseId;
                 existingExercise.Notes = exerciseDto.Notes;
                 existingExercise.WeightUnit = exerciseDto.WeightUnit;
+                existingExercise.DistanceUnit = exerciseDto.DistanceUnit;
                 existingExercise.EffortType = exerciseDto.EffortType;
 
                 SyncSets(existingExercise, exerciseDto.Sets);
@@ -281,6 +306,7 @@ public class WorkoutService
                 {
                     Notes = exerciseDto.Notes,
                     WeightUnit = exerciseDto.WeightUnit,
+                    DistanceUnit = exerciseDto.DistanceUnit,
                     EffortType = exerciseDto.EffortType,
                     ExerciseId = exerciseDto.ExerciseId,
                     Sets = exerciseDto.Sets?
@@ -293,6 +319,12 @@ public class WorkoutService
                             EffortRating = s.EffortRating,
                             TargetEffortMin = s.TargetEffortMin,
                             TargetEffortMax = s.TargetEffortMax,
+                            Distance = s.Distance,
+                            TargetDistanceMin = s.TargetDistanceMin,
+                            TargetDistanceMax = s.TargetDistanceMax,
+                            DurationSeconds = s.DurationSeconds,
+                            TargetSecondsMin = s.TargetSecondsMin,
+                            TargetSecondsMax = s.TargetSecondsMax,
                         }).ToList() ?? new List<Set>(),
                 });
             }
@@ -333,6 +365,12 @@ public class WorkoutService
                 existingSet.EffortRating = setDto.EffortRating;
                 existingSet.TargetEffortMin = setDto.TargetEffortMin;
                 existingSet.TargetEffortMax = setDto.TargetEffortMax;
+                existingSet.Distance = setDto.Distance;
+                existingSet.TargetDistanceMin = setDto.TargetDistanceMin;
+                existingSet.TargetDistanceMax = setDto.TargetDistanceMax;
+                existingSet.DurationSeconds = setDto.DurationSeconds;
+                existingSet.TargetSecondsMin = setDto.TargetSecondsMin;
+                existingSet.TargetSecondsMax = setDto.TargetSecondsMax;
             }
             else
             {
@@ -345,28 +383,181 @@ public class WorkoutService
                     EffortRating = setDto.EffortRating,
                     TargetEffortMin = setDto.TargetEffortMin,
                     TargetEffortMax = setDto.TargetEffortMax,
+                    Distance = setDto.Distance,
+                    TargetDistanceMin = setDto.TargetDistanceMin,
+                    TargetDistanceMax = setDto.TargetDistanceMax,
+                    DurationSeconds = setDto.DurationSeconds,
+                    TargetSecondsMin = setDto.TargetSecondsMin,
+                    TargetSecondsMax = setDto.TargetSecondsMax,
                 });
             }
         }
     }
-    
+
+    // Enforces that the weight/distance/reps/duration/effort fields supplied for each
+    // exercise and set are consistent with that exercise's ExerciseType
+    //   - Reps:   weight/reps/effort allowed; distance and duration fields must be empty.
+    //   - Time:   weight/duration/effort allowed; distance and reps fields must be empty.
+    //   - Cardio: distance/duration/effort allowed; weight and reps fields must be empty.
+    // RIR effort ratings are additionally disallowed on Time/Cardio sets, since "reps in
+    // reserve" only makes sense when the set is driven by a rep target.
+    private async Task<Dictionary<string, List<string>>> GetExerciseAndSetValidationErrors(WorkoutDto workoutDto)
+    {
+        var errors = new Dictionary<string, List<string>>();
+
+        if (workoutDto.Exercises != null && workoutDto.Exercises.Count > 0)
+        {
+            var exerciseIds = workoutDto.Exercises.Select(e => e!.ExerciseId).ToList();
+
+            var exerciseTypes = await _context.Exercises
+                .Where(e => exerciseIds.Contains(e.Id))
+                .Select(e => new
+                {
+                    e.Id,
+                    e.Name,
+                    e.ExerciseType
+                }).ToListAsync();
+
+            for (int i = 0; i < workoutDto.Exercises.Count; i++)
+            {
+                var exercise = workoutDto.Exercises[i];
+                var exerciseKey = $"{nameof(workoutDto.Exercises)}[{i}]";
+
+                var exerciseExists = exerciseTypes.Any(e => e.Id == exercise.ExerciseId);
+
+                if (!exerciseExists)
+                {
+                    AddError(errors, exerciseKey, $"Exercise with ID {exercise.ExerciseId} does not exist.");
+                    continue;
+                }
+
+                var exerciseType = exerciseTypes
+                    .Where(e => e.Id == exercise.ExerciseId)
+                    .Select(e => e.ExerciseType)
+                    .FirstOrDefault();
+
+                var exerciseName = exerciseTypes
+                    .Where(e => e.Id == exercise.ExerciseId)
+                    .Select(e => e.Name)
+                    .FirstOrDefault();
+
+                if (exercise.WeightUnit == null && exercise.DistanceUnit == null)
+                {
+                    AddError(errors, exerciseKey,
+                        $"Exercise '{exerciseName}' must have either a weight unit or a distance unit specified.");
+                }
+
+                if ((exerciseType == ExerciseType.Reps || exerciseType == ExerciseType.Time) &&
+                    exercise.DistanceUnit != null)
+                {
+                    AddError(errors, exerciseKey,
+                        $"Exercise '{exerciseName}' is of type '{exerciseType}' and should not have a distance unit specified.");
+                }
+
+                if (exerciseType == ExerciseType.Cardio && exercise.WeightUnit != null)
+                {
+                    AddError(errors, exerciseKey,
+                        $"Exercise '{exerciseName}' is of type 'Cardio' and should not have a weight unit specified.");
+                }
+                
+                if (exerciseType == ExerciseType.Distance && (exercise.WeightUnit == null || exercise.DistanceUnit == null))
+                {
+                    AddError(errors, exerciseKey,
+                        $"Exercise '{exerciseName}' is of type 'Distance' and must have both a weight unit and a distance unit specified.");
+                }
+
+                if (exercise.Sets != null && exercise.Sets.Count > 0)
+                {
+                    for (var j = 0; j < exercise.Sets.Count; j++)
+                    {
+                        var set = exercise.Sets[j];
+                        var setKey = $"{exerciseKey}.{nameof(exercise.Sets)}[{j}]";
+                        var setNumber = j + 1;
+
+                        if (
+                            exerciseType == ExerciseType.Reps &&
+                            (set.Distance != null || set.TargetDistanceMax != null ||
+                             set.TargetDistanceMin != null || set.DurationSeconds != null ||
+                             set.TargetSecondsMax != null || set.TargetSecondsMin != null))
+                        {
+                            AddError(errors, setKey,
+                                $"Set {setNumber} of exercise '{exerciseName}' is of type 'Reps' and should not have distance or duration values specified.");
+                        }
+
+                        if (
+                            exerciseType == ExerciseType.Time &&
+                            (set.Distance != null || set.TargetDistanceMax != null ||
+                             set.TargetDistanceMin != null || set.Reps != null ||
+                             set.TargetRepsMax != null || set.TargetRepsMin != null))
+                        {
+                            AddError(errors, setKey,
+                                $"Set {setNumber} of exercise '{exerciseName}' is of type 'Time' and should not have distance or reps values specified.");
+                        }
+
+                        if (exerciseType == ExerciseType.Distance && (
+                                set.DurationSeconds != null || set.TargetSecondsMax != null ||
+                                set.TargetSecondsMin != null || set.Reps != null || set.TargetRepsMax != null ||
+                                set.TargetRepsMin != null))
+                        {
+                            AddError(errors, setKey,
+                                $"Set {setNumber} of exercise '{exerciseName}' is of type 'Distance' and should not have duration or reps values specified.");
+                        }
+
+                        if (
+                            exerciseType == ExerciseType.Cardio &&
+                            (set.Weight != null || set.Reps != null ||
+                             set.TargetRepsMax != null || set.TargetRepsMin != null))
+                        {
+                            AddError(errors, setKey,
+                                $"Set {setNumber} of exercise '{exerciseName}' is of type 'Cardio' and should not have weight or reps values specified.");
+                        }
+
+                        if ((exerciseType == ExerciseType.Time || exerciseType == ExerciseType.Cardio ||
+                             exerciseType == ExerciseType.Distance) &&
+                            exercise.EffortType == EffortRatingType.Rir &&
+                            (set.EffortRating != null ||
+                             set.TargetEffortMax != null ||
+                             set.TargetEffortMin != null))
+                        {
+                            AddError(errors, setKey,
+                                $"Set {setNumber} of exercise '{exerciseName}' is of type '{exerciseType}' and should not have an RIR effort rating or target effort values specified.");
+                        }
+                    }
+                }
+            }
+        }
+
+        return errors;
+    }
+
+    private static void AddError(Dictionary<string, List<string>> errors, string key, string message)
+    {
+        if (!errors.TryGetValue(key, out var messages))
+        {
+            messages = new List<string>();
+            errors[key] = messages;
+        }
+
+        messages.Add(message);
+    }
+
     // After autosave was implemented, it no longer makes sense to soft delete exercises and sets when an *unfinished* workout is updated.
     // This method is called on update *only* if the workout is unfinished. Updating a finished workout will soft-delete.
     private static void PurgeDeletedExercisesAndSets(Workout workout, WorkoutDbContext context)
     {
         var deletedSets = workout.Exercises.SelectMany(e => e.Sets).Where(s => s.Deleted).ToList();
         var deletedExercises = workout.Exercises.Where(e => e.Deleted).ToList();
-        
+
         context.Sets.RemoveRange(deletedSets);
         context.WorkoutExercises.RemoveRange(deletedExercises);
     }
-    
+
     // Hard delete a workout and all associated exercises and sets from the database. Called conditionally when deleting an unfinished workout.
     private static void HardDeleteWorkout(Workout workout, WorkoutDbContext context)
     {
         var sets = workout.Exercises.SelectMany(e => e.Sets).ToList();
         var exercises = workout.Exercises.ToList();
-        
+
         context.Sets.RemoveRange(sets);
         context.WorkoutExercises.RemoveRange(exercises);
         context.Workouts.Remove(workout);

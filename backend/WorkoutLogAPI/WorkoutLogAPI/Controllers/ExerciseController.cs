@@ -71,7 +71,7 @@ public class ExerciseController : ControllerBase
 
         try
         {
-            var exerciseEntity = await _exerciseService.CreateUserExercise(userId, exerciseDto.Name);
+            var exerciseEntity = await _exerciseService.CreateUserExercise(userId, exerciseDto);
             
             _logger.LogInformation("Created new exercise with ID {ExerciseId} for user {UserId}", exerciseEntity.Id, userId);
             

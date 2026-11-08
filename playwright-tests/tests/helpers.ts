@@ -155,19 +155,18 @@ export async function startNewWorkout(
   return id;
 }
 
-// The exercise card's "Actions"/"exercise options" icon buttons (Dropdown and
-// Popover triggers wrapped in a Tooltip) don't reliably open on a plain
-// .click() in this component library - a hover + manual mousedown/up does.
+// The exercise card's "Actions"/"exercise options" icon buttons sit inside a
+// Dropdown/Popover trigger with a nested Tooltip around their icon - a plain
+// .click() (and even a manual hover+mousedown+mouseup) can get swallowed by
+// the Tooltip's own pointer-event handling rather than reaching the
+// trigger's press handler, with no consistent failure signal (it's silent,
+// not an error). Activating via keyboard instead sidesteps pointer events
+// entirely - react-aria's useButton treats Enter/Space the same as a press,
+// and this has proven reliable (and faster) in testing across all three
+// browsers where the pointer-based gesture was not.
 export async function pressIconTrigger(locator: Locator) {
-  await locator.hover();
-  await locator.page().mouse.down();
-  await locator.page().waitForTimeout(50);
-  // Re-hover before releasing - a layout shift during the wait (e.g. a
-  // sibling card's autosave re-render) can move this button, and a mouseup
-  // at the stale down-position lands on whatever is there now instead,
-  // silently dropping the click rather than opening the dropdown.
-  await locator.hover();
-  await locator.page().mouse.up();
+  await locator.focus();
+  await locator.press('Enter');
 }
 
 export function exerciseCard(page: Page, exerciseName: string): Locator {
@@ -204,9 +203,22 @@ export async function applyTargetToSets(page: Page, setNumbers: number[]) {
   await expect(page.getByRole('dialog')).toHaveCount(1);
 }
 
+// Which fields a set row actually has (and is filled with) depends on the
+// exercise's type - `reps`/`time`/`distance` exercises have a weight input,
+// `cardio` doesn't; `reps` has a reps input, `distance` has a distance
+// input, and `time`/`cardio` have a minutes+seconds duration input instead.
+// Every type has an effort rating input, so that's always the one blurred
+// to trigger the row's onBlur save handler.
 export async function fillSet(
   card: Locator,
-  values: { weight?: string; reps?: string; effortRating?: string },
+  values: {
+    weight?: string;
+    reps?: string;
+    distance?: string;
+    durationMinutes?: string;
+    durationSeconds?: string;
+    effortRating?: string;
+  },
   setIndex = 0
 ) {
   if (values.weight !== undefined) {
@@ -215,11 +227,55 @@ export async function fillSet(
   if (values.reps !== undefined) {
     await card.getByRole('textbox', { name: 'reps' }).nth(setIndex).fill(values.reps);
   }
+  if (values.distance !== undefined) {
+    await card.getByRole('textbox', { name: 'distance' }).nth(setIndex).fill(values.distance);
+  }
+  if (values.durationMinutes !== undefined) {
+    await card.getByRole('textbox', { name: 'minutes' }).nth(setIndex).fill(values.durationMinutes);
+  }
+  if (values.durationSeconds !== undefined) {
+    await card.getByRole('textbox', { name: 'seconds' }).nth(setIndex).fill(values.durationSeconds);
+  }
   if (values.effortRating !== undefined) {
     await card.getByRole('textbox', { name: 'effort rating' }).nth(setIndex).fill(values.effortRating);
   }
   // blur to trigger the row's onBlur save handler
   await card.getByRole('textbox', { name: 'effort rating' }).nth(setIndex).blur();
+}
+
+// Picks an option from the "Exercise Type" Select in the Select Exercise
+// drawer's "create new" form. The trigger button's accessible name includes
+// its *currently selected* value (e.g. "Weight/Reps Exercise Type*"), so
+// match on the label that's always present instead of hardcoding whichever
+// option happens to be selected already.
+export async function selectExerciseType(page: Page, typeLabel: string) {
+  await page.getByRole('button', { name: /Exercise Type/ }).click();
+  await page.getByRole('option', { name: typeLabel, exact: true }).click();
+}
+
+// Reads the lines shown in a set-targets column header's tooltip (e.g.
+// ["Set 1: 8-10"], ["Sets 1-2: >= 5"]) - the per-row "Target: <range>" text
+// this used to render as was replaced by a single tooltip per column that
+// groups sets sharing the same range. `columnAriaLabel` identifies which
+// column's icon to read: "reps, distance, or duration targets" for the
+// exercise's second column (Reps/Distance/Duration depending on type),
+// "effort targets" for its effort rating column, or - only for a `cardio`
+// exercise's first column - "distance targets". Opens the tooltip, reads
+// it, then toggles it closed again so it doesn't linger over the card.
+export async function readTargetTooltip(card: Locator, columnAriaLabel: string): Promise<string[]> {
+  const icon = card.getByRole('button', { name: columnAriaLabel, exact: true });
+  const tooltip = card.page().getByRole('tooltip');
+
+  await icon.click();
+  await expect(tooltip).toBeVisible();
+  const lines = (await tooltip.innerText())
+    .split('\n')
+    .filter((line) => line !== '' && line !== 'Target');
+
+  await icon.click();
+  await expect(tooltip).toHaveCount(0);
+
+  return lines;
 }
 
 export async function setWorkoutDate(dialog: Locator, date: Date) {

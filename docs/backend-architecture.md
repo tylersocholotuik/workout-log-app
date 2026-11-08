@@ -30,9 +30,9 @@ WorkoutLogAPI/
 ├── Data/            # WorkoutDbContext + seed data
 ├── Migrations/      # EF Core migrations
 ├── Exceptions/      # Custom domain exceptions (business-rule violations)
-├── Validation/      # Custom [ValidationAttribute]s (weight/reps ranges)
+├── Validation/      # Custom [ValidationAttribute]s (weight/reps/distance/duration ranges)
 ├── Constants/       # Shared string/config constants (AppConstants)
-├── Enums/           # Shared enums (e.g. WeightUnit)
+├── Enums/           # Shared enums (e.g. WeightUnit, ExerciseType)
 ├── Extensions/      # Small static helper extension methods
 └── Program.cs       # Composition root: DI, middleware pipeline, auth config
 ```
@@ -66,13 +66,22 @@ WorkoutLogAPI/
   primary constructor parameters (`[param: Required]`, `[param:
   StringLength]`, etc.), plus a few custom attributes in `Validation/` for
   domain-specific numeric ranges (`WeightRangeAttribute`,
-  `RepsRangeAttribute`) that mirror the same constraints enforced in the
+  `RepsRangeAttribute`, `DistanceRangeAttribute`, `DurationRangeAttribute`)
+  that mirror the same constraints enforced in the
   frontend UI. `SetDto.EffortRating`'s range/step validation is the
   exception — since the rule depends on the parent
   `WorkoutExerciseDto.EffortType` (RPE allows 0.5 steps, RIR must be a whole
   number), it's enforced via `IValidatableObject.Validate` on
   `WorkoutExerciseDto` instead of an attribute, since attributes only see
-  the single property they're applied to.
+  the single property they're applied to. That same `Validate` method also
+  checks that each set's target-min doesn't exceed its target-max (reps,
+  distance, duration, and effort). A separate, later check —
+  `WorkoutService.GetExerciseAndSetValidationErrors` — validates that the
+  set/exercise's populated fields match what's expected for the exercise's
+  `ExerciseType` (e.g. a `Cardio` set can't have `Reps`, a `Reps` set can't
+  have `Distance`); it runs as a service-layer check rather than DTO
+  attribute validation since it needs to compare several DTOs against each
+  other (the exercise's type, its weight/distance units, and every set).
 
 This keeps controllers small and consistent; every action follows the same
 shape: get the user ID from claims → call one service method → map to a

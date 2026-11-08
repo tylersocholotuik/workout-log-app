@@ -65,6 +65,7 @@ erDiagram
     EXERCISE {
         int id PK
         string name
+        string exercise_type "reps / time / distance / cardio"
         string user_id FK "null = system exercise"
         bool deleted
         datetime created_at
@@ -87,6 +88,7 @@ erDiagram
         int id PK
         string notes
         string weight_unit "lbs / kg"
+        string distance_unit "meters / kilometers / miles"
         string effort_type "rpe / rir"
         int exercise_id FK
         string workout_id FK
@@ -101,6 +103,12 @@ erDiagram
         int reps
         int target_reps_min
         int target_reps_max
+        double distance
+        double target_distance_min
+        double target_distance_max
+        int duration_seconds
+        int target_seconds_min
+        int target_seconds_max
         double effort_rating
         double target_effort_min
         double target_effort_max
@@ -149,6 +157,16 @@ everyone) or a **custom exercise** created by a specific user.
 
 - `id` (PK, `int` identity)
 - `name` (non-unique index for lookups/search)
+- `exercise_type` — the `ExerciseType` enum (`Reps`/`Time`/`Distance`/`Cardio`),
+  stored as its lowercase string name via an EF value converter (same
+  pattern as `weight_unit`/`effort_type` below). Fixed at creation time —
+  there's no endpoint to change an existing exercise's type, since it
+  determines which fields are meaningful for every `workout_exercises`/`sets`
+  row that references it (see
+  [Why is exercise type stored on exercises, not workout_exercises or sets?](#why-is-exercise-type-stored-on-exercises-not-workout_exercises-or-sets)).
+  `Reps` (weight + reps, e.g. "Barbell Bench Press"), `Time` (weight + a
+  timed hold, e.g. "Plank"), `Distance` (weight + distance, e.g. "Farmer's
+  Carry"), and `Cardio` (distance + duration, no weight, e.g. "Running")
 - `user_id` (FK to `users.id`, nullable, `ON DELETE RESTRICT`)
 - `deleted`, `created_at`, `updated_at`
 - **Check constraint** `CK_Exercise_SystemExercise_NotDeleted`: `user_id IS
@@ -189,7 +207,13 @@ catalog entry itself.
 - `weight_unit` — the `WeightUnit` enum (`Lbs`/`Kg`), stored as its
   lowercase string name (`"lbs"`/`"kg"`) via an EF value converter so the
   column is human-readable and matches the API's JSON representation,
-  rather than the default numeric enum value
+  rather than the default numeric enum value. Nullable — `null` for
+  `Cardio` exercises, which never have a weight (see
+  [`exercises`](#exercises) above)
+- `distance_unit` — the `DistanceUnit` enum (`Meters`/`Kilometers`/`Miles`),
+  stored the same way as `weight_unit` (lowercase string name via an EF
+  value converter). Nullable — only set for `Distance` and `Cardio`
+  exercises, which are the only types with a distance field on their sets
 - `effort_type` — the `EffortRatingType` enum (`Rpe`/`Rir`), stored the
   same way as `weight_unit` (lowercase string name via an EF value
   converter). Determines how every set's `effort_rating` on this
@@ -201,23 +225,42 @@ catalog entry itself.
 
 ### `sets`
 
-An individual set (weight/reps/effort rating) performed for a
-`workout_exercises` row. Despite the FK property being named `ExerciseId`
-in code, it actually points at `workout_exercises.id`, not `exercises.id` —
-a set only makes sense in the context of one specific exercise-within-a-workout.
+An individual set performed for a `workout_exercises` row — which of its
+fields are populated depends on the parent exercise's `exercise_type` (see
+[`exercises`](#exercises) above); the backend's cross-field validation
+(`WorkoutService.GetExerciseAndSetValidationErrors`) rejects a set with
+values that don't match its exercise's type (e.g. `reps` on a `Cardio`
+set). Despite the FK property being named `ExerciseId` in code, it
+actually points at `workout_exercises.id`, not `exercises.id` — a set only
+makes sense in the context of one specific exercise-within-a-workout.
 
 - `id` (PK, `int` identity)
-- `weight` (nullable `double`), `reps` (nullable `int`), `effort_rating`
-  (nullable `double`, used by the 1RM calculator) — interpreted as RPE
-  (Rate of Perceived Exertion, 0.5 steps) or RIR (Reps in Reserve, whole
-  numbers) depending on the parent `workout_exercises.effort_type`
-- `target_reps_min` / `target_reps_max` (nullable `int`) and
-  `target_effort_min` / `target_effort_max` (nullable `double`) — optional
-  goals for the set, shown alongside the actual values and used to
-  colour-code them in the UI (see [frontend-architecture.md](frontend-architecture.md#set-targets)).
-  Not required to be a matched pair; either bound can be set independently.
-  Same RPE/RIR step rules as `effort_rating` apply to the two effort target
-  fields.
+- `weight` (nullable `double`) — set on `Reps`, `Time`, and `Distance`
+  sets; always `null` for `Cardio`
+- `reps` (nullable `int`) — set on `Reps` sets only
+- `target_reps_min` / `target_reps_max` (nullable `int`) — optional goals
+  for `reps`, shown alongside the actual value and used to colour-code it
+  in the UI (see [frontend-architecture.md](frontend-architecture.md#set-targets)).
+  Not required to be a matched pair; either bound can be set independently
+- `distance` (nullable `double`) — set on `Distance` and `Cardio` sets only
+- `target_distance_min` / `target_distance_max` (nullable `double`) —
+  optional goals for `distance`, same matched-pair rules as the reps
+  targets above
+- `duration_seconds` (nullable `int`) — set on `Time` and `Cardio` sets
+  only. Stored as a total whole-second count rather than separate
+  minutes/seconds columns; the frontend splits it into an mm:ss pair of
+  inputs for display/editing
+- `target_seconds_min` / `target_seconds_max` (nullable `int`) — optional
+  goals for `duration_seconds`, same matched-pair rules as the reps/distance
+  targets above
+- `effort_rating` (nullable `double`, used by the 1RM calculator) —
+  interpreted as RPE (Rate of Perceived Exertion, 0.5 steps) or RIR (Reps
+  in Reserve, whole numbers) depending on the parent
+  `workout_exercises.effort_type`. RIR is only allowed on `Reps` exercises
+  (see [`workout_exercises`](#workout_exercises) above)
+- `target_effort_min` / `target_effort_max` (nullable `double`) — optional
+  goals for `effort_rating`, same matched-pair rules as the other target
+  fields above and the same RPE/RIR step rules as `effort_rating` itself
 - `exercise_id` (FK to `workout_exercises.id`, `ON DELETE RESTRICT`)
 - `deleted`, `created_at`, `updated_at`
 
@@ -293,6 +336,18 @@ consistently for every set of that exercise. Storing it at the exercise
 level also keeps the UI simple: one toggle per exercise card, rather than a
 rating-type picker on every individual set.
 
+### Why is exercise type stored on exercises, not workout_exercises or sets?
+
+Unlike `effort_type` above, `exercise_type` is an intrinsic property of the
+exercise itself, not a per-use choice — "Running" is always cardio, "Bench
+Press" is always weight/reps. It's fixed at creation and there's no
+endpoint to change it later, since allowing that would require retroactively
+rewriting every `workout_exercises`/`sets` row that already references the
+exercise (e.g. clearing `reps` and backfilling `distance`/`duration_seconds`
+for every historical set). Storing it on the catalog entry also means the
+"Add Exercise" and "Change Exercise" drawers can group/filter the exercise
+list by type without joining through every workout.
+
 ### System vs. custom exercises
 
 A single `exercises` table serves both the global stock list (seeded at
@@ -327,3 +382,11 @@ Notable migrations beyond the initial schema:
 - `AddTargetRepsAndTargetEffortToSets` — added the nullable
   `target_reps_min`/`target_reps_max`/`target_effort_min`/`target_effort_max`
   columns to `sets` for the set-targets feature.
+- `AddExerciseTypeAndCardioFields` — added `exercises.exercise_type`
+  (default `"reps"`, so existing exercises keep their original
+  weight/reps behaviour), `workout_exercises.distance_unit`, and the
+  nullable `distance`/`target_distance_min`/`target_distance_max`/
+  `duration_seconds`/`target_seconds_min`/`target_seconds_max` columns on
+  `sets`, for the Time/Distance/Cardio exercise types. Also widened
+  `workout_exercises.weight_unit` to nullable, since `Cardio` exercises
+  have no weight.

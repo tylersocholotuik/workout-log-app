@@ -21,7 +21,26 @@ import {Dispatch, SetStateAction, useMemo, useState} from "react";
 import {WorkoutExercise, SetTargets} from "@/types";
 import {deriveAppliesToAllSets} from "@/components/workout/ExerciseCard";
 
+import {DISTANCE_UNIT_LABELS} from "@/lib/constants/labels";
 import {handleInputChange, sanitizeDisplayValues} from "@/utils/inputHandlers";
+import {
+    REPS_REGEX,
+    REPS_MIN,
+    REPS_MAX,
+    DISTANCE_REGEX,
+    DISTANCE_MIN,
+    DISTANCE_MAX,
+    DURATION_MINUTES_REGEX,
+    DURATION_MINUTES_MIN,
+    DURATION_MINUTES_MAX,
+    DURATION_SECONDS_REGEX,
+    DURATION_SECONDS_MIN,
+    DURATION_SECONDS_MAX,
+    RPE_REGEX,
+    RIR_REGEX,
+    EFFORT_RATING_MIN,
+    EFFORT_RATING_MAX,
+} from "@/lib/constants/validation";
 
 interface TargetsDrawerProps {
     isOpen: boolean;
@@ -35,22 +54,50 @@ interface TargetDraftStrings {
     targetRepsMax: string;
     targetEffortMin: string;
     targetEffortMax: string;
+    targetDistanceMin: string;
+    targetDistanceMax: string;
+    targetDurationMinMinutes: string;
+    targetDurationMinSeconds: string;
+    targetDurationMaxMinutes: string;
+    targetDurationMaxSeconds: string;
 }
 
-// null -> empty string for display, same as SetsTableRow
 const toDraftStrings = (target: SetTargets): TargetDraftStrings => ({
     targetRepsMin: target.targetRepsMin !== null ? String(target.targetRepsMin) : "",
     targetRepsMax: target.targetRepsMax !== null ? String(target.targetRepsMax) : "",
     targetEffortMin: target.targetEffortMin !== null ? String(target.targetEffortMin) : "",
     targetEffortMax: target.targetEffortMax !== null ? String(target.targetEffortMax) : "",
+    targetDistanceMin: target.targetDistanceMin !== null ? String(target.targetDistanceMin) : "",
+    targetDistanceMax: target.targetDistanceMax !== null ? String(target.targetDistanceMax) : "",
+    targetDurationMinMinutes: target.targetSecondsMin !== null ? String(Math.floor(target.targetSecondsMin / 60)) : "",
+    targetDurationMinSeconds: target.targetSecondsMin !== null ? String(target.targetSecondsMin % 60).padStart(2, "0") : "",
+    targetDurationMaxMinutes: target.targetSecondsMax !== null ? String(Math.floor(target.targetSecondsMax / 60)) : "",
+    targetDurationMaxSeconds: target.targetSecondsMax !== null ? String(target.targetSecondsMax % 60).padStart(2, "0") : "",
 });
 
-// empty string -> null, the reverse of toDraftStrings
+// combines a duration bound's minutes/seconds draft strings back into total seconds,
+// null if both are empty
+const combineDuration = (minutes: string, seconds: string): number | null =>
+    minutes !== "" || seconds !== ""
+        ? (minutes !== "" ? parseInt(minutes) : 0) * 60 + (seconds !== "" ? parseInt(seconds) : 0)
+        : null;
+
+// splits a total-seconds duration bound back into draft strings, e.g. when a
+// min/max swap derives a new value that needs to be reflected in both fields
+const splitDuration = (totalSeconds: number) => ({
+    minutes: String(Math.floor(totalSeconds / 60)),
+    seconds: String(totalSeconds % 60).padStart(2, "0"),
+});
+
 const parseTargetDraft = (draft: TargetDraftStrings) => ({
     targetRepsMin: draft.targetRepsMin !== "" ? parseInt(draft.targetRepsMin) : null,
     targetRepsMax: draft.targetRepsMax !== "" ? parseInt(draft.targetRepsMax) : null,
     targetEffortMin: draft.targetEffortMin !== "" ? parseFloat(draft.targetEffortMin) : null,
     targetEffortMax: draft.targetEffortMax !== "" ? parseFloat(draft.targetEffortMax) : null,
+    targetDistanceMin: draft.targetDistanceMin !== "" ? parseFloat(draft.targetDistanceMin) : null,
+    targetDistanceMax: draft.targetDistanceMax !== "" ? parseFloat(draft.targetDistanceMax) : null,
+    targetSecondsMin: combineDuration(draft.targetDurationMinMinutes, draft.targetDurationMinSeconds),
+    targetSecondsMax: combineDuration(draft.targetDurationMaxMinutes, draft.targetDurationMaxSeconds),
 });
 
 export default function TargetsDrawer({
@@ -59,23 +106,16 @@ export default function TargetsDrawer({
                                           exercise,
                                           exerciseIndex
                                       }: TargetsDrawerProps) {
-    const {targets, effortType} = useWorkoutExercise();
+    const {targets, effortType, exerciseType, distanceUnit} = useWorkoutExercise();
     const {setWorkout} = useWorkoutContext();
 
     const effortTypeLabel = useMemo(() => {
         return effortType === "rpe" ? "RPE" : "RIR";
     }, [effortType]);
 
-    // reps: whole numbers 0-9999; effort: 0-10, 0.5 steps for RPE, whole for RIR
-    const REPS_REGEX = /^(?:[0-9]{1,4})?$/;
-    const REPS_MIN = 0;
-    const REPS_MAX = 9999;
-    const RPE_REGEX = /^(10|[0-9](\.\d{0,1})?)?$/;
-    const RIR_REGEX = /^(10|[0-9])?$/;
     const effortRegex = effortType === "rpe" ? RPE_REGEX : RIR_REGEX;
-    const EFFORT_MIN = 0;
-    const EFFORT_MAX = 10;
     const effortIsInteger = effortType === "rir";
+    const distanceUnitLabel = DISTANCE_UNIT_LABELS[distanceUnit || "meters"];
 
     // local draft strings per target row, so handleInputChange (which
     // expects a single Dispatch<SetStateAction<string>>) can be reused
@@ -145,14 +185,49 @@ export default function TargetsDrawer({
                 setter: makeDraftSetter(targetIndex, "targetEffortMax"),
                 stripTrailingDecimal: true
             },
+            {
+                value: draft.targetDistanceMin,
+                setter: makeDraftSetter(targetIndex, "targetDistanceMin"),
+                stripTrailingDecimal: true,
+                stripLeadingZero: true
+            },
+            {
+                value: draft.targetDistanceMax,
+                setter: makeDraftSetter(targetIndex, "targetDistanceMax"),
+                stripTrailingDecimal: true,
+                stripLeadingZero: true
+            },
+            {
+                value: draft.targetDurationMinMinutes,
+                setter: makeDraftSetter(targetIndex, "targetDurationMinMinutes"),
+                stripLeadingZero: true
+            },
+            {
+                value: draft.targetDurationMaxMinutes,
+                setter: makeDraftSetter(targetIndex, "targetDurationMaxMinutes"),
+                stripLeadingZero: true
+            },
         ]);
+
+        // re-pad the duration seconds fields to 2 digits
+        makeDraftSetter(targetIndex, "targetDurationMinSeconds")((prev) =>
+            prev !== "" ? String(parseInt(prev)).padStart(2, "0") : ""
+        );
+        makeDraftSetter(targetIndex, "targetDurationMaxSeconds")((prev) =>
+            prev !== "" ? String(parseInt(prev)).padStart(2, "0") : ""
+        );
 
         const targetRepsMin = draft.targetRepsMin !== "" ? parseInt(draft.targetRepsMin) : null;
         let targetRepsMax = draft.targetRepsMax !== "" ? parseInt(draft.targetRepsMax) : null;
         const targetEffortMin = draft.targetEffortMin !== "" ? parseFloat(draft.targetEffortMin) : null;
         let targetEffortMax = draft.targetEffortMax !== "" ? parseFloat(draft.targetEffortMax) : null;
+        const targetDistanceMin = draft.targetDistanceMin !== "" ? parseFloat(draft.targetDistanceMin) : null;
+        let targetDistanceMax = draft.targetDistanceMax !== "" ? parseFloat(draft.targetDistanceMax) : null;
+        const targetSecondsMin = combineDuration(draft.targetDurationMinMinutes, draft.targetDurationMinSeconds);
+        let targetSecondsMax = combineDuration(draft.targetDurationMaxMinutes, draft.targetDurationMaxSeconds);
 
-        // ensure min <= max for both reps and effort; if not, set max = min and update draft strings
+        // ensure min <= max for reps, effort, distance, and duration; if not,
+        // set max = min and update draft strings
         if ((targetRepsMin !== null && targetRepsMax !== null) && (targetRepsMax < targetRepsMin)) {
             targetRepsMax = targetRepsMin;
             setTargetDrafts((prev) =>
@@ -171,6 +246,27 @@ export default function TargetsDrawer({
             );
         }
 
+        if ((targetDistanceMin !== null && targetDistanceMax !== null) && (targetDistanceMax < targetDistanceMin)) {
+            targetDistanceMax = targetDistanceMin;
+            setTargetDrafts((prev) =>
+                prev.map((draft, i) =>
+                    i === targetIndex ? {...draft, targetDistanceMax: String(targetDistanceMax)} : draft
+                )
+            );
+        }
+
+        if ((targetSecondsMin !== null && targetSecondsMax !== null) && (targetSecondsMax < targetSecondsMin)) {
+            targetSecondsMax = targetSecondsMin;
+            const {minutes, seconds} = splitDuration(targetSecondsMax);
+            setTargetDrafts((prev) =>
+                prev.map((draft, i) =>
+                    i === targetIndex
+                        ? {...draft, targetDurationMaxMinutes: minutes, targetDurationMaxSeconds: seconds}
+                        : draft
+                )
+            );
+        }
+
         const setIndices = Array.from(selectedSetsByTarget[targetIndex]);
 
         setWorkout((prevWorkout) => ({
@@ -181,7 +277,17 @@ export default function TargetsDrawer({
                         ...ex,
                         sets: ex.sets.map((set, sIndex) =>
                             setIndices.includes(sIndex)
-                                ? {...set, targetRepsMin, targetRepsMax, targetEffortMin, targetEffortMax}
+                                ? {
+                                    ...set,
+                                    targetRepsMin,
+                                    targetRepsMax,
+                                    targetEffortMin,
+                                    targetEffortMax,
+                                    targetDistanceMin,
+                                    targetDistanceMax,
+                                    targetSecondsMin,
+                                    targetSecondsMax,
+                                }
                                 : set
                         ),
                     }
@@ -214,8 +320,16 @@ export default function TargetsDrawer({
             prev.map((s, i) => (i === targetIndex ? newIndices : s))
         );
 
-        const {targetRepsMin, targetRepsMax, targetEffortMin, targetEffortMax} =
-            parseTargetDraft(targetDrafts[targetIndex]);
+        const {
+            targetRepsMin,
+            targetRepsMax,
+            targetEffortMin,
+            targetEffortMax,
+            targetDistanceMin,
+            targetDistanceMax,
+            targetSecondsMin,
+            targetSecondsMax,
+        } = parseTargetDraft(targetDrafts[targetIndex]);
 
         setWorkout((prevWorkout) => ({
             ...prevWorkout,
@@ -231,6 +345,10 @@ export default function TargetsDrawer({
                                     targetRepsMax,
                                     targetEffortMin,
                                     targetEffortMax,
+                                    targetDistanceMin,
+                                    targetDistanceMax,
+                                    targetSecondsMin,
+                                    targetSecondsMax,
                                 };
                             }
                             if (removed.includes(sIndex)) {
@@ -240,6 +358,10 @@ export default function TargetsDrawer({
                                     targetRepsMax: null,
                                     targetEffortMin: null,
                                     targetEffortMax: null,
+                                    targetDistanceMin: null,
+                                    targetDistanceMax: null,
+                                    targetSecondsMin: null,
+                                    targetSecondsMax: null,
                                 };
                             }
                             return set;
@@ -264,8 +386,16 @@ export default function TargetsDrawer({
             prev.map((s, i) => (i === targetIndex ? newIndices : s))
         );
 
-        const {targetRepsMin, targetRepsMax, targetEffortMin, targetEffortMax} =
-            parseTargetDraft(targetDrafts[targetIndex]);
+        const {
+            targetRepsMin,
+            targetRepsMax,
+            targetEffortMin,
+            targetEffortMax,
+            targetDistanceMin,
+            targetDistanceMax,
+            targetSecondsMin,
+            targetSecondsMax,
+        } = parseTargetDraft(targetDrafts[targetIndex]);
 
         setWorkout((prevWorkout) => ({
             ...prevWorkout,
@@ -276,7 +406,17 @@ export default function TargetsDrawer({
                         targetAppliesToAllSets: checked,
                         sets: ex.sets.map((set, sIndex) =>
                             added.includes(sIndex)
-                                ? {...set, targetRepsMin, targetRepsMax, targetEffortMin, targetEffortMax}
+                                ? {
+                                    ...set,
+                                    targetRepsMin,
+                                    targetRepsMax,
+                                    targetEffortMin,
+                                    targetEffortMax,
+                                    targetDistanceMin,
+                                    targetDistanceMax,
+                                    targetSecondsMin,
+                                    targetSecondsMax,
+                                }
                                 : set
                         ),
                     }
@@ -319,6 +459,12 @@ export default function TargetsDrawer({
             targetRepsMax: "",
             targetEffortMin: "",
             targetEffortMax: "",
+            targetDistanceMin: "",
+            targetDistanceMax: "",
+            targetDurationMinMinutes: "",
+            targetDurationMinSeconds: "",
+            targetDurationMaxMinutes: "",
+            targetDurationMaxSeconds: "",
         };
 
         setTargetDrafts((prev) => [...prev, emptyTargetDraft]);
@@ -348,6 +494,10 @@ export default function TargetsDrawer({
                                     targetRepsMax: null,
                                     targetEffortMin: null,
                                     targetEffortMax: null,
+                                    targetDistanceMin: null,
+                                    targetDistanceMax: null,
+                                    targetSecondsMin: null,
+                                    targetSecondsMax: null,
                                 }
                                 : set
                         ),
@@ -356,6 +506,348 @@ export default function TargetsDrawer({
             ),
         }));
     }
+
+    // visually matches HeroUI's "outside" label styling,
+    // but as a normal block element instead of an absolutely-positioned floating label.
+    // HeroUI's "outside" label only moves above the input once it has a value or focus
+    // (group-data-[filled-within=true]), so it sits inline over empty inputs - clashing
+    // with endContent (e.g. the distance unit) and, for narrow inputs, wrapping awkwardly.
+    // A real label rendered above the input always stays there, value or not.
+    const renderFieldLabel = (htmlFor: string, text: string) => (
+        <label htmlFor={htmlFor} className="text-tiny font-bold">
+            {text}
+        </label>
+    );
+
+    // "Min Reps"/"Max Reps" pair, used when exerciseType === "reps"
+    const renderRepsPair = (targetIndex: number, colSpanClassName: string) => (
+        <div className={`flex gap-2 ${colSpanClassName}`}>
+            <div className="flex flex-col gap-1 flex-1 min-w-0">
+                {renderFieldLabel(`target-${targetIndex}-reps-min`, "Min Reps")}
+                <Input
+                    id={`target-${targetIndex}-reps-min`}
+                    size="sm"
+                    value={targetDrafts[targetIndex].targetRepsMin}
+                    inputMode="decimal"
+                    onValueChange={(value) => {
+                        handleInputChange({
+                            value,
+                            regex: REPS_REGEX,
+                            isInteger: true,
+                            minValue: REPS_MIN,
+                            maxValue: REPS_MAX,
+                            setter: makeDraftSetter(targetIndex, "targetRepsMin"),
+                        });
+                    }}
+                    onBlur={() => commitTargetDraft(targetIndex)}
+                />
+            </div>
+            <div className="flex flex-col gap-1 flex-1 min-w-0">
+                {renderFieldLabel(`target-${targetIndex}-reps-max`, "Max Reps")}
+                <Input
+                    id={`target-${targetIndex}-reps-max`}
+                    size="sm"
+                    value={targetDrafts[targetIndex].targetRepsMax}
+                    inputMode="decimal"
+                    onValueChange={(value) => {
+                        handleInputChange({
+                            value,
+                            regex: REPS_REGEX,
+                            isInteger: true,
+                            minValue: REPS_MIN,
+                            maxValue: REPS_MAX,
+                            setter: makeDraftSetter(targetIndex, "targetRepsMax"),
+                        });
+                    }}
+                    onBlur={() => commitTargetDraft(targetIndex)}
+                />
+            </div>
+        </div>
+    );
+
+    // "Min Distance"/"Max Distance" pair, used when exerciseType === "distance" or "cardio"
+    const renderDistancePair = (targetIndex: number, colSpanClassName: string) => (
+        <div className={`flex gap-2 ${colSpanClassName}`}>
+            <div className="flex flex-col gap-1 flex-1 min-w-0">
+                {renderFieldLabel(`target-${targetIndex}-distance-min`, "Min Distance")}
+                <Input
+                    id={`target-${targetIndex}-distance-min`}
+                    size="sm"
+                    value={targetDrafts[targetIndex].targetDistanceMin}
+                    inputMode="decimal"
+                    endContent={
+                        <div className="pointer-events-none flex items-center">
+                            <span className="text-default-400 text-small">{distanceUnitLabel}</span>
+                        </div>
+                    }
+                    onValueChange={(value) => {
+                        handleInputChange({
+                            value,
+                            regex: DISTANCE_REGEX,
+                            isInteger: false,
+                            minValue: DISTANCE_MIN,
+                            maxValue: DISTANCE_MAX,
+                            step: 0.1,
+                            setter: makeDraftSetter(targetIndex, "targetDistanceMin"),
+                        });
+                    }}
+                    onBlur={() => commitTargetDraft(targetIndex)}
+                />
+            </div>
+            <div className="flex flex-col gap-1 flex-1 min-w-0">
+                {renderFieldLabel(`target-${targetIndex}-distance-max`, "Max Distance")}
+                <Input
+                    id={`target-${targetIndex}-distance-max`}
+                    size="sm"
+                    value={targetDrafts[targetIndex].targetDistanceMax}
+                    inputMode="decimal"
+                    endContent={
+                        <div className="pointer-events-none flex items-center">
+                            <span className="text-default-400 text-small">{distanceUnitLabel}</span>
+                        </div>
+                    }
+                    onValueChange={(value) => {
+                        handleInputChange({
+                            value,
+                            regex: DISTANCE_REGEX,
+                            isInteger: false,
+                            minValue: DISTANCE_MIN,
+                            maxValue: DISTANCE_MAX,
+                            step: 0.1,
+                            setter: makeDraftSetter(targetIndex, "targetDistanceMax"),
+                        });
+                    }}
+                    onBlur={() => commitTargetDraft(targetIndex)}
+                />
+            </div>
+        </div>
+    );
+
+    // "Min Duration"/"Max Duration" pair (each a minutes:seconds compound field),
+    // used when exerciseType === "time" or "cardio". The label sits above the whole
+    // minutes+seconds group (not just the minutes input), so it has the full group's
+    // width to lay out in and doesn't need to wrap the way a per-input label would.
+    // Only the minutes input is labeled/given an id; seconds relies on its aria-label.
+    const renderDurationPair = (targetIndex: number, colSpanClassName: string) => (
+        <div className={`flex gap-2 ${colSpanClassName}`}>
+            <div className="flex flex-col gap-1 flex-1 min-w-0">
+                {renderFieldLabel(`target-${targetIndex}-duration-min-minutes`, "Min Duration")}
+                <div className="flex gap-1 items-center">
+                    <Input
+                        id={`target-${targetIndex}-duration-min-minutes`}
+                        size="sm"
+                        aria-label="minutes"
+                        classNames={{input: "text-center"}}
+                        value={targetDrafts[targetIndex].targetDurationMinMinutes}
+                        inputMode="decimal"
+                        onValueChange={(value) => {
+                            handleInputChange({
+                                value,
+                                regex: DURATION_MINUTES_REGEX,
+                                isInteger: true,
+                                minValue: DURATION_MINUTES_MIN,
+                                maxValue: DURATION_MINUTES_MAX,
+                                setter: makeDraftSetter(targetIndex, "targetDurationMinMinutes"),
+                            });
+                        }}
+                        onBlur={() => commitTargetDraft(targetIndex)}
+                    />
+                    <span>:</span>
+                    <Input
+                        size="sm"
+                        aria-label="seconds"
+                        classNames={{input: "text-center"}}
+                        value={targetDrafts[targetIndex].targetDurationMinSeconds}
+                        inputMode="decimal"
+                        onValueChange={(value) => {
+                            handleInputChange({
+                                value,
+                                regex: DURATION_SECONDS_REGEX,
+                                isInteger: true,
+                                minValue: DURATION_SECONDS_MIN,
+                                maxValue: DURATION_SECONDS_MAX,
+                                setter: makeDraftSetter(targetIndex, "targetDurationMinSeconds"),
+                            });
+                        }}
+                        onBlur={() => commitTargetDraft(targetIndex)}
+                    />
+                </div>
+            </div>
+            <div className="flex flex-col gap-1 flex-1 min-w-0">
+                {renderFieldLabel(`target-${targetIndex}-duration-max-minutes`, "Max Duration")}
+                <div className="flex gap-1 items-center">
+                    <Input
+                        id={`target-${targetIndex}-duration-max-minutes`}
+                        size="sm"
+                        aria-label="minutes"
+                        classNames={{input: "text-center"}}
+                        value={targetDrafts[targetIndex].targetDurationMaxMinutes}
+                        inputMode="decimal"
+                        onValueChange={(value) => {
+                            handleInputChange({
+                                value,
+                                regex: DURATION_MINUTES_REGEX,
+                                isInteger: true,
+                                minValue: DURATION_MINUTES_MIN,
+                                maxValue: DURATION_MINUTES_MAX,
+                                setter: makeDraftSetter(targetIndex, "targetDurationMaxMinutes"),
+                            });
+                        }}
+                        onBlur={() => commitTargetDraft(targetIndex)}
+                    />
+                    <span>:</span>
+                    <Input
+                        size="sm"
+                        aria-label="seconds"
+                        classNames={{input: "text-center"}}
+                        value={targetDrafts[targetIndex].targetDurationMaxSeconds}
+                        inputMode="decimal"
+                        onValueChange={(value) => {
+                            handleInputChange({
+                                value,
+                                regex: DURATION_SECONDS_REGEX,
+                                isInteger: true,
+                                minValue: DURATION_SECONDS_MIN,
+                                maxValue: DURATION_SECONDS_MAX,
+                                setter: makeDraftSetter(targetIndex, "targetDurationMaxSeconds"),
+                            });
+                        }}
+                        onBlur={() => commitTargetDraft(targetIndex)}
+                    />
+                </div>
+            </div>
+        </div>
+    );
+
+    // "Min <RPE/RIR>"/"Max <RPE/RIR>" pair, rendered for every exercise type
+    const renderEffortPair = (targetIndex: number, colSpanClassName: string) => (
+        <div className={`flex gap-2 ${colSpanClassName}`}>
+            <div className="flex flex-col gap-1 flex-1 min-w-0">
+                {renderFieldLabel(`target-${targetIndex}-effort-min`, `Min ${effortTypeLabel}`)}
+                <Input
+                    id={`target-${targetIndex}-effort-min`}
+                    size="sm"
+                    value={targetDrafts[targetIndex].targetEffortMin}
+                    inputMode="decimal"
+                    onValueChange={(value) => {
+                        handleInputChange({
+                            value,
+                            regex: effortRegex,
+                            isInteger: effortIsInteger,
+                            minValue: EFFORT_RATING_MIN,
+                            maxValue: EFFORT_RATING_MAX,
+                            setter: makeDraftSetter(targetIndex, "targetEffortMin"),
+                        });
+                    }}
+                    onBlur={() => commitTargetDraft(targetIndex)}
+                />
+            </div>
+            <div className="flex flex-col gap-1 flex-1 min-w-0">
+                {renderFieldLabel(`target-${targetIndex}-effort-max`, `Max ${effortTypeLabel}`)}
+                <Input
+                    id={`target-${targetIndex}-effort-max`}
+                    size="sm"
+                    value={targetDrafts[targetIndex].targetEffortMax}
+                    inputMode="decimal"
+                    onValueChange={(value) => {
+                        handleInputChange({
+                            value,
+                            regex: effortRegex,
+                            isInteger: effortIsInteger,
+                            minValue: EFFORT_RATING_MIN,
+                            maxValue: EFFORT_RATING_MAX,
+                            setter: makeDraftSetter(targetIndex, "targetEffortMax"),
+                        });
+                    }}
+                    onBlur={() => commitTargetDraft(targetIndex)}
+                />
+            </div>
+        </div>
+    );
+
+    // "Apply to all" checkbox + "Apply to Sets" multi-select, rendered for every exercise type
+    const renderApplySection = (targetIndex: number, colSpanClassName: string) => (
+        <div className={`flex flex-col gap-2 ${colSpanClassName}`}>
+            <Checkbox
+                // forces the native checkbox to remount on every logical value
+                // change - works around a mobile WebKit bug where the controlled
+                // `isSelected` state updates correctly but the checked visual
+                // doesn't repaint, since the native input toggles its own
+                // `checked` DOM property on tap before React re-renders
+                key={appliesToAllByTarget[targetIndex] ? "checked" : "unchecked"}
+                classNames={{label: "text-tiny"}}
+                size="sm"
+                isSelected={appliesToAllByTarget[targetIndex]}
+                isDisabled={!canApplyToAllByTarget[targetIndex]}
+                onValueChange={(checked) => handleApplyToAllChange(targetIndex, checked)}
+            >
+                Apply to all
+            </Checkbox>
+            {!appliesToAllByTarget[targetIndex] &&
+                <div className="flex flex-col gap-1">
+                    {renderFieldLabel(`target-${targetIndex}-apply-to-sets`, "Apply to Sets")}
+                    <Select
+                        id={`target-${targetIndex}-apply-to-sets`}
+                        aria-label="Apply to Sets"
+                        selectionMode="multiple"
+                        size="sm"
+                        selectedKeys={new Set(Array.from(selectedSetsByTarget[targetIndex], String))}
+                        disabledKeys={disabledKeysByTarget[targetIndex]}
+                        onSelectionChange={(selection) => handleSelectionChange(targetIndex, selection)}
+                        renderValue={() =>
+                            Array.from(selectedSetsByTarget[targetIndex])
+                                .sort((a, b) => a - b)
+                                .map((setIndex) => setIndex + 1)
+                                .join(", ")
+                        }
+                    >
+                        {exercise.sets.map((_, setIndex) => (
+                            <SelectItem key={String(setIndex)}>
+                                {`${setIndex + 1}`}
+                            </SelectItem>
+                        ))}
+                    </Select>
+                </div>
+            }
+        </div>
+    );
+    
+    const renderTargetRow = (targetIndex: number) => {
+        if (exerciseType === "cardio") {
+            return <>
+                <div className="grid grid-cols-1 sm:grid-cols-8 gap-4 items-end">
+                    {renderDistancePair(targetIndex, "col-span-1 sm:col-span-3")}
+                    {renderDurationPair(targetIndex, "col-span-1 sm:col-span-5")}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-8 gap-4 items-end">
+                    {renderEffortPair(targetIndex, "col-span-1 sm:col-span-4")}
+                    {renderApplySection(targetIndex, "col-span-1 sm:col-span-4")}
+                </div>
+            </>;
+        }
+
+        if (exerciseType === "distance") {
+            return <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 items-end">
+                {renderDistancePair(targetIndex, "col-span-1 sm:col-span-2")}
+                {renderEffortPair(targetIndex, "col-span-1 sm:col-span-2")}
+                {renderApplySection(targetIndex, "col-span-1 sm:col-span-1")}
+            </div>;
+        }
+
+        if (exerciseType === "time") {
+            return <div className="grid grid-cols-1 sm:grid-cols-6 gap-4 items-end">
+                {renderDurationPair(targetIndex, "col-span-1 sm:col-span-3")}
+                {renderEffortPair(targetIndex, "col-span-1 sm:col-span-2")}
+                {renderApplySection(targetIndex, "col-span-1 sm:col-span-1")}
+            </div>;
+        }
+
+        return <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 items-end">
+            {renderRepsPair(targetIndex, "col-span-1 sm:col-span-2")}
+            {renderEffortPair(targetIndex, "col-span-1 sm:col-span-2")}
+            {renderApplySection(targetIndex, "col-span-1 sm:col-span-1")}
+        </div>;
+    };
 
     return <>
         <Drawer
@@ -375,123 +867,7 @@ export default function TargetsDrawer({
                 <DrawerBody>
                     {targetDrafts.map((_, targetIndex) =>
                         <div key={`target-${targetIndex}`} className="flex flex-col gap-2 shrink-0">
-                            <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 items-end">
-                                <div className="flex gap-2 col-span-2">
-                                    <Input
-                                        label="Min Reps"
-                                        labelPlacement="outside"
-                                        size="sm"
-                                        value={targetDrafts[targetIndex].targetRepsMin}
-                                        inputMode="decimal"
-                                        onValueChange={(value) => {
-                                            handleInputChange({
-                                                value,
-                                                regex: REPS_REGEX,
-                                                isInteger: true,
-                                                minValue: REPS_MIN,
-                                                maxValue: REPS_MAX,
-                                                setter: makeDraftSetter(targetIndex, "targetRepsMin"),
-                                            });
-                                        }}
-                                        onBlur={() => commitTargetDraft(targetIndex)}
-                                    />
-                                    <Input
-                                        label="Max Reps"
-                                        labelPlacement="outside"
-                                        size="sm"
-                                        value={targetDrafts[targetIndex].targetRepsMax}
-                                        inputMode="decimal"
-                                        onValueChange={(value) => {
-                                            handleInputChange({
-                                                value,
-                                                regex: REPS_REGEX,
-                                                isInteger: true,
-                                                minValue: REPS_MIN,
-                                                maxValue: REPS_MAX,
-                                                setter: makeDraftSetter(targetIndex, "targetRepsMax"),
-                                            });
-                                        }}
-                                        onBlur={() => commitTargetDraft(targetIndex)}
-                                    />
-                                </div>
-                                <div className="flex gap-2 col-span-2">
-                                    <Input
-                                        label={`Min ${effortTypeLabel}`}
-                                        labelPlacement="outside"
-                                        size="sm"
-                                        value={targetDrafts[targetIndex].targetEffortMin}
-                                        inputMode="decimal"
-                                        onValueChange={(value) => {
-                                            handleInputChange({
-                                                value,
-                                                regex: effortRegex,
-                                                isInteger: effortIsInteger,
-                                                minValue: EFFORT_MIN,
-                                                maxValue: EFFORT_MAX,
-                                                setter: makeDraftSetter(targetIndex, "targetEffortMin"),
-                                            });
-                                        }}
-                                        onBlur={() => commitTargetDraft(targetIndex)}
-                                    />
-                                    <Input
-                                        label={`Max ${effortTypeLabel}`}
-                                        labelPlacement="outside"
-                                        size="sm"
-                                        value={targetDrafts[targetIndex].targetEffortMax}
-                                        inputMode="decimal"
-                                        onValueChange={(value) => {
-                                            handleInputChange({
-                                                value,
-                                                regex: effortRegex,
-                                                isInteger: effortIsInteger,
-                                                minValue: EFFORT_MIN,
-                                                maxValue: EFFORT_MAX,
-                                                setter: makeDraftSetter(targetIndex, "targetEffortMax"),
-                                            });
-                                        }}
-                                        onBlur={() => commitTargetDraft(targetIndex)}
-                                    />
-                                </div>
-                                <div className="flex flex-col gap-2 col-span-1">
-                                    <Checkbox
-                                        // forces the native checkbox to remount on every logical value
-                                        // change - works around a mobile WebKit bug where the controlled
-                                        // `isSelected` state updates correctly but the checked visual
-                                        // doesn't repaint, since the native input toggles its own
-                                        // `checked` DOM property on tap before React re-renders
-                                        key={appliesToAllByTarget[targetIndex] ? "checked" : "unchecked"}
-                                        size="sm"
-                                        isSelected={appliesToAllByTarget[targetIndex]}
-                                        isDisabled={!canApplyToAllByTarget[targetIndex]}
-                                        onValueChange={(checked) => handleApplyToAllChange(targetIndex, checked)}
-                                    >
-                                        Apply to all
-                                    </Checkbox>
-                                    {!appliesToAllByTarget[targetIndex] &&
-                                        <Select
-                                            label="Apply to Sets"
-                                            labelPlacement="outside"
-                                            selectionMode="multiple"
-                                            size="sm"
-                                            selectedKeys={new Set(Array.from(selectedSetsByTarget[targetIndex], String))}
-                                            disabledKeys={disabledKeysByTarget[targetIndex]}
-                                            onSelectionChange={(selection) => handleSelectionChange(targetIndex, selection)}
-                                            renderValue={() =>
-                                                Array.from(selectedSetsByTarget[targetIndex])
-                                                    .sort((a, b) => a - b)
-                                                    .map((setIndex) => setIndex + 1)
-                                                    .join(", ")
-                                            }
-                                        >
-                                            {exercise.sets.map((_, setIndex) => (
-                                                <SelectItem key={String(setIndex)}>
-                                                    {`${setIndex + 1}`}
-                                                </SelectItem>
-                                            ))}
-                                        </Select>
-                                    }
-                                </div>
-                            </div>
+                            {renderTargetRow(targetIndex)}
                             <Button
                                 size="sm"
                                 variant="flat"
