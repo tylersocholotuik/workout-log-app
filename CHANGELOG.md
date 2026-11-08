@@ -16,6 +16,8 @@ change behind it.
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-11-08
+
 ### Added
 
 - Added exercise types (`exerciseType`: Reps, Time, Distance, Cardio), letting an exercise record
@@ -544,7 +546,8 @@ not itemized here — this entry describes the state of the app as of this tag.
   `/health` endpoint for platform health checks.
 - Database migrations and idempotent seed data for local/dev environments.
 
-[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.10.1...HEAD
+[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.11.0...HEAD
+[1.11.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.11.0
 [1.10.1]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.10.1
 [1.10.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.10.0
 [1.9.1]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.9.1
