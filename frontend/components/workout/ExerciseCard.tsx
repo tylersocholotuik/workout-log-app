@@ -33,7 +33,6 @@ import {
     Exercise,
     WorkoutExercise,
     EffortRatingType,
-    ExerciseType,
     SetTargets,
 } from "@/types";
 
