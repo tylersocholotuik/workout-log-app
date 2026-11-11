@@ -36,7 +36,8 @@ public class JwtServiceTests
         // provider. SQLite (in-memory) fills that gap here.
         var context = SqliteInMemoryDbContextFactory.Create();
         var configuration = BuildConfiguration(refreshThresholdMinutes);
-        var userService = new UserService(context, NullLogger<UserService>.Instance);
+        var emailServiceMock = new Mock<EmailService>(NullLogger<EmailService>.Instance, configuration);
+        var userService = new UserService(context, emailServiceMock.Object, NullLogger<UserService>.Instance);
 
         // IWebHostEnvironment is a first-party interface, so it can be mocked
         // directly with Moq with no changes needed to production code.
