@@ -28,6 +28,7 @@ builder.Services.AddScoped<ExerciseService>();
 builder.Services.AddScoped<WorkoutService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<UserSettingsService>();
 builder.Services.AddScoped<AuthService>();
 
 // Add Authentication

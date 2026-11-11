@@ -1,8 +1,8 @@
-using System.Net.Http.Json;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit; 
 using WorkoutLogAPI.DTOs.Email;
+using WorkoutLogAPI.Constants;
 
 namespace WorkoutLogAPI.Services;
 
@@ -18,6 +18,77 @@ public class EmailService
     }
 
     private static readonly HttpClient Client = new HttpClient();
+    
+    public async Task SendPasswordResetEmailAsync(string email, string toName, string resetToken, int expirationMinutes)
+    {
+        try
+        {
+            var baseUrl = _configuration.GetValue<string>("Frontend:BaseUrl");
+            var resetUrl = $"{baseUrl}/reset-password?token={resetToken}";
+            var subject = AppConstants.EmailSubjects.PasswordReset;
+            var body = $"""
+                        <p>Hi {toName},</p>
+                        <p>We received a request to reset the password for your Workout Log account. Click the button below to choose a new one:</p>
+                        <p>
+                            <a href="{resetUrl}" style="display:inline-block;padding:10px 20px;background-color:#0d6efd;color:#ffffff;text-decoration:none;border-radius:4px;">
+                                Reset Password
+                            </a>
+                        </p>
+                        <p>This link will expire in {expirationMinutes} minutes and can only be used once.</p>
+                        <p>If you didn't request a password reset, you can safely ignore this email &mdash; your password will not be changed.</p>
+                        """;
+            
+            await SendEmailAsync([new EmailAddress(email, toName)], subject, body);
+            _logger.LogInformation("Password reset email sent to {Email}", email);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending password reset email to {Email}: {Message}", email, ex.Message);
+            throw;
+        }
+    }
+    
+    public async Task SendPasswordResetConfirmationEmailAsync(string email, string toName)
+    {
+        const string subject = AppConstants.EmailSubjects.PasswordResetConfirmation;
+        var body = $"""
+                    <p>Hi {toName},</p>
+                    <p>Your password has been successfully reset. If you did not perform this action, please contact our support team immediately.</p>
+                    """;
+        
+        await SendEmailAsync([new EmailAddress(email, toName)], subject, body);
+        _logger.LogInformation("Password reset confirmation email sent to {Email}", email);
+    }
+    
+    public async Task SendPasswordChangeConfirmationEmailAsync(string email, string toName)
+    {
+        const string subject = AppConstants.EmailSubjects.PasswordChangeConfirmation;
+        var body = $"""
+                    <p>Hi {toName},</p>
+                    <p>
+                        Your password has been successfully changed from your account settings.
+                        If you did not perform this action, please contact our support team immediately.
+                    </p>
+                    """;
+        
+        await SendEmailAsync([new EmailAddress(email, toName)], subject, body);
+        _logger.LogInformation("Password change confirmation email sent to {Email}", email);
+    }
+    
+    // Sends an email to the original address so an attacker cannot change the email without the original owner knowing.
+    public async Task SendEmailChangeConfirmationAsync(string originalEmail, string newEmail, string toName)
+    {
+        const string subject = AppConstants.EmailSubjects.EmailChangeConfirmation;
+        var body = $"""
+                    <p>Hi {toName},</p>
+                    <p>
+                        Your email address for your Workout Log account has been changed to {newEmail}. 
+                        If you did not perform this action, please contact our support team immediately.
+                    </p>
+                    """;
+        await SendEmailAsync([new EmailAddress(originalEmail, toName)], subject, body);
+        _logger.LogInformation("Email change confirmation sent to {Email}", originalEmail);
+    }
 
     /// <summary>
     /// Sends an email to one or more recipients using either direct SMTP or the Brevo transactional
