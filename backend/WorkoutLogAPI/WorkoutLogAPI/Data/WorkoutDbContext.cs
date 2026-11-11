@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using WorkoutLogAPI.Data.Converters;
 using WorkoutLogAPI.Enums;
 using WorkoutLogAPI.Models;
 
@@ -11,6 +12,7 @@ public class WorkoutDbContext : DbContext
     }
 
     public DbSet<User> Users { get; set; }
+    public DbSet<UserSettings> UserSettings { get; set; }
     public DbSet<Exercise> Exercises { get; set; }
     public DbSet<Workout> Workouts { get; set; }
     public DbSet<WorkoutExercise> WorkoutExercises { get; set; }
@@ -44,6 +46,18 @@ public class WorkoutDbContext : DbContext
         }
     }
 
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        // Store every occurrence of these enum types as their lowercase name
+        // (e.g. "lbs") instead of the default int, so columns stay human-readable
+        // and match the API's JSON values.
+        configurationBuilder.Properties<Theme>().HaveConversion<LowercaseEnumConverter<Theme>>();
+        configurationBuilder.Properties<WeightUnit>().HaveConversion<LowercaseEnumConverter<WeightUnit>>();
+        configurationBuilder.Properties<DistanceUnit>().HaveConversion<LowercaseEnumConverter<DistanceUnit>>();
+        configurationBuilder.Properties<EffortRatingType>().HaveConversion<LowercaseEnumConverter<EffortRatingType>>();
+        configurationBuilder.Properties<ExerciseType>().HaveConversion<LowercaseEnumConverter<ExerciseType>>();
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -56,6 +70,26 @@ public class WorkoutDbContext : DbContext
         {
             entity.HasIndex(e => e.Email).IsUnique();
         });
+        
+        modelBuilder.Entity<UserSettings>(entity =>
+        {
+            entity.HasKey(us => us.UserId);
+            entity.HasOne(us => us.User)
+                .WithOne(u => u.Settings)
+                .HasForeignKey<UserSettings>(us => us.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            // Dark (not Light, the enum's zero value) is both the CLR default and the
+            // DB default, so the sentinel must be set explicitly - otherwise EF can't
+            // distinguish "unset" from an explicit Theme.Light assignment and would
+            // silently override Light with the DB default on insert.
+            entity.Property(us => us.Theme)
+                .HasDefaultValue(Theme.Dark)
+                .HasSentinel(Theme.Dark);
+            entity.Property(us => us.WeightUnit).HasDefaultValue(WeightUnit.Lbs);
+            entity.Property(us => us.DistanceUnit).HasDefaultValue(DistanceUnit.Meters);
+            entity.Property(us => us.EffortType).HasDefaultValue(EffortRatingType.Rpe);
+        });
 
         modelBuilder.Entity<Exercise>(entity =>
         {
@@ -65,11 +99,7 @@ public class WorkoutDbContext : DbContext
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
             
-            entity.Property(e => e.ExerciseType)
-                .HasConversion(
-                    type => type.ToString().ToLowerInvariant(),
-                    value => Enum.Parse<ExerciseType>(value, ignoreCase: true))
-                .HasDefaultValue(ExerciseType.Reps);
+            entity.Property(e => e.ExerciseType).HasDefaultValue(ExerciseType.Reps);
 
             // Prevent deleting system exercises (UserId = null)
             entity.ToTable(t => t.HasCheckConstraint(
@@ -98,23 +128,7 @@ public class WorkoutDbContext : DbContext
                 .HasForeignKey(we => we.WorkoutId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Store the enum as its lowercase name ("lbs"/"kg") instead of the default
-            // int, so the column stays human-readable and matches the API's JSON values.
-            entity.Property(we => we.WeightUnit)
-                .HasConversion(
-                    unit => unit.ToString().ToLowerInvariant(),
-                    value => Enum.Parse<WeightUnit>(value, ignoreCase: true));
-            
-            entity.Property(we => we.DistanceUnit)
-                .HasConversion(
-                    unit => unit.ToString().ToLowerInvariant(),
-                    value => Enum.Parse<DistanceUnit>(value, ignoreCase: true));
-
-            entity.Property(we => we.EffortType)
-                .HasConversion(
-                    type => type.ToString().ToLowerInvariant(),
-                    value => Enum.Parse<EffortRatingType>(value, ignoreCase: true))
-                .HasDefaultValue(EffortRatingType.Rpe);
+            entity.Property(we => we.EffortType).HasDefaultValue(EffortRatingType.Rpe);
         });
 
         modelBuilder.Entity<Set>(entity =>
