@@ -1,17 +1,6 @@
-import {User, RegisterData, LoginData, ResetPasswordData, AuthResponse} from '@/types';
+import {RegisterData, LoginData, ResetPasswordData, ChangePasswordData, AuthResponse} from '@/types';
 import {throwApiError} from './apiErrors';
-import {apiFetch} from './client';
-
-// NEXT_PUBLIC_API_URL should be left unset in Vercel (staging/production) so
-// requests are made relative to the frontend's own origin and proxied to the
-// backend via the rewrite in next.config.ts (see BuildAuthCookieOptions in
-// JwtService.cs for why). It's only needed locally, where the frontend calls
-// the backend directly - Vercel doesn't support saving an empty-string env
-// var (it just discards it), so the "same-origin" default only applies when
-// NODE_ENV is "production" (true for both Vercel environments), not merely
-// when the variable is unset.
-const API_URL = process.env.NEXT_PUBLIC_API_URL
-    ?? (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5258');
+import {apiFetch, API_URL} from './client';
 
 // Auth API calls
 export const register = async (data: RegisterData): Promise<AuthResponse> => {
@@ -78,15 +67,17 @@ export const resetPassword = async (data: ResetPasswordData): Promise<void> => {
     }
 };
 
-export const fetchCurrentUser = async (): Promise<User | null> => {
-    const res = await apiFetch(`${API_URL}/api/auth/me`, {method: 'GET'});
 
-    if (res.ok) {
-        return await res.json();
-    } else if (res.status === 401) {
-        return null;
-    } else {
-        return await throwApiError(res, 'Failed to fetch current user');
+export const changePassword = async (data: ChangePasswordData): Promise<void> => {
+    const res = await apiFetch(`${API_URL}/api/auth/change-password`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+        await throwApiError(res, 'Failed to change password');
     }
 };
-

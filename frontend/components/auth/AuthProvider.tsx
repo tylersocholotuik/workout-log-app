@@ -2,7 +2,8 @@ import { useEffect, useMemo, createContext, useContext, ReactNode } from "react"
 import { useRouter } from "next/router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { User } from "@/types";
-import { logout as logoutAuth, fetchCurrentUser } from "@/lib/api/auth";
+import { logout as logoutAuth } from "@/lib/api/auth";
+import { fetchCurrentUser } from "@/lib/api/users";
 
 const CURRENT_USER_QUERY_KEY = ["currentUser"];
 
