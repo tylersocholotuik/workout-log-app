@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useRouter } from "next/router";
+import {useState, JSX} from "react";
+import {useRouter} from "next/router";
 
 import {
     Navbar,
@@ -10,52 +10,35 @@ import {
     NavbarContent,
     NavbarItem,
     Link,
-    Button,
     Dropdown,
     DropdownMenu,
     DropdownItem,
     DropdownTrigger,
     useDisclosure,
+    Avatar,
+    User,
 } from "@heroui/react";
 
-import { Icon } from "@iconify/react/dist/iconify.js";
-import { ChevronDownIcon } from "@/icons/ChevronDownIcon";
+import {Icon} from "@iconify/react/dist/iconify.js";
 
-import DarkModeSwitch from "./DarkModeSwitch";
 import ConfirmationModal from "@/components/shared/ConfirmationModal";
 
-import { useAuth } from "./auth/AuthProvider";
+import {useAuth} from "./auth/AuthProvider";
+
+import {useMediaQuery} from "react-responsive";
 
 export default function NavBar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const router = useRouter();
 
-    const { user, isSignedIn, isLoading, logout } = useAuth();
+    const {user, isSignedIn, isLoading, logout} = useAuth();
 
     const logoutModal = useDisclosure();
-
-    const menuItems = [
-        {
-            name: "Workout",
-            path: "/workout/[workoutId]",
-            icon: (
-                <Icon icon="arcticons:my-workout-plan" width="28" height="28" />
-            ),
-        },
-        {
-            name: "History",
-            path: "/history",
-            icon: (
-                <Icon icon="material-symbols:history" width="24" height="24" />
-            ),
-        },
-        {
-            name: "Calculator",
-            path: "/calculator",
-            icon: <Icon icon="mdi:calculator" width="24" height="24" />,
-        },
-    ];
+    
+    const isMobile = useMediaQuery({ query: '(max-width: 639px)' });
+    
+    const iconSize = isMobile ? 16 : 20;
 
     const isActive = (path: string): boolean => {
         // ensure home page is not active on every page
@@ -64,6 +47,106 @@ export default function NavBar() {
         }
         return router.pathname.includes(path);
     };
+    
+    const menuItems = [
+        {
+            name: "Workout",
+            path: "/workout/[workoutId]",
+            icon: (
+                <Icon icon="arcticons:my-workout-plan" width={iconSize} height={iconSize}/>
+            ),
+        },
+        {
+            name: "History",
+            path: "/history",
+            icon: (
+                <Icon icon="material-symbols:history" width={iconSize} height={iconSize}/>
+            ),
+        },
+        {
+            name: "Calculator",
+            path: "/calculator",
+            icon: <Icon icon="mdi:calculator" width={iconSize} height={iconSize}/>,
+        },
+    ];
+    
+    const renderDropdownItems = () => {
+        if (!isSignedIn()) {
+            return (
+                <DropdownItem
+                    key="login"
+                    onPress={() => router.push("/login")}
+                    startContent={
+                        <Icon
+                            icon="mdi:login"
+                            width="16"
+                            height="16"
+                        />
+                    }
+                >
+                    Login
+                </DropdownItem>
+            );
+        } else {
+            return (
+                <>
+                    <DropdownItem
+                        key="account"
+                        onPress={() => router.push("/account")}
+                        startContent={
+                            <Icon
+                                icon="mdi:account"
+                                width="16"
+                                height="16"
+                            />
+                        }
+                    >
+                        Account
+                    </DropdownItem>
+                    <DropdownItem
+                        key="logout"
+                        color="danger"
+                        className="text-danger"
+                        onPress={logoutModal.onOpen}
+                        startContent={
+                            <Icon
+                                icon="mdi:logout"
+                                width="16"
+                                height="16"
+                            />
+                        }
+                    >
+                        Logout
+                    </DropdownItem>
+                </>
+            );
+        }
+    }
+    
+    const renderNavbarLink = (item: { name: string; path: string; icon: JSX.Element }, size: "sm" | "md") => {
+        return (
+            <Link
+                className="w-full flex items-center gap-1"
+                color={
+                    isActive(item.path)
+                        ? undefined
+                        : "foreground"
+                }
+                aria-current={
+                    isActive(item.path) ? "page" : undefined
+                }
+                href={item.path.replace(
+                    "[workoutId]",
+                    "new-workout"
+                )}
+                onPress={() => setIsMenuOpen(false)}
+                size={size}
+            >
+                {item.icon}
+                {item.name}
+            </Link>
+        )
+    }
 
     return (
         <>
@@ -123,25 +206,7 @@ export default function NavBar() {
                                 key={item.name}
                                 isActive={isActive(item.path)}
                             >
-                                <Link
-                                    size="md"
-                                    color={
-                                        isActive(item.path)
-                                            ? undefined
-                                            : "foreground"
-                                    }
-                                    aria-current={
-                                        isActive(item.path) ? "page" : undefined
-                                    }
-                                    href={item.path.replace(
-                                        "[workoutId]",
-                                        "new-workout"
-                                    )}
-                                    showAnchorIcon
-                                    anchorIcon={item.icon}
-                                >
-                                    {item.name}
-                                </Link>
+                                {renderNavbarLink(item, "md")}
                             </NavbarItem>
                         );
                     })}
@@ -149,192 +214,83 @@ export default function NavBar() {
 
                 <NavbarContent justify="end">
                     {/* Prevent Login flash while user is fetched from the server */}
-                    {isLoading ? null : !isSignedIn() ? (
-                        <NavbarItem className="hidden sm:flex">
-                            <Link href="/login">Login</Link>
-                        </NavbarItem>
-                    ) : (
+                    {isLoading ? null :
                         <>
                             <NavbarItem className="hidden md:flex">
                                 <Dropdown>
                                     <DropdownTrigger>
-                                        <Button
+                                        <User
                                             aria-label="User Actions"
-                                            variant="light"
-                                            size="sm"
-                                            startContent={
-                                                <Icon
-                                                    icon="mdi:user"
-                                                    width="16"
-                                                    height="16"
-                                                />
-                                            }
-                                            endContent={<ChevronDownIcon />}
-                                        >
-                                        {user?.displayName ??
-                                            `${user?.firstName} ${user?.lastName}`}
-                                        </Button>
+                                            className="hover:cursor-pointer"
+                                            avatarProps={{
+                                                size: "sm",
+                                                src: "",
+                                                showFallback: true,
+                                            }}
+                                            name={user?.displayName ?? `${user?.firstName ?? ""} ${user?.lastName ?? ""}`}
+                                            description={user?.email ?? ""}
+                                        />
                                     </DropdownTrigger>
                                     <DropdownMenu
                                         aria-label="Static Actions"
-                                        disabledKeys={["account"]}
                                     >
-                                        <DropdownItem
-                                            key="account"
-                                            description="Currently unavailable"
-                                        >
-                                            Manage account
-                                        </DropdownItem>
-                                        <DropdownItem
-                                            key="logout"
-                                            color="danger"
-                                            className="text-danger"
-                                            onPress={logoutModal.onOpen}
-                                        >
-                                            Logout
-                                        </DropdownItem>
+                                        {renderDropdownItems()}
                                     </DropdownMenu>
                                 </Dropdown>
                             </NavbarItem>
-                            <NavbarItem className="hidden sm:flex md:hidden">
+                            <NavbarItem className="md:hidden">
                                 <Dropdown>
                                     <DropdownTrigger>
-                                        <Button
+                                        <Avatar
                                             aria-label="User Actions"
-                                            variant="light"
+                                            className="hover:cursor-pointer"
                                             size="sm"
-                                            isIconOnly
-                                        >
-                                            <Icon
-                                                icon="mdi:user"
-                                                width="16"
-                                                height="16"
-                                            />
-                                            <ChevronDownIcon />
-                                        </Button>
+                                            src=""
+                                            showFallback
+                                            name={`${user?.firstName.charAt(0).toUpperCase() ?? ""}${user?.lastName.charAt(0).toUpperCase() ?? ""}`}
+                                        />
                                     </DropdownTrigger>
                                     <DropdownMenu
                                         aria-label="User Actions"
-                                        disabledKeys={["account"]}
                                     >
-                                        <DropdownItem
-                                            key="account"
-                                            description="Currently unavailable"
-                                        >
-                                            Manage account
-                                        </DropdownItem>
-                                        <DropdownItem
-                                            key="logout"
-                                            color="danger"
-                                            className="text-danger"
-                                            onPress={logoutModal.onOpen}
-                                        >
-                                            Logout
-                                        </DropdownItem>
+                                        {renderDropdownItems()}
                                     </DropdownMenu>
                                 </Dropdown>
                             </NavbarItem>
                         </>
-                    )}
-                    <NavbarItem>
-                        <DarkModeSwitch />
-                    </NavbarItem>
+                    }
                 </NavbarContent>
 
                 <NavbarMenu>
                     <NavbarMenuItem>
                         <Link
-                            className="w-full"
+                            className="w-full flex items-center gap-1"
                             color={isActive("/") ? undefined : "foreground"}
                             aria-current={isActive("/") ? "page" : undefined}
                             href="/"
                             onPress={() => setIsMenuOpen(false)}
                             size="sm"
                         >
+                            <Icon
+                                icon="mdi:home"
+                                width={iconSize}
+                                height={iconSize}
+                            />
                             Home
                         </Link>
                     </NavbarMenuItem>
                     {menuItems.map((item, index) => (
                         <NavbarMenuItem key={`${item}-${index}`}>
-                            <Link
-                                className="w-full"
-                                color={
-                                    isActive(item.path)
-                                        ? undefined
-                                        : "foreground"
-                                }
-                                aria-current={
-                                    isActive(item.path) ? "page" : undefined
-                                }
-                                href={item.path.replace(
-                                    "[workoutId]",
-                                    "new-workout"
-                                )}
-                                onPress={() => setIsMenuOpen(false)}
-                                size="sm"
-                            >
-                                {item.name}
-                            </Link>
+                            {renderNavbarLink(item, "sm")}
                         </NavbarMenuItem>
                     ))}
-                    {isLoading ? null : !isSignedIn() ? (
-                        <NavbarMenuItem>
-                            <Link 
-                                color="foreground" 
-                                href="/login"
-                                onPress={() => setIsMenuOpen(false)}
-                            >
-                                Login
-                            </Link>
-                        </NavbarMenuItem>
-                    ) : (
-                        <>
-                            <NavbarMenuItem className="mt-4">
-                                <div className="flex items-center gap-1">
-                                    <Icon
-                                        icon="mdi:user"
-                                        width="16"
-                                        height="16"
-                                    />
-                                    <p className="text-sm">
-                                        {user?.displayName ??
-                                            `${user?.firstName} ${user?.lastName}`}
-                                    </p>
-                                </div>
-                            </NavbarMenuItem>
-                            <NavbarMenuItem>
-                                <Link
-                                    className="hover:cursor-pointer"
-                                    color="foreground"
-                                    size="sm"
-                                    isDisabled
-                                    onPress={() => setIsMenuOpen(false)}
-                                >
-                                    Manage account
-                                </Link>
-                            </NavbarMenuItem>
-                            <NavbarMenuItem>
-                                <Link
-                                    className="hover:cursor-pointer"
-                                    color="danger"
-                                    size="sm"
-                                    onPress={() => {
-                                        setIsMenuOpen(false);
-                                        logoutModal.onOpen();
-                                    }}
-                                >
-                                    Logout
-                                </Link>
-                            </NavbarMenuItem>
-                        </>
-                    )}
                 </NavbarMenu>
             </Navbar>
-            
-            <ConfirmationModal 
-                isOpen={logoutModal.isOpen} 
-                onOpenChange={logoutModal.onOpenChange} 
-                headerText="Logout" 
+
+            <ConfirmationModal
+                isOpen={logoutModal.isOpen}
+                onOpenChange={logoutModal.onOpenChange}
+                headerText="Logout"
                 bodyText="Are you sure you want to logout?"
                 confirmButtonText="Logout"
                 confirmButtonColor="danger"
