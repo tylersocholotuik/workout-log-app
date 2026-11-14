@@ -46,6 +46,7 @@ import TargetsDrawer from "@/components/workout/TargetsDrawer";
 import WorkoutExerciseProvider from "@/components/workout/WorkoutExerciseProvider";
 
 import {useWorkoutContext} from "@/pages/workout/[workoutId]";
+import {useSettings} from "@/components/user/SettingsProvider";
 
 import {calculateOneRepMax, convertEffortRating} from "@/utils/calculator/calculator";
 
@@ -137,6 +138,7 @@ export default function ExerciseCard({
                                          exerciseIndex,
                                      }: ExerciseCardProps) {
     const {workout, setWorkout} = useWorkoutContext();
+    const {settings} = useSettings();
 
     const exerciseType = exercise.exercise.exerciseType;
 
@@ -144,7 +146,7 @@ export default function ExerciseCard({
     const [weightUnit, setWeightUnit] = useState(exercise.weightUnit?.toString());
     const [distanceUnit, setDistanceUnit] = useState(exercise.distanceUnit?.toString());
     const [effortType, setEffortType] = useState(exercise.effortType.toString());
-    const [showOneRepMax, setShowOneRepMax] = useState(exerciseType === "reps");
+    const [showOneRepMax, setShowOneRepMax] = useState(settings?.showOneRepMax ?? exerciseType === "reps");
     const [showTargets, setShowTargets] = useState(true);
     const targets = useMemo(() => deriveTargets(exercise.sets), [exercise.sets]);
 
@@ -240,9 +242,14 @@ export default function ExerciseCard({
         exerciseIndex?: number
     ) => {
         const originalExerciseType = workout.exercises[exerciseIndex!].exercise.exerciseType;
+        const typeChanged = originalExerciseType !== newExercise.exerciseType;
+
+        const newWeightUnit = newExercise.exerciseType === "cardio" ? null : exercise.weightUnit ?? settings?.weightUnit ?? "lbs";
+        const newDistanceUnit = newExercise.exerciseType === "cardio" || newExercise.exerciseType === "distance" ? exercise.distanceUnit ?? settings?.distanceUnit ?? "meters" : null;
+        const newEffortType = newExercise.exerciseType === "reps" ? settings?.effortType ?? "rpe" : "rpe";
 
         // Update the exercise
-        // If the exercise type has changed, reset the weightUnit and distanceUnit accordingly
+        // If the exercise type has changed, reset the weightUnit, distanceUnit, and effortType accordingly
         // If the exercise type has changed, reset all sets to empty sets since the previous sets may not be relevant to the new exercise type
         const updatedWorkout = {
             ...workout,
@@ -252,12 +259,13 @@ export default function ExerciseCard({
                         ...exercise,
                         exercise: newExercise,
                         exerciseId: newExercise.id,
-                        ...(originalExerciseType !== newExercise.exerciseType && {
-                            weightUnit: newExercise.exerciseType === "cardio" ? null : exercise.weightUnit ?? "lbs",
-                            distanceUnit: newExercise.exerciseType === "cardio" || newExercise.exerciseType === "distance" ? exercise.distanceUnit ?? "meters" : null,
+                        ...(typeChanged && {
+                            weightUnit: newWeightUnit,
+                            distanceUnit: newDistanceUnit,
+                            effortType: newEffortType,
                         }),
                         sets: exercise.sets.map((set) =>
-                            originalExerciseType !== newExercise.exerciseType ? createEmptySet() : {...set}
+                            typeChanged ? createEmptySet() : {...set}
                         ),
                     }
                     : exercise
@@ -265,6 +273,12 @@ export default function ExerciseCard({
         };
 
         setWorkout(updatedWorkout);
+        
+        if (typeChanged) {
+            setWeightUnit(newWeightUnit?.toString());
+            setDistanceUnit(newDistanceUnit?.toString());
+            setEffortType(newEffortType.toString());
+        }
     };
 
     const saveInputChange = (

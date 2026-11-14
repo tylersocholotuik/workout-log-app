@@ -53,6 +53,7 @@ import {
 } from "@/lib/factories";
 
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useSettings } from "@/components/user/SettingsProvider";
 
 interface WorkoutContextType {
     workout: Workout;
@@ -97,6 +98,8 @@ export default function WorkoutLog() {
 
     const { user, isLoading: isAuthLoading } = useAuth();
     const userId = user?.id ?? "";
+    
+    const { settings, isLoading: isSettingsLoading } = useSettings();
 
     const detailsModal = useDisclosure();
     const deleteModal = useDisclosure();
@@ -343,9 +346,11 @@ export default function WorkoutLog() {
         newWorkoutExercise.exerciseId = exercise.id;
         newWorkoutExercise.exercise = exercise;
         newWorkoutExercise.workoutId = workout.id;
-        newWorkoutExercise.weightUnit = exercise.exerciseType !== "cardio" ? "lbs" : null;
+        newWorkoutExercise.weightUnit = exercise.exerciseType !== "cardio" ? settings?.weightUnit ?? "lbs" : null;
         newWorkoutExercise.distanceUnit = 
-            exercise.exerciseType === "cardio" || exercise.exerciseType === "distance" ? "meters" : null;
+            exercise.exerciseType === "cardio" || exercise.exerciseType === "distance" ? settings?.distanceUnit ?? "meters" : null;
+        newWorkoutExercise.effortType = 
+            exercise.exerciseType === "reps" ? settings?.effortType ?? "rpe": "rpe";
         // automatically add an empty set when adding a new exercise
         const newSet = createEmptySet();
         newWorkoutExercise.sets.push(newSet);
@@ -440,7 +445,7 @@ export default function WorkoutLog() {
         deleteWorkoutMutation.mutate(workoutId);
     };
 
-    if (!router.isReady || isAuthLoading || isWorkoutLoading || isActiveWorkoutLoading) {
+    if (!router.isReady || isAuthLoading || isSettingsLoading || isWorkoutLoading || isActiveWorkoutLoading) {
         return (
             <>
                 <Head>
