@@ -41,12 +41,18 @@ export function workoutIdFromUrl(page: Page): string {
 // makes the two files mutually exclusive no matter how the suite is invoked.
 const ACCOUNT_LOCK_PATH = path.join(__dirname, '..', '.account.lock');
 // A crashed/interrupted run could leave the lock file behind forever -
-// treat it as abandoned after this long so a later run isn't stuck forever.
+// treat it as abandoned once it hasn't been refreshed for this long. A live
+// holder refreshes it every ACCOUNT_LOCK_HEARTBEAT_MS (see below), so a lock
+// is only ever considered stale if its owner died - not merely because a
+// file legitimately takes longer than this to run (workout.spec.ts takes
+// ~4 minutes per browser).
 const ACCOUNT_LOCK_STALE_MS = 3 * 60 * 1000;
-// With up to 3 local browser projects each running both files, as many as 6
-// file-runs can be queued on this one lock - long enough for all of them to
-// take their turn.
-const ACCOUNT_LOCK_WAIT_MS = 10 * 60 * 1000;
+const ACCOUNT_LOCK_HEARTBEAT_MS = 30 * 1000;
+// With up to 3 local browser projects each running workout.spec.ts,
+// history.spec.ts and account.spec.ts, as many as 9 file-runs can be queued
+// on this one lock (workout alone is ~4 minutes each) - long enough for all
+// of them to take their turn.
+const ACCOUNT_LOCK_WAIT_MS = 25 * 60 * 1000;
 // Playwright kills a beforeAll hook that runs longer than the test timeout
 // (30-60s by default here) regardless of this module's own wait loop - the
 // caller must raise the hook's own timeout via `testInfo.setTimeout(...)`
@@ -54,11 +60,23 @@ const ACCOUNT_LOCK_WAIT_MS = 10 * 60 * 1000;
 // by that unrelated default long before `ACCOUNT_LOCK_WAIT_MS` is reached.
 export const ACCOUNT_LOCK_HOOK_TIMEOUT_MS = ACCOUNT_LOCK_WAIT_MS + 30_000;
 
+let accountLockHeartbeat: NodeJS.Timeout | undefined;
+
 export async function acquireAccountLock(): Promise<void> {
   const deadline = Date.now() + ACCOUNT_LOCK_WAIT_MS;
   for (;;) {
     try {
       fs.writeFileSync(ACCOUNT_LOCK_PATH, String(Date.now()), { flag: 'wx' });
+      // Keep refreshing the timestamp for as long as this process holds the
+      // lock, so a long-running file isn't mistaken for a crashed one.
+      accountLockHeartbeat = setInterval(() => {
+        try {
+          fs.writeFileSync(ACCOUNT_LOCK_PATH, String(Date.now()));
+        } catch {
+          // Lock was released/removed out from under us - nothing to refresh.
+        }
+      }, ACCOUNT_LOCK_HEARTBEAT_MS);
+      accountLockHeartbeat.unref();
       return;
     } catch (e) {
       if (!(e instanceof Error) || (e as NodeJS.ErrnoException).code !== 'EEXIST') {
@@ -85,6 +103,10 @@ export async function acquireAccountLock(): Promise<void> {
 }
 
 export function releaseAccountLock(): void {
+  if (accountLockHeartbeat) {
+    clearInterval(accountLockHeartbeat);
+    accountLockHeartbeat = undefined;
+  }
   try {
     fs.unlinkSync(ACCOUNT_LOCK_PATH);
   } catch {
@@ -409,4 +431,63 @@ export async function finishWorkout(page: Page) {
     page.getByRole('button', { name: 'Finish Workout' }).click(),
   ]);
   expect(response.ok()).toBeTruthy();
+}
+
+export type UserSettings = {
+  theme: 'light' | 'dark';
+  weightUnit: 'lbs' | 'kg';
+  distanceUnit: 'meters' | 'kilometers' | 'miles';
+  effortType: 'rpe' | 'rir';
+  showOneRepMax: boolean;
+};
+
+export type UserProfile = {
+  email: string;
+  firstName: string;
+  lastName: string;
+  displayName: string | null;
+};
+
+const CSRF_HEADERS = { 'X-Requested-With': 'XMLHttpRequest' };
+
+export async function getUserSettingsViaApi(request: APIRequestContext): Promise<UserSettings> {
+  const res = await request.get(`${AUTHENTICATED_API_URL}/api/users/me/settings`, {
+    headers: CSRF_HEADERS,
+  });
+  expect(res.ok(), `GET /api/users/me/settings failed (${res.status()})`).toBeTruthy();
+  return res.json();
+}
+
+export async function updateUserSettingsViaApi(
+  request: APIRequestContext,
+  patch: Partial<UserSettings>
+): Promise<void> {
+  const res = await request.patch(`${AUTHENTICATED_API_URL}/api/users/me/settings`, {
+    headers: CSRF_HEADERS,
+    data: patch,
+  });
+  expect(res.ok(), `PATCH /api/users/me/settings failed (${res.status()})`).toBeTruthy();
+}
+
+export async function getUserProfileViaApi(request: APIRequestContext): Promise<UserProfile> {
+  const res = await request.get(`${AUTHENTICATED_API_URL}/api/users/me`, {
+    headers: CSRF_HEADERS,
+  });
+  expect(res.ok(), `GET /api/users/me failed (${res.status()})`).toBeTruthy();
+  return res.json();
+}
+
+// Deliberately limited to the name fields - the email is never patched by
+// tests (see "Email change caveat" in test-plans/account.md), so there's
+// never anything to restore there, and sending it would risk triggering a
+// confirmation email.
+export async function updateUserNamesViaApi(
+  request: APIRequestContext,
+  patch: { firstName?: string; lastName?: string; displayName?: string }
+): Promise<void> {
+  const res = await request.patch(`${AUTHENTICATED_API_URL}/api/users/me`, {
+    headers: CSRF_HEADERS,
+    data: patch,
+  });
+  expect(res.ok(), `PATCH /api/users/me failed (${res.status()})`).toBeTruthy();
 }
