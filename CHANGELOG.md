@@ -16,6 +16,8 @@ change behind it.
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-11-15
+
 ### Added
 
 - Added a user settings feature: a new `user_settings` table (1:1 with `users`, auto-created with
@@ -599,7 +601,8 @@ not itemized here — this entry describes the state of the app as of this tag.
   `/health` endpoint for platform health checks.
 - Database migrations and idempotent seed data for local/dev environments.
 
-[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.11.1...HEAD
+[Unreleased]: https://github.com/tylersocholotuik/workout-log-app/compare/v1.12.0...HEAD
+[1.12.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.12.0
 [1.11.1]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.11.1
 [1.11.0]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.11.0
 [1.10.1]: https://github.com/tylersocholotuik/workout-log-app/releases/tag/v1.10.1
