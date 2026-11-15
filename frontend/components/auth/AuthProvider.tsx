@@ -1,9 +1,10 @@
-import { useEffect, useMemo, createContext, useContext, ReactNode } from "react";
+import { useEffect, createContext, useContext, ReactNode } from "react";
 import { useRouter } from "next/router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { User } from "@/types";
 import { logout as logoutAuth } from "@/lib/api/auth";
 import { fetchCurrentUser } from "@/lib/api/users";
+import { PROTECTED_PAGES } from "@/lib/constants/routes";
 
 const CURRENT_USER_QUERY_KEY = ["currentUser"];
 
@@ -35,14 +36,6 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     const router = useRouter();
     const queryClient = useQueryClient();
 
-    const protectedPages = useMemo(
-        () => [
-            "/workout/[workoutId]",
-            "/history"
-        ],
-        []
-    );
-    
     const { data: user = null, isLoading, refetch } = useQuery({
         queryKey: CURRENT_USER_QUERY_KEY,
         queryFn: fetchCurrentUser,
@@ -52,7 +45,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
         const verifyAuth = async () => {
             const { data: currentUser } = await refetch();
 
-            if (!currentUser && protectedPages.includes(router.pathname)) {
+            if (!currentUser && PROTECTED_PAGES.includes(router.pathname)) {
                 await router.push("/login");
             }
         };
@@ -60,7 +53,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
         verifyAuth();
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [router.pathname, protectedPages, refetch]);
+    }, [router.pathname, refetch]);
 
     // Accepts an optional, already-known User (e.g. the response from
     // login/register) to write straight into the cache - avoiding a

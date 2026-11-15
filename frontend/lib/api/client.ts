@@ -1,4 +1,5 @@
 import Router from 'next/router';
+import { NO_REDIRECT_ENDPOINTS } from '@/lib/constants/routes';
 
 const CSRF_HEADER_NAME = 'X-Requested-With';
 
@@ -28,15 +29,7 @@ export const apiFetch = async (
     
     const url = typeof input === 'string' ? input : input.toString();
     
-    const noRedirectEndpoints = [
-        "/api/auth/login",
-        "/api/auth/register",
-        "/api/auth/forgot-password",
-        "/api/auth/reset-password",
-        "/api/users/me",
-    ];
-    
-    const skipRedirect = noRedirectEndpoints.some(endpoint => url.includes(endpoint));
+    const skipRedirect = NO_REDIRECT_ENDPOINTS.some(endpoint => url.includes(endpoint));
     
     // Redirect to login page if the user is not authenticated and the endpoint isn't one of the above
     if (res.status === 401 && !skipRedirect) {
