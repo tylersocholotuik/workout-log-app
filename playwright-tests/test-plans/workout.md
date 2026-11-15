@@ -64,6 +64,24 @@ persistence into workout history.
   exercise, click Add → a card with that exercise's name appears, containing
   exactly one set row whose fields match the exercise's type (see
   **Exercise types** below).
+- **a new exercise's weight unit, distance unit, and effort rating type
+  default to the account's preferences** — on the Preferences tab of
+  `/account` (see [account.md](account.md)), set Default Weight Unit,
+  Default Distance Unit, and Default Effort Rating Type to non-default
+  values (e.g. kg, km, RIR), then add a new `reps`/`distance`/`cardio`
+  exercise on a workout → its Options popover shows those preferred units
+  (and effort rating type, for a `reps` exercise) already selected, rather
+  than the hardcoded lbs/meters/RPE fallback used when no preference is
+  set. Restore the original preferences afterward (same caveat as
+  [account.md](account.md)'s **Test data & cleanup** - this is a shared
+  test account).
+- **a new `reps` exercise's "Show e1RM" default matches the account's
+  preference** — with the "Show estimated one-rep max (e1RM)" preference
+  turned off, add a new `reps` exercise and enter an e1RM-eligible
+  Weight/Reps/effort rating combination → no e1RM is shown until "Show
+  e1RM" is manually toggled on in the Options popover (contrast with the
+  default-on behavior in **Sets** below, which assumes the preference is
+  left at its default of on).
 - **creating a brand-new exercise adds it to the list and workout** — in the
   Select Exercise drawer, switch to "create new," enter a unique name,
   choose an Exercise Type from the dropdown (Weight/Reps, Weight/Time,
@@ -78,7 +96,11 @@ persistence into workout history.
   header updates to the new exercise, sets are preserved. Swapping to an
   exercise of a *different* type instead resets every set on the card to
   empty (its old set data may not apply to the new type) and resets the
-  weight/distance unit to the new type's defaults.
+  weight unit, distance unit, and effort rating type to the new type's
+  defaults - the account's preferences (see **a new exercise's weight
+  unit, distance unit, and effort rating type default to the account's
+  preferences** above), falling back to lbs/meters/RPE if no preference is
+  set.
 - **exercise can be removed** — open the actions menu → "Delete exercise" →
   card is removed from the workout.
 - **exercise history is viewable** — open the actions menu → "Exercise
@@ -136,7 +158,10 @@ Every type also has an effort rating (RPE or RIR) field and column.
 - **sets can be removed** — click the delete icon on a set row → that row is
   removed.
 - **estimated one-rep max is calculated and displayed for `reps`
-  exercises** — on a `reps` exercise, enter a Weight/Reps/effort rating
+  exercises** — with the account's "Show estimated one-rep max (e1RM)"
+  preference left at its default (on - see **a new `reps` exercise's "Show
+  e1RM" default matches the account's preference** under **Exercises**
+  above), on a `reps` exercise, enter a Weight/Reps/effort rating
   combination within the eligible range (reps 1-10, and RPE ≥ 6 or RIR ≤ 4
   depending on the exercise's effort rating type) → "e1RM: <value>" appears
   under the set rows. `time`, `distance`, and `cardio` exercises never show

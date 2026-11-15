@@ -89,6 +89,14 @@ Users have the option to login or sign up with an email address and password. Th
 
 **Note:** Image is outdated. Login with Magic Link is no longer available.
 
+### Account Page
+
+The account page (linked from the avatar menu in the navbar) has three tabs:
+
+-   **Profile** — update your email, first/last name, and display name. Changing your email shows a confirmation warning first (since an incorrect address would prevent you from receiving future notifications), re-requires email verification, and sends a confirmation email to your *previous* address so an unexpected email change is never silent.
+-   **Preferences** — set your default theme (light/dark), weight unit (lbs/kg), distance unit (meters/kilometers/miles), effort rating type (RPE/RIR), and whether to show the estimated one-rep max. These become the defaults applied whenever you add a new exercise to a workout, and changing your theme here applies immediately, app-wide.
+-   **Security** — change your password (requires your current password). A confirmation warns you that you'll be logged out of your current session afterward, and a confirmation email is sent in case the change wasn't you.
+
 ## Tech Stack
 
 ### Frontend
@@ -109,7 +117,6 @@ Users have the option to login or sign up with an email address and password. Th
 
 ## Future Improvements
 
--   Add an account management page to update information and change password.
 -   Add a page to view and edit user-created exercises.
 -   Add an analytics page with charts to monitor exercise progress over time (one-rep max, tonnage, total reps, volume, etc.)
 -   Add a user dashboard showing recent workouts and options to show progress charts for selected exercises.

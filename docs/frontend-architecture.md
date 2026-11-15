@@ -38,25 +38,31 @@ and UI/styling conventions. For the backend API it talks to, see
 ```
 frontend/
 ├── pages/            # Routes (Pages Router: file path = URL path)
-│   ├── _app.tsx      # Global providers (HeroUI, theme, auth), NavBar
+│   ├── _app.tsx      # Global providers (HeroUI, theme, auth, settings), NavBar
 │   ├── _document.tsx # HTML document shell
 │   ├── index.tsx     # Landing page
 │   ├── login.tsx     # Combined login/signup page
 │   ├── history.tsx   # Workout history list
 │   ├── calculator.tsx
 │   ├── reset-password.tsx
+│   ├── account.tsx   # Account page: Profile / Preferences / Security tabs
 │   └── workout/[workoutId].tsx  # Workout editor (dynamic route)
 ├── components/         # UI components, grouped by feature folder
 │   ├── auth/           # AuthProvider, forgot-password modal
 │   ├── calculator/     # 1RM calculator form + RPE/RIR table
 │   ├── history/        # Workout history list/card
+│   ├── shared/         # Cross-feature components (generic ConfirmationModal<T>)
+│   ├── user/           # SettingsProvider, ProfileForm, PreferencesForm, PasswordChangeForm
 │   ├── workout/        # Workout editor: exercise cards, sets table, modals
-│   └── *.tsx           # Shared: NavBar, Footer, DarkModeSwitch, LogoutModal
+│   └── *.tsx           # Shared: NavBar, Footer, LogoutModal
 ├── lib/
-│   ├── api/           # fetch wrappers per backend resource (auth, workouts, exercises)
-│   ├── factories/     # "empty object" constructors for new Workout/Exercise/Set
-│   └── queryClient.ts # Shared TanStack Query client + global error/retry config
+│   ├── api/            # fetch wrappers per backend resource (auth, users, workouts, exercises)
+│   ├── factories/       # "empty object" constructors for new Workout/Exercise/Set
+│   ├── validation/      # Pure field validators shared across forms (e.g. userValidation.ts)
+│   └── queryClient.ts  # Shared TanStack Query client + global error/retry config
 ├── types/             # Shared TypeScript interfaces, mirroring backend DTOs
+│                      # (split by feature area, e.g. auth.ts / user.ts / common.ts —
+│                      #  see Types & factories below)
 ├── utils/             # Pure helper functions (date formatting, 1RM math)
 ├── icons/             # Hand-written SVG icon components
 ├── styles/globals.css # Tailwind directives + minor global overrides
@@ -76,8 +82,12 @@ All backend calls go through `lib/api/*.ts`, one file per resource
   [backend-architecture.md](backend-architecture.md#csrf-protection)).
 - Sets `credentials: "include"` so the `HttpOnly` auth cookie is sent.
 - On a `401` response, redirects the whole page to `/login` — except for
-  the auth endpoints themselves (login/register/forgot/reset/me), which
-  need to handle a `401` as normal data, not a global redirect trigger.
+  a short skip-list of endpoints that need to handle a `401` as normal
+  data rather than a global redirect trigger: `/api/auth/login`,
+  `/api/auth/register`, `/api/auth/forgot-password`,
+  `/api/auth/reset-password`, and `/api/users/me` (the last one is how
+  `AuthProvider` probes for an existing session on app load without
+  bouncing a logged-out visitor straight to `/login`).
 
 Each resource file resolves the API base URL the same way:
 
@@ -185,31 +195,39 @@ isn't a single explicit action - it's driven by autosave; see
 inside the theme provider) and exposes `useAuth()`:
 
 - Fetches the current user via `useQuery(["currentUser"], fetchCurrentUser)`
-  (`GET /api/auth/me`). Since the auth cookie is `HttpOnly`, the frontend
-  can't read it directly — asking the backend "who am I?" is how it learns
-  whether the visitor is signed in.
+  (`GET /api/users/me`, in `lib/api/users.ts` - mirroring the backend's
+  own `AuthController`/`UserController` split). Since the auth cookie is
+  `HttpOnly`, the frontend can't read it directly — asking the backend
+  "who am I?" is how it learns whether the visitor is signed in.
 - On every route change, a `useEffect` calls the query's own `refetch()`
   (re-verifying auth, e.g. after the cookie expired) and redirects to
   `/login` if it comes back with no user and the route is one of the
-  `protectedPages` (currently `/history` and `/workout/[workoutId]`). This
+  `protectedPages` (currently `/history`, `/workout/[workoutId]`, and
+  `/account`). This
   is one of the few `useEffect`s that's still appropriate under TanStack
   Query: it's an imperative side effect (navigation) triggered by a route
   change, not a data-fetching concern that Query would otherwise replace.
 - `refreshUser(updatedUser?)` takes an *optional* `User | null`. Login/
   register already return the fresh `User` in their response, so passing
   it writes straight into the `["currentUser"]` cache via
-  `queryClient.setQueryData` - avoiding a redundant `GET /api/auth/me`
-  round trip. Called with no arguments, it falls back to
+  `queryClient.setQueryData` - avoiding a redundant `GET /api/users/me`
+  round trip. `ProfileForm`'s `updateUserInfo` mutation does the same with
+  its response. Called with no arguments, it falls back to
   `invalidateQueries` so the next read refetches from the server (used
   when there's no already-known `User` object on hand).
 - `logout()` calls the backend logout endpoint (which revokes the token
   server-side), clears the `["currentUser"]` cache to `null`, and
-  redirects to `/login`.
+  redirects to `/login`. `PasswordChangeForm` calls this itself right
+  after a successful password change, since that change already
+  invalidates the current JWT server-side (see
+  [backend-architecture.md](backend-architecture.md#authentication)) -
+  logging out client-side just makes the UI match reality immediately
+  instead of waiting for the next request to fail.
 
 Route protection is handled client-side inside `AuthProvider` rather than
 with a `middleware.ts` route guard. The query's own `isLoading` flag lets
 consumers (e.g. `NavBar`) avoid flashing the wrong content (like a "Login"
-link) while the initial `/api/auth/me` check is still in flight.
+link) while the initial `/api/users/me` check is still in flight.
 
 ## Rendering model
 
@@ -222,11 +240,21 @@ data ahead of time wouldn't gain much — a straightforward future
 enhancement would be adopting `getServerSideProps` (or the App Router) for
 pages that would benefit from a faster first paint.
 
-The one recurring exception is theme-dependent UI (`index.tsx`,
-`DarkModeSwitch`): since `next-themes` can't know the real theme during
-server rendering, these components track a local `mounted` flag and only
-render theme-specific output after the client mounts, avoiding a
-hydration mismatch.
+`pages/workout/[workoutId].tsx` additionally waits on the settings query
+(`isSettingsLoading` from `useSettings()`) before rendering, rather than
+just the workout/exercise queries - so a brand-new exercise's
+weight/distance-unit/effort-type defaults are never seeded from the
+hardcoded fallback values because the user's real settings hadn't arrived
+yet (see [Account & settings](#account--settings) below).
+
+The one recurring exception is theme-dependent UI (`index.tsx`): since
+`next-themes` can't know the real theme during server rendering, these
+components track a local `mounted` flag and only render theme-specific
+output after the client mounts, avoiding a hydration mismatch. Dark mode
+itself is no longer toggled from a standalone `DarkModeSwitch` in the
+`NavBar` - it's controlled by the `theme` field in the user's settings
+(`PreferencesForm`), synced into `next-themes` by `SettingsProvider` (see
+below).
 
 ## State management
 
@@ -236,6 +264,14 @@ that is, at three scopes:
 
 - **App-wide:** the current user lives in TanStack Query's cache
   (`["currentUser"]`), exposed app-wide via `AuthContext`/`AuthProvider`.
+  Alongside it, `components/user/SettingsProvider.tsx` fetches the current
+  user's settings (`["userSettings", userId]`, `GET /api/users/me/settings`)
+  and exposes them app-wide via `useSettings()`; a `useEffect` calls
+  `next-themes`' `setTheme(settings.theme)` whenever the settings data
+  loads or changes, which is how a signed-in user's saved theme preference
+  becomes the actually-applied theme on every device/session, replacing
+  what used to be a per-browser `DarkModeSwitch` toggle with no
+  persistence. See [Account & settings](#account--settings) below.
 - **Page-wide:** `WorkoutContext` in `pages/workout/[workoutId].tsx` - the
   workout being edited is `useState` at the page level (seeded from the
   `["workout", workoutId]` query once it loads) and shared with every
@@ -443,11 +479,68 @@ the tank) - unlike reps/distance/duration, there's no universally "good"
 direction to color-code.
 
 
+## Account & settings
+
+`pages/account.tsx` is a single protected page with a HeroUI `<Tabs>` of
+three panels, each backed by its own component in `components/user/`:
+
+- **Profile** (`ProfileForm.tsx`) - edits `email`/`firstName`/`lastName`/
+  `displayName` via `PATCH /api/users/me`, sending only the fields that
+  changed (diffed against the current `User`) as a `PatchUser`. Changing
+  the email specifically routes through `ConfirmationModal` first (see
+  below), since it has side effects (re-verification, a confirmation
+  email to the *old* address) worth calling out before submitting. On
+  success, `refreshUser(updatedUser)` writes the result straight into the
+  `["currentUser"]` cache.
+- **Preferences** (`PreferencesForm.tsx`) - edits the current user's
+  `UserSettings` (theme/weight unit/distance unit/effort type/show-1RM)
+  via `PATCH /api/users/me/settings`, using the same dirty-field-diffing
+  pattern as `ProfileForm` to send a minimal `Partial<UserSettings>`
+  patch. On success, writes the result directly into the
+  `["userSettings", userId]` cache (see [State management](#state-management)
+  above) rather than invalidating, so the new theme/units apply
+  immediately without an extra round trip.
+- **Security** (`PasswordChangeForm.tsx`) - changes the current password
+  via `POST /api/auth/change-password`. Confirming the change opens a
+  `ConfirmationModal` warning that the user will be logged out; on
+  success, calls `logout()` immediately (see
+  [Authentication](#authentication-authprovider) above).
+
+`components/user/SettingsProvider.tsx` is covered in
+[State management](#state-management) above - it's what makes the
+Preferences tab's `theme` field actually change the app's rendered theme,
+and what seeds the workout editor's defaults below.
+
+### Workout editor settings defaults
+
+`useSettings()` is also consumed outside the Account page: in
+`pages/workout/[workoutId].tsx`'s `addExercise` and
+`components/workout/ExerciseCard.tsx`'s `changeExercise`, the new/changed
+exercise's `weightUnit`/`distanceUnit`/`effortType` default from the
+user's saved settings (falling back to hardcoded defaults - `lbs`,
+`meters`, `rpe` - if settings haven't loaded yet, which the
+`isSettingsLoading` guard on the page's spinner condition is meant to
+make unreachable in practice). `effortType` is handled differently on
+`changeExercise`: it's deliberately *not* reset to the settings default
+when only the exercise type changes on an already-added exercise, since
+the user may have intentionally picked a different effort type for that
+specific exercise and switching exercise type shouldn't silently discard
+that choice - only a brand-new exercise (`addExercise`) seeds `effortType`
+from settings.
+
 ## Types & factories
 
-`types/` mirrors the backend's DTOs (`Workout`, `WorkoutExercise`, `Set`,
-`Exercise`, `User`, plus request/response shapes for auth), giving the
-frontend compile-time safety against the shapes the API actually returns.
+`types/` mirrors the backend's DTOs, split by feature area to match the
+backend's own `DTOs/` folder split (see
+[backend-architecture.md](backend-architecture.md#layering-controller--service--dbcontext)):
+`types/auth.ts` (`RegisterData`, `LoginData`, `ResetPasswordData`,
+`ChangePasswordData`, `AuthResponse`), `types/user.ts` (`User`,
+`UserSettings`, `PatchUser`), `types/common.ts` (the shared enums used
+across both users and workouts - `WeightUnit`, `DistanceUnit`,
+`EffortRatingType`, `ExerciseType`, `Theme`), and the workout-specific
+types (`Workout`, `WorkoutExercise`, `Set`, `Exercise`) in their own file.
+This gives the frontend compile-time safety against the shapes the API
+actually returns.
 `lib/factories/` provides `createEmptyWorkout()` /
 `createEmptyWorkoutExercise()` / `createEmptySet()` used when starting a
 new workout or adding a new exercise/set — centralizing default values
@@ -475,6 +568,13 @@ comments in the frontend
 validation code explicitly reference which backend rule they're
 mirroring, which is a handy pattern if this ever grows into a shared
 validation schema (e.g. Zod) down the line.
+
+`lib/validation/userValidation.ts` follows the same mirrored-rules
+pattern for the Account page's forms: a set of small pure validators
+(email format, name/display-name length, password length/match) plus a
+generic `runValidators(value, validators[])` helper that returns the
+first failing message or `null`, shared by `ProfileForm`,
+`PasswordChangeForm`, and `login.tsx`'s signup form.
 
 ## UI/styling conventions
 

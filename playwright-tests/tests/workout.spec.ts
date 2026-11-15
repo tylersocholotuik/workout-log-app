@@ -16,7 +16,9 @@ import {
   acquireAccountLock,
   releaseAccountLock,
   ACCOUNT_LOCK_HOOK_TIMEOUT_MS,
+  updateUserSettingsViaApi,
 } from './helpers';
+import type { Locator, Page } from '@playwright/test';
 
 // Tests in this file share one Playwright test account and its workout
 // history, so keep them serial to avoid cross-test interference. This
@@ -37,6 +39,40 @@ test.beforeAll(async ({}, testInfo) => {
 test.afterAll(() => {
   releaseAccountLock();
 });
+
+// Opens an exercise card's Options popover and checks which unit/effort
+// controls are selected (or, for `null`, that the control isn't offered at
+// all - e.g. no Weight Unit on a cardio exercise), then closes it again.
+async function expectExerciseOptions(
+  page: Page,
+  card: Locator,
+  expected: {
+    weightUnit: 'lbs' | 'kg' | null;
+    distanceUnit: 'm' | 'km' | 'mi' | null;
+    effortType: 'RPE' | 'RIR' | null;
+  }
+) {
+  await pressIconTrigger(card.getByRole('button', { name: 'exercise options' }));
+
+  const groups = {
+    weightUnit: page.getByRole('radiogroup', { name: 'Weight Unit' }),
+    distanceUnit: page.getByRole('radiogroup', { name: 'Distance Unit' }),
+    effortType: page.getByRole('radiogroup', { name: 'Effort Rating Type' }),
+  };
+  for (const key of ['weightUnit', 'distanceUnit', 'effortType'] as const) {
+    const value = expected[key];
+    if (value === null) {
+      await expect(groups[key]).toHaveCount(0);
+    } else {
+      await expect(
+        groups[key].getByRole('radio', { name: value, exact: key !== 'effortType' })
+      ).toBeChecked();
+    }
+  }
+
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+}
 
 test.describe('Entry point', () => {
   test('shows create/load options for a brand-new workout', async ({ page }) => {
@@ -163,6 +199,91 @@ test.describe('Exercises', () => {
     await expect(card.getByRole('textbox', { name: 'weight' })).toHaveCount(1);
   });
 
+  test('a new exercise\u2019s units and effort rating type default to the account\u2019s preferences', async ({
+    page,
+    request,
+    trackWorkout,
+    restoreAccount,
+  }) => {
+    void restoreAccount;
+    // Non-default values for every preference, so a hardcoded lbs/meters/RPE
+    // fallback can't pass by coincidence.
+    await updateUserSettingsViaApi(request, {
+      weightUnit: 'kg',
+      distanceUnit: 'kilometers',
+      effortType: 'rir',
+    });
+
+    await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel')); // reps
+    await waitForAutosave(page, () => addExercise(page, 'Farmers Walk')); // distance
+    await waitForAutosave(page, () => addExercise(page, 'Running')); // cardio
+    await waitForAutosave(page, () => addExercise(page, 'Plank')); // time
+
+    await expectExerciseOptions(page, exerciseCard(page, 'Ab Wheel'), {
+      weightUnit: 'kg',
+      distanceUnit: null,
+      effortType: 'RIR',
+    });
+    await expectExerciseOptions(page, exerciseCard(page, 'Farmers Walk'), {
+      weightUnit: 'kg',
+      distanceUnit: 'km',
+      effortType: null,
+    });
+    await expectExerciseOptions(page, exerciseCard(page, 'Running'), {
+      weightUnit: null,
+      distanceUnit: 'km',
+      effortType: null,
+    });
+    await expectExerciseOptions(page, exerciseCard(page, 'Plank'), {
+      weightUnit: 'kg',
+      distanceUnit: null,
+      effortType: null,
+    });
+
+    // Only `reps` exercises can use RIR - every other type's effort rating
+    // is always RPE regardless of the preference.
+    await expect(exerciseCard(page, 'Ab Wheel').getByText('RIR', { exact: true })).toBeVisible();
+    await expect(exerciseCard(page, 'Farmers Walk').getByText('RPE', { exact: true })).toBeVisible();
+    await expect(exerciseCard(page, 'Running').getByText('RPE', { exact: true })).toBeVisible();
+    await expect(exerciseCard(page, 'Plank').getByText('RPE', { exact: true })).toBeVisible();
+
+    // and it's what actually gets saved, not just what's displayed
+    await page.reload();
+    await expectExerciseOptions(page, exerciseCard(page, 'Ab Wheel'), {
+      weightUnit: 'kg',
+      distanceUnit: null,
+      effortType: 'RIR',
+    });
+  });
+
+  test('a new reps exercise\u2019s "Show e1RM" default matches the account\u2019s preference', async ({
+    page,
+    request,
+    trackWorkout,
+    restoreAccount,
+  }) => {
+    void restoreAccount;
+    await updateUserSettingsViaApi(request, { showOneRepMax: false });
+
+    await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => addExercise(page, 'Ab Wheel'));
+    const card = exerciseCard(page, 'Ab Wheel');
+
+    await waitForAutosave(page, () => fillSet(card, { weight: '250', reps: '8', effortRating: '9' }));
+    // an e1RM-eligible set, but the preference says not to show it by default
+    await expect(card.getByText(/e1RM:/)).toHaveCount(0);
+
+    await pressIconTrigger(card.getByRole('button', { name: 'exercise options' }));
+    const toggle = page.getByRole('switch', { name: 'Show e1RM' });
+    await expect(toggle).not.toBeChecked();
+    await toggle.check({ force: true });
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    await expect(card.getByText(/e1RM:/)).toBeVisible();
+  });
+
   test('creating a brand-new exercise adds it to the list and workout', async ({
     page,
     trackWorkout,
@@ -256,6 +377,54 @@ test.describe('Exercises', () => {
     await expect(card.getByRole('textbox', { name: 'weight' })).toHaveCount(0);
     await expect(card.getByRole('textbox', { name: 'distance' })).toHaveValue('');
     await expect(card.getByRole('textbox', { name: 'effort rating' })).toHaveValue('');
+  });
+
+  test('swapping to a different exercise type resets units and effort rating type to the account\u2019s preferences', async ({
+    page,
+    request,
+    trackWorkout,
+    restoreAccount,
+  }) => {
+    void restoreAccount;
+    await updateUserSettingsViaApi(request, {
+      weightUnit: 'kg',
+      distanceUnit: 'kilometers',
+      effortType: 'rir',
+    });
+
+    const swapTo = async (from: string, to: string) => {
+      await pressIconTrigger(
+        exerciseCard(page, from).getByRole('button', { name: 'Actions', exact: true })
+      );
+      await expect(page.getByRole('menu')).toBeVisible();
+      await page.getByRole('menuitem', { name: 'Change exercise' }).click();
+      await page.getByPlaceholder('Search exercises...').fill(to);
+      await page.getByRole('row', { name: to, exact: true }).click();
+      await waitForAutosave(page, () => page.getByRole('button', { name: 'Update' }).click());
+      await expect(exerciseCard(page, to)).toBeVisible();
+    };
+
+    await startNewWorkout(page, trackWorkout);
+    await waitForAutosave(page, () => addExercise(page, 'Running')); // cardio: no weight unit
+
+    // cardio -> reps: has no weight unit to carry over, so falls back to the
+    // preference, and a reps exercise gets the preferred effort rating type
+    await swapTo('Running', 'Ab Wheel');
+    await expectExerciseOptions(page, exerciseCard(page, 'Ab Wheel'), {
+      weightUnit: 'kg',
+      distanceUnit: null,
+      effortType: 'RIR',
+    });
+
+    // reps -> distance: no distance unit to carry over, so falls back to the
+    // preference; only reps exercises can use RIR, so effort goes back to RPE
+    await swapTo('Ab Wheel', 'Farmers Walk');
+    await expectExerciseOptions(page, exerciseCard(page, 'Farmers Walk'), {
+      weightUnit: 'kg',
+      distanceUnit: 'km',
+      effortType: null,
+    });
+    await expect(exerciseCard(page, 'Farmers Walk').getByText('RPE', { exact: true })).toBeVisible();
   });
 
   test('exercise can be removed', async ({ page, trackWorkout }) => {

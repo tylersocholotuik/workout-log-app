@@ -285,6 +285,57 @@ namespace WorkoutLogAPI.Migrations
                     b.ToTable("users");
                 });
 
+            modelBuilder.Entity("WorkoutLogAPI.Models.UserSettings", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("text")
+                        .HasColumnName("user_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DistanceUnit")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("meters")
+                        .HasColumnName("distance_unit");
+
+                    b.Property<string>("EffortType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("rpe")
+                        .HasColumnName("effort_type");
+
+                    b.Property<bool>("ShowOneRepMax")
+                        .HasColumnType("boolean")
+                        .HasColumnName("show_one_rep_max");
+
+                    b.Property<string>("Theme")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("dark")
+                        .HasColumnName("theme");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("WeightUnit")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("lbs")
+                        .HasColumnName("weight_unit");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("user_settings");
+                });
+
             modelBuilder.Entity("WorkoutLogAPI.Models.Workout", b =>
                 {
                     b.Property<string>("Id")
@@ -411,6 +462,17 @@ namespace WorkoutLogAPI.Migrations
                     b.Navigation("Exercise");
                 });
 
+            modelBuilder.Entity("WorkoutLogAPI.Models.UserSettings", b =>
+                {
+                    b.HasOne("WorkoutLogAPI.Models.User", "User")
+                        .WithOne("Settings")
+                        .HasForeignKey("WorkoutLogAPI.Models.UserSettings", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("WorkoutLogAPI.Models.Workout", b =>
                 {
                     b.HasOne("WorkoutLogAPI.Models.User", "User")
@@ -449,6 +511,9 @@ namespace WorkoutLogAPI.Migrations
             modelBuilder.Entity("WorkoutLogAPI.Models.User", b =>
                 {
                     b.Navigation("Exercises");
+
+                    b.Navigation("Settings")
+                        .IsRequired();
 
                     b.Navigation("Workouts");
                 });

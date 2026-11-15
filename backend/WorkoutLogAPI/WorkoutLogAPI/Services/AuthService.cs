@@ -50,8 +50,15 @@ public class AuthService
             IsAdmin = false,
             CreatedAt = DateTime.UtcNow
         };
+        
+        // Create default user settings for the new user
+        var userSettings = new UserSettings
+        {
+            UserId = user.Id
+        };
 
         _context.Users.Add(user);
+        _context.UserSettings.Add(userSettings);
         await _context.SaveChangesAsync();
 
         return user;
@@ -144,7 +151,7 @@ public class AuthService
             await _context.SaveChangesAsync();
             
             // Send the password reset email
-            await SendPasswordResetEmailAsync(email, userFullName, resetToken, expirationMinutes);
+            await _emailService.SendPasswordResetEmailAsync(email, userFullName, resetToken, expirationMinutes);
         }
         catch (Exception ex)
         {
@@ -178,54 +185,13 @@ public class AuthService
         {
             var user = await _userService.GetUserByIdAsync(passwordResetToken.UserId);
             var userFullName = $"{user.FirstName} {user.LastName}";
-            await SendPasswordResetConfirmationEmailAsync(user.Email, userFullName);
+            await _emailService.SendPasswordResetConfirmationEmailAsync(user.Email, userFullName);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error sending password reset confirmation email for user ID {UserId}: {Message}", passwordResetToken.UserId, ex.Message);
             // Don't throw an error here to avoid failing the password reset process due to email issues
         }
-    }
-    
-    private async Task SendPasswordResetEmailAsync(string email, string toName, string resetToken, int expirationMinutes)
-    {
-        try
-        {
-            var baseUrl = _configuration.GetValue<string>("Frontend:BaseUrl");
-            var resetUrl = $"{baseUrl}/reset-password?token={resetToken}";
-            var subject = AppConstants.EmailSubjects.PasswordReset;
-            var body = $"""
-                        <p>Hi {toName},</p>
-                        <p>We received a request to reset the password for your Workout Log account. Click the button below to choose a new one:</p>
-                        <p>
-                            <a href="{resetUrl}" style="display:inline-block;padding:10px 20px;background-color:#0d6efd;color:#ffffff;text-decoration:none;border-radius:4px;">
-                                Reset Password
-                            </a>
-                        </p>
-                        <p>This link will expire in {expirationMinutes} minutes and can only be used once.</p>
-                        <p>If you didn't request a password reset, you can safely ignore this email &mdash; your password will not be changed.</p>
-                        """;
-            
-            await _emailService.SendEmailAsync([new EmailAddress(email, toName)], subject, body);
-            _logger.LogInformation("Password reset email sent to {Email}", email);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error sending password reset email to {Email}: {Message}", email, ex.Message);
-            throw;
-        }
-    }
-    
-    private async Task SendPasswordResetConfirmationEmailAsync(string email, string toName)
-    {
-        var subject = AppConstants.EmailSubjects.PasswordResetConfirmation;
-        var body = $"""
-                    <p>Hi {toName},</p>
-                    <p>Your password has been successfully reset. If you did not perform this action, please contact our support team immediately.</p>
-                    """;
-        
-        await _emailService.SendEmailAsync([new EmailAddress(email, toName)], subject, body);
-        _logger.LogInformation("Password reset confirmation email sent to {Email}", email);
     }
     
     private static string GenerateSecureToken(int length = 32)

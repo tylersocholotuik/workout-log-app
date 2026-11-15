@@ -6,6 +6,8 @@ public static class AppConstants
     {
         public const string PasswordReset = "Reset your Workout Log password";
         public const string PasswordResetConfirmation = "Your Workout Log password has been reset";
+        public const string PasswordChangeConfirmation = "Your Workout Log password has been changed";
+        public const string EmailChangeConfirmation = "Your Workout Log email address has been changed";
     }
 
     public static class Auth

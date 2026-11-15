@@ -1,8 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
+using Moq;
 using WorkoutLogAPI.Constants;
 using WorkoutLogAPI.DTOs.Auth;
-using WorkoutLogAPI.DTOs.Users;
+using WorkoutLogAPI.DTOs.Email;
 
 namespace WorkoutLogAPI.Tests.Integration;
 
@@ -98,28 +99,6 @@ public class AuthControllerTests(PostgresContainerFixture postgres) : Integratio
     }
 
     [Fact]
-    public async Task Me_WithValidAuthCookie_ReturnsCurrentUser()
-    {
-        var registerRequest = ValidRegisterRequest();
-        var registerResponse = await Client.PostAsJsonWithCsrfAsync("/api/auth/register", registerRequest);
-        var authCookie = registerResponse.ExtractCookie(AppConstants.Auth.TokenCookieName);
-
-        var response = await Client.GetWithCookieAsync("/api/auth/me", authCookie);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var user = await response.Content.ReadFromJsonAsync<UserDto>();
-        Assert.Equal(registerRequest.Email, user!.Email);
-    }
-
-    [Fact]
-    public async Task Me_WithoutAuthCookie_ReturnsUnauthorized()
-    {
-        var response = await Client.GetWithCookieAsync("/api/auth/me");
-
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-    }
-
-    [Fact]
     public async Task Logout_RevokesToken_SoSubsequentRequestIsUnauthorized()
     {
         var registerRequest = ValidRegisterRequest();
@@ -130,9 +109,66 @@ public class AuthControllerTests(PostgresContainerFixture postgres) : Integratio
             "/api/auth/logout", null, authCookie);
         Assert.Equal(HttpStatusCode.OK, logoutResponse.StatusCode);
 
-        var meResponse = await Client.GetWithCookieAsync("/api/auth/me", authCookie);
+        // /api/users/me is the current "who am I" endpoint (moved from /api/auth/me),
+        // so it's the right place to confirm the revoked token is rejected.
+        var meResponse = await Client.GetWithCookieAsync("/api/users/me", authCookie);
 
         Assert.Equal(HttpStatusCode.Unauthorized, meResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task ChangePassword_WithCorrectCurrentPassword_ReturnsOkAndSendsConfirmationEmail()
+    {
+        var registerRequest = ValidRegisterRequest();
+        var registerResponse = await Client.PostAsJsonWithCsrfAsync("/api/auth/register", registerRequest);
+        var authCookie = registerResponse.ExtractCookie(AppConstants.Auth.TokenCookieName);
+
+        var response = await Client.PostAsJsonWithCsrfAsync(
+            "/api/auth/change-password",
+            new ChangePasswordRequest(registerRequest.Password, "NewPassword456!"),
+            authCookie);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        // The new password must actually work for subsequent logins.
+        var loginResponse = await Client.PostAsJsonWithCsrfAsync(
+            "/api/auth/login", new LoginRequest(registerRequest.Email, "NewPassword456!"));
+        Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+
+        EmailServiceMock.Verify(
+            m => m.SendEmailAsync(
+                It.IsAny<List<EmailAddress>>(),
+                AppConstants.EmailSubjects.PasswordChangeConfirmation,
+                It.IsAny<string>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ChangePassword_WithWrongCurrentPassword_ReturnsBadRequestAndDoesNotChangePassword()
+    {
+        var registerRequest = ValidRegisterRequest();
+        var registerResponse = await Client.PostAsJsonWithCsrfAsync("/api/auth/register", registerRequest);
+        var authCookie = registerResponse.ExtractCookie(AppConstants.Auth.TokenCookieName);
+
+        var response = await Client.PostAsJsonWithCsrfAsync(
+            "/api/auth/change-password",
+            new ChangePasswordRequest("WrongPassword!", "NewPassword456!"),
+            authCookie);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var loginResponse = await Client.PostAsJsonWithCsrfAsync(
+            "/api/auth/login", new LoginRequest(registerRequest.Email, registerRequest.Password));
+        Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task ChangePassword_WithoutAuthCookie_ReturnsUnauthorized()
+    {
+        var response = await Client.PostAsJsonWithCsrfAsync(
+            "/api/auth/change-password", new ChangePasswordRequest("OldPassword123!", "NewPassword456!"));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 }
 

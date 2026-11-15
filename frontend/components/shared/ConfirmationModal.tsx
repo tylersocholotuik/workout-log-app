@@ -6,24 +6,24 @@ import {
     ModalFooter,
     Button,
 } from "@heroui/react";
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 
 type ButtonColor = "default" | "primary" | "secondary" | "success" | "warning" | "danger" | undefined;
 
-interface ConfirmationModalProps {
+interface ConfirmationModalProps<T> {
     isOpen: boolean;
     onOpenChange: () => void;
     headerText: string;
-    bodyText: string;
+    bodyText: ReactNode;
     confirmButtonText?: string;
     cancelButtonText?: string;
     confirmButtonColor?: ButtonColor;
     cancelButtonColor?: ButtonColor;
-    confirmFunction: () => void | Promise<void>;
-    cancelFunction?: () => void | Promise<void>;
+    confirmFunction: () => T | Promise<T>;
+    cancelFunction?: () => T | Promise<T>;
 }
 
-export default function ConfirmationModal({
+export default function ConfirmationModal<T>({
                                               isOpen,
                                               onOpenChange,
                                               confirmFunction,
@@ -34,7 +34,7 @@ export default function ConfirmationModal({
                                               cancelButtonText,
                                               cancelButtonColor,
                                               cancelFunction,
-                                          }: ConfirmationModalProps) {
+                                          }: ConfirmationModalProps<T>) {
     const [isConfirming, setIsConfirming] = useState(false);
 
     return (
@@ -65,9 +65,9 @@ export default function ConfirmationModal({
                                 {headerText}
                             </ModalHeader>
                             <ModalBody>
-                                <p className="text-sm">
+                                <div className="text-sm">
                                     {bodyText}
-                                </p>
+                                </div>
                             </ModalBody>
                             <ModalFooter>
                                 <Button

@@ -54,4 +54,5 @@ public class User : IAuditableEntity
     // Navigation properties
     public ICollection<Workout> Workouts { get; set; } = new List<Workout>();
     public ICollection<Exercise> Exercises { get; set; } = new List<Exercise>();
+    public UserSettings Settings { get; set; } = null!;
 }

@@ -81,7 +81,11 @@ Every test that creates a workout registers it with the `trackWorkout` fixture
 (see [tests/fixtures.ts](tests/fixtures.ts)) instead of deleting it as the
 last line of the test body - that guarantees the delete still runs even if an
 earlier assertion fails. `history.spec.ts` uses an analogous `afterAll` for
-its shared fixture set.
+its shared fixture set. Tests that change the account's profile names or
+preferences (`account.spec.ts`, and the preference-default tests in
+`workout.spec.ts`) use the `restoreAccount` fixture the same way - it
+snapshots them up front and restores them via the API even if the test
+fails. Tests never change the account's email or password.
 
 Authenticated cleanup calls must go through whichever origin the app itself
 used to log in (see the comment above `AUTHENTICATED_API_URL` in
@@ -111,10 +115,11 @@ npx playwright show-report
 ```
 tests/
   auth.setup.ts             # logs in once per browser, saves storage state
-  fixtures.ts               # trackWorkout fixture - guaranteed workout cleanup
+  fixtures.ts               # trackWorkout (workout cleanup) and restoreAccount (profile/preferences restore) fixtures
   helpers.ts                # shared helpers (createWorkout, saveWorkout, etc.)
   workout.spec.ts           # workout CRUD (authenticated)
   history.spec.ts           # history page filtering/grouping (authenticated)
+  account.spec.ts           # account page: profile, preferences, password validation (authenticated)
   home.spec.ts              # smoke test that auth state is reused
   unauthenticated/
     login.spec.ts           # login form validation

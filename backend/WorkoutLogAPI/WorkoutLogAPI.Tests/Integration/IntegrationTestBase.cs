@@ -21,6 +21,12 @@ public abstract class IntegrationTestBase : IAsyncLifetime
     private readonly CustomWebApplicationFactory _factory;
     protected HttpClient Client { get; private set; } = null!;
 
+    /// <summary>
+    /// The shared <see cref="EmailService"/> mock the app resolves for the duration of
+    /// the test; use it to assert that (or that no) email was sent for a given flow.
+    /// </summary>
+    protected Moq.Mock<WorkoutLogAPI.Services.EmailService> EmailServiceMock => _factory.EmailServiceMock;
+
     protected IntegrationTestBase(
         PostgresContainerFixture postgres,
         IReadOnlyDictionary<string, string?>? additionalConfiguration = null)

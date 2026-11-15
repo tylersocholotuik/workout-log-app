@@ -1,11 +1,4 @@
-export interface User {
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    displayName: string | null;
-    isAdmin: boolean;
-}
+import { User } from './user';
 
 export interface RegisterData {
     email: string;
@@ -22,6 +15,11 @@ export interface LoginData {
 
 export interface ResetPasswordData {
     token: string;
+    newPassword: string;
+}
+
+export interface ChangePasswordData {
+    currentPassword: string;
     newPassword: string;
 }
 

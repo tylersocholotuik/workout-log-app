@@ -26,8 +26,8 @@ public class AuthServiceTests
     {
         var context = InMemoryDbContextFactory.Create();
         var configuration = BuildConfiguration();
-        var userService = new UserService(context, NullLogger<UserService>.Instance);
         var emailServiceMock = new Mock<EmailService>(NullLogger<EmailService>.Instance, configuration);
+        var userService = new UserService(context, emailServiceMock.Object, NullLogger<UserService>.Instance);
         emailServiceMock
             .Setup(m => m.SendEmailAsync(It.IsAny<List<EmailAddress>>(), It.IsAny<string>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
@@ -52,6 +52,18 @@ public class AuthServiceTests
         Assert.NotEqual("Password123!", user.PasswordHash); // must be hashed, never stored in plain text
         Assert.True(BCrypt.Net.BCrypt.Verify("Password123!", user.PasswordHash));
         Assert.NotNull(await context.Users.FindAsync(user.Id));
+    }
+
+    [Fact]
+    public async Task CreateUserAsync_WithNewEmail_CreatesDefaultUserSettings()
+    {
+        var (_, authService, context) = CreateSut();
+
+        var user = await authService.CreateUserAsync("new@example.com", "Jane", "Doe", null, "Password123!");
+
+        var settings = await context.UserSettings.FindAsync(user.Id);
+        Assert.NotNull(settings);
+        Assert.Equal(user.Id, settings!.UserId);
     }
 
     [Fact]

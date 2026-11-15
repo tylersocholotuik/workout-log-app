@@ -1,11 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using WorkoutLogAPI.Constants;
 using WorkoutLogAPI.Data;
 using WorkoutLogAPI.DTOs.Auth;
 using WorkoutLogAPI.DTOs.Users;
-using WorkoutLogAPI.Models;
+using WorkoutLogAPI.Extensions;
 using WorkoutLogAPI.Services;
 
 namespace WorkoutLogAPI.Controllers;
@@ -110,7 +109,7 @@ public class AuthController : ControllerBase
 
             Response.Cookies.Delete(AppConstants.Auth.TokenCookieName);
             
-            _logger.LogInformation("User logged out successfully: {UserId}", User.FindFirst("sub")?.Value);
+            _logger.LogInformation("User logged out successfully: {UserId}", this.GetUserId());
 
             return Ok(new { message = "Logged out successfully" });
         }
@@ -118,28 +117,6 @@ public class AuthController : ControllerBase
         {
             _logger.LogError(ex, "Error during logout");
             return StatusCode(500, new { error = "An error occurred during logout" });
-        }
-    }
-
-    [Authorize]
-    [HttpGet("me")]
-    public async Task<ActionResult<UserDto>> Me()
-    {
-        var userId = User.FindFirst("sub")?.Value;
-        
-        if (string.IsNullOrEmpty(userId))
-        {
-            return Unauthorized(new { error = "User ID not found in token" });
-        }
-
-        try
-        {
-            var user = await _userService.GetUserByIdAsync(userId);
-            return Ok(UserDto.FromUser(user));
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
         }
     }
 
@@ -175,6 +152,33 @@ public class AuthController : ControllerBase
         {
             _logger.LogError(ex, "Error resetting password: {Message}", ex.Message);
             return StatusCode(500, new { error = "An error occurred while resetting the password." });
+        }
+    }
+
+    [Authorize]
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        try
+        {
+            var userId = this.GetUserId();
+            await _userService.ChangePasswordAsync(userId, request.CurrentPassword, request.NewPassword);
+            return Ok(new { message = "Password changed successfully" });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            _logger.LogWarning(ex, "User not found: {Message}", ex.Message);
+            return NotFound(new { error = "User not found." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Invalid operation: {Message}", ex.Message);
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while changing password: {Message}", ex.Message);
+            return StatusCode(500, new { error = "An unexpected error occurred while changing the password." });
         }
     }
 }

@@ -63,6 +63,45 @@ X-Requested-With: XMLHttpRequest
     "password": "{{Password}}"
 }
 
+### Get the logged-in user's profile
+GET {{Base_Url}}/api/users/me
+Accept: application/json
+Authorization: Bearer {{Access_Token}}
+X-Requested-With: XMLHttpRequest
+
+### Update the logged-in user's profile (displayName, firstName, lastName, email)
+PATCH {{Base_Url}}/api/users/me
+Content-Type: application/json
+Authorization: Bearer {{Access_Token}}
+X-Requested-With: XMLHttpRequest
+
+{
+    "displayName": "Test User Updated",
+    "firstName": "Test Updated",
+    "lastName": "User Updated",
+    "email": "{{email}}"
+}
+
+### Get the logged-in user's settings
+GET {{Base_Url}}/api/users/me/settings
+Accept: application/json
+Authorization: Bearer {{Access_Token}}
+X-Requested-With: XMLHttpRequest
+
+### Update the logged-in user's settings
+PATCH {{Base_Url}}/api/users/me/settings
+Content-Type: application/json
+Authorization: Bearer {{Access_Token}}
+X-Requested-With: XMLHttpRequest
+
+{
+    "theme": "light",
+    "weightUnit": "kg",
+    "distanceUnit": "kilometers",
+    "effortType": "rir",
+    "showOneRepMax": false
+}
+
 ### Get all exercises available to the user
 GET {{Base_Url}}/api/exercises
 Accept: application/json
@@ -191,6 +230,17 @@ X-Requested-With: XMLHttpRequest
 {
     "newPassword": "{{New_Password}}",
     "token": "{{Reset_Token}}"
+}
+
+### Change password (logged-in user changes their own password)
+POST {{Base_Url}}/api/auth/change-password
+Content-Type: application/json
+Authorization: Bearer {{Access_Token}}
+X-Requested-With: XMLHttpRequest
+
+{
+    "currentPassword": "{{Password}}",
+    "newPassword": "{{New_Password}}"
 }
 
 ### Hard delete Playwright test user workouts

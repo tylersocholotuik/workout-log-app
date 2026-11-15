@@ -8,6 +8,7 @@ import {ToastProvider} from "@heroui/react";
 import {ThemeProvider as NextThemesProvider} from "next-themes";
 import {queryClient} from "@/lib/queryClient";
 import AuthProvider from "@/components/auth/AuthProvider";
+import SettingsProvider from "@/components/user/SettingsProvider";
 import NavBar from "@/components/NavBar";
 
 declare module "@react-types/shared" {
@@ -39,8 +40,10 @@ export default function App({Component, pageProps}: AppProps) {
                 />
                 <NextThemesProvider attribute="class" defaultTheme="dark">
                     <AuthProvider>
-                        <NavBar/>
-                        <Component {...pageProps} />
+                        <SettingsProvider>
+                            <NavBar/>
+                            <Component {...pageProps} />
+                        </SettingsProvider>
                     </AuthProvider>
                 </NextThemesProvider>
             </QueryClientProvider>
