@@ -16,6 +16,50 @@ change behind it.
 
 ## [Unreleased]
 
+### Added
+
+- Added a user settings feature: a new `user_settings` table (1:1 with `users`, auto-created with
+  defaults on registration) storing a default theme (light/dark), weight unit, distance unit,
+  effort rating type, and whether to show the estimated one-rep max. Exposed via
+  `GET /api/users/me/settings` and `PATCH /api/users/me/settings` (JSON merge-patch semantics —
+  omitted/`null` fields are left unchanged).
+- Added an account page (`/account`), linked from a new avatar menu in the navbar, with three tabs:
+  - **Profile** — edit email/first name/last name/display name via the new `GET /api/users/me` and
+    `PATCH /api/users/me` endpoints (replacing the old `GET /api/auth/me`). Changing the email shows
+    a confirmation warning first, resets `isEmailVerified`, and sends a confirmation email to the
+    *original* address rather than the new one, so an unexpected email change is never silent.
+  - **Preferences** — edit the new user settings described above; changing the theme here applies
+    immediately, app-wide, via a new `SettingsProvider` that syncs the saved theme into `next-themes`.
+  - **Security** — change your password via a new `POST /api/auth/change-password` endpoint
+    (verifies the current password, invalidates existing JWTs via `PasswordChangedAt`, and sends a
+    confirmation email). The frontend logs the user out immediately after a successful change to
+    match the now-invalidated session.
+- Added default weight unit/distance unit/effort rating type support to the workout editor: adding a
+  new exercise or changing an existing exercise's type now defaults these fields from the user's
+  saved settings instead of hardcoded values (effort type is intentionally preserved, not reset, when
+  only the exercise type changes on an already-added exercise).
+- Added `lib/validation/userValidation.ts`, a shared set of pure field validators (email format,
+  name/display-name length, password length/match) plus a generic `runValidators` helper, used by
+  the new Profile/Security forms and the existing signup form.
+
+### Changed
+
+- Changed the navbar: replaced the old button+chevron account dropdown trigger with a HeroUI
+  `User` avatar component, added `react-responsive`-driven icon sizing for mobile, and replaced the
+  disabled "Manage account" placeholder item with working Account/Logout items. Removed the
+  standalone `DarkModeSwitch` from the navbar — dark mode is now set from the account page's
+  Preferences tab (see above) and applies across devices/sessions instead of per-browser.
+- Changed `EmailService` to absorb `SendPasswordResetEmailAsync`/
+  `SendPasswordResetConfirmationEmailAsync` (moved from private `AuthService` methods) alongside the
+  two new email-change/password-change confirmation emails, consolidating all outgoing email
+  templates/sending in one service.
+
+### Removed
+
+- Removed `GET /api/auth/me` — replaced by `GET /api/users/me` under the new `UserController`.
+- Removed the `DarkModeSwitch.tsx` component that was previously in the Navbar. The theme is now
+  set in the Preferences tab on the `/account` page. 
+
 ## [1.11.1] - 2026-11-08
 
 ### Fixed

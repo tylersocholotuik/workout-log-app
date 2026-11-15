@@ -27,7 +27,7 @@ WorkoutLogAPI/
 ├── Services/        # Business logic; talk to WorkoutDbContext directly
 ├── DTOs/            # Request/response records, one subfolder per feature area
 ├── Models/          # EF Core entities (see database-design.md)
-├── Data/            # WorkoutDbContext + seed data
+├── Data/            # WorkoutDbContext + seed data + enum value converters
 ├── Migrations/      # EF Core migrations
 ├── Exceptions/      # Custom domain exceptions (business-rule violations)
 ├── Validation/      # Custom [ValidationAttribute]s (weight/reps/distance/duration ranges)
@@ -177,6 +177,21 @@ and the `AddJwtBearer` configuration in `Program.cs`:
   its password to log in again.
 - **Admin authorization:** a `"AdminOnly"` policy
   (`RequireClaim("is_admin", "true")`) protects `AdminController`.
+- **Default settings on registration:** `AuthService.CreateUserAsync`
+  creates a `UserSettings` row for every new user in the same operation as
+  the `User` row, with fixed defaults (theme dark, lbs, meters, RPE, show
+  one-rep max) — so `UserSettingsService`/`UserController` never have to
+  handle a user with no settings yet.
+- **Changing your own password is separate from resetting a forgotten
+  one:** `POST /api/auth/change-password` (authenticated, verifies the
+  current password) is distinct from the forgot/reset-password flow
+  (unauthenticated, token-based). Both ultimately call into
+  `EmailService` to send a confirmation email and update
+  `PasswordChangedAt`, which — per the password-change invalidation rule
+  above — immediately invalidates any JWTs issued before the change,
+  including the one the request itself was authenticated with; the
+  frontend logs the user out client-side right after a successful change
+  to match.
 
 ### CSRF protection
 
@@ -215,15 +230,35 @@ cookie as first-party — avoiding Safari/WebKit's blocking of third-party
   the workout's `UserId` doesn't match the caller, keeping the "does this
   resource belong to this user" check next to the query itself rather than
   duplicated in the controller.
-- **Whole-tree updates:** `PUT /api/workouts/{id}` takes the entire
-  `WorkoutDto` tree (workout + exercises + sets) rather than patching
-  individual fields or exposing separate endpoints per nested resource.
-  `WorkoutService.UpdateWorkout` reconciles the payload against the
-  existing entity graph (`SyncExercises`), soft-deleting anything missing
-  from it. The one `PATCH` endpoint that does exist
-  (`PATCH /api/workouts/{id}/finish`) is narrow by design — it only flips
-  the `finished_at` timestamp and takes no body — rather than a general
-  `JsonPatch`/partial-update mechanism for arbitrary fields.
+- **Whole-tree updates vs. targeted patches:** `PUT /api/workouts/{id}`
+  takes the entire `WorkoutDto` tree (workout + exercises + sets) rather
+  than patching individual fields or exposing separate endpoints per
+  nested resource. `WorkoutService.UpdateWorkout` reconciles the payload
+  against the existing entity graph (`SyncExercises`), soft-deleting
+  anything missing from it. `PATCH /api/workouts/{id}/finish` is narrow by
+  design — it only flips the `finished_at` timestamp and takes no body.
+  By contrast, `PATCH /api/users/me` and `PATCH /api/users/me/settings`
+  use true JSON merge-patch semantics (`PatchUserDto`/
+  `PatchUserSettingsDto`, all fields nullable, `null`/omitted = unchanged)
+  — appropriate there since those resources are flat records of
+  independent scalar fields rather than an entity graph that needs
+  reconciling.
+- **Enum value converters are centralized, not per-property:** every enum
+  column (`exercise_type`, `weight_unit`, `distance_unit`, `effort_type`,
+  `theme`, …) is stored as its lowercase string name via a single generic
+  `LowercaseEnumConverter<TEnum>`
+  (`Data/Converters/LowercaseEnumConverter.cs`), registered once for every
+  enum property through `WorkoutDbContext.ConfigureConventions` rather
+  than declared inline on each property — so adding a new enum column
+  (like `user_settings.theme`) doesn't require writing another near-
+  identical converter.
+- **Email-change and password-change confirmations go to the *original*
+  address:** `EmailService.SendEmailChangeConfirmationAsync` is sent to
+  the account's address *before* the change, not the new one, and
+  likewise `SendPasswordChangeConfirmationEmailAsync` goes out after a
+  password change. This means an attacker who changes the email/password
+  on a compromised account still can't silently cut the real owner out —
+  they're notified at the address they still control.
 - **Autosave / in-progress workouts:** `workouts.finished_at` (nullable)
   tracks whether a workout is still in progress. The frontend creates a
   workout immediately with only its top-level fields, autosaves

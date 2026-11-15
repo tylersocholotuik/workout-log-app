@@ -34,9 +34,9 @@ companion that's easier to skim/link to and covers things Scalar doesn't
 | POST | `/register` | — | Create an account, set the auth cookie, return the new user. |
 | POST | `/login` | — | Authenticate, set the auth cookie, return the user. |
 | POST | `/logout` | 🔒 | Revoke the current token (`jti`) and clear the auth cookie. |
-| GET | `/me` | 🔒 | Return the currently authenticated user. |
 | POST | `/forgot-password` | — | Email a password reset link if the address is registered. Always `200` — doesn't reveal whether the email exists. |
 | POST | `/reset-password` | — | Consume a reset token and set a new password. |
+| POST | `/change-password` | 🔒 | Change the current user's password after verifying their current one. |
 
 #### `POST /register`
 
@@ -69,10 +69,10 @@ Request body: `{ "email": string, "password": string }`
 - `200 OK` → `{ "message": "Logged out successfully" }`
 - `400 Bad Request` → no/invalid token cookie present
 
-#### `GET /me` 🔒
-
-- `200 OK` → `UserDto`
-- `401 Unauthorized` / `404 Not Found` if the token's user no longer exists
+> `GET /me` was removed from this controller — the currently authenticated
+> user is now fetched via `GET /api/users/me` (see
+> [Users — `/api/users/me`](#users--apiusersme) below), mirroring the
+> backend's own `UserController`/`UserService` split.
 
 #### `POST /forgot-password`
 
@@ -91,6 +91,86 @@ Request body: `{ "newPassword": string, "token": string }` (`newPassword`
 
 - `200 OK` → `{ "message": "Password has been reset successfully" }`
 - `400 Bad Request` → `{ "error": "Invalid or expired password reset token." }`
+
+#### `POST /change-password` 🔒
+
+Request body: `{ "currentPassword": string, "newPassword": string }` (both
+6–100 chars)
+
+Verifies `currentPassword` against the stored bcrypt hash, then updates the
+password hash and `PasswordChangedAt` (which immediately invalidates any
+JWTs issued before this point — see
+[Password-change invalidation](backend-architecture.md#authentication)).
+Also sends a confirmation email to the account's current address, and does
+**not** log the user out server-side — the frontend's `PasswordChangeForm`
+calls `logout()` immediately after a successful change instead, to force
+re-authentication on this device too.
+
+- `200 OK` → `{ "message": "Password changed successfully" }`
+- `400 Bad Request` → `{ "error": "Current password is incorrect" }`
+- `404 Not Found` → `{ "error": "User not found." }`
+
+## Users — `/api/users/me` (all endpoints 🔒)
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/` | Return the currently authenticated user. Replaces the old `GET /api/auth/me`. |
+| GET | `/settings` | Return the currently authenticated user's settings (theme/unit/effort-type preferences). |
+| PATCH | `/` | Partially update the current user's profile fields. |
+| PATCH | `/settings` | Partially update the current user's settings. |
+
+#### `GET /`
+
+- `200 OK` → `UserDto` (see [Shared DTOs](#shared-dtos))
+- `404 Not Found` if the token's user no longer exists
+
+#### `GET /settings`
+
+- `200 OK` → `UserSettingsDto` (see [Shared DTOs](#shared-dtos))
+- `404 Not Found` if the token's user no longer exists
+
+#### `PATCH /`
+
+Request body: `PatchUserDto` — all fields optional/nullable (JSON
+merge-patch semantics: omitted/`null` = unchanged):
+```json
+{
+  "email": "new@example.com",
+  "firstName": "Jane",
+  "lastName": "Doe",
+  "displayName": "Jane D."
+}
+```
+`email` ≤ 255 chars; `firstName`/`lastName` ≤ 50 chars; `displayName` ≤ 25
+chars.
+
+Changing `email` sets `isEmailVerified` back to `false` and sends a
+confirmation email to the **original** (pre-change) address rather than
+the new one, so an account takeover attempt that changes the email is
+still visible to the real owner.
+
+- `200 OK` → `UserDto`
+- `404 Not Found` if the user no longer exists
+- `409 Conflict` → `{ "error": "A user with this email already exists" }`
+  (note: this is a `409` here vs. the `400` returned for the same
+  duplicate-email case on `POST /register`)
+
+#### `PATCH /settings`
+
+Request body: `PatchUserSettingsDto` — all fields optional/nullable (JSON
+merge-patch semantics: omitted/`null` = unchanged):
+```json
+{
+  "theme": "dark",
+  "weightUnit": "lbs",
+  "distanceUnit": "meters",
+  "effortType": "rpe",
+  "showOneRepMax": true
+}
+```
+
+- `200 OK` → `UserSettingsDto`
+- `404 Not Found` if the user's settings row no longer exists
 
 ## Workouts — `/api/workouts` (all endpoints 🔒)
 
@@ -252,6 +332,22 @@ validation attributes).
   "isAdmin": false
 }
 ```
+
+**`UserSettingsDto`**
+```json
+{
+  "theme": "dark",
+  "weightUnit": "lbs",
+  "distanceUnit": "meters",
+  "effortType": "rpe",
+  "showOneRepMax": true
+}
+```
+Created automatically (with these exact defaults) for every new user on
+registration. `theme` is `"light"` or `"dark"`; `weightUnit`,
+`distanceUnit`, and `effortType` mirror the same enums used on
+`WorkoutExerciseDto` below, and seed the defaults applied when adding a new
+exercise or changing an exercise's type in the workout editor.
 
 **`ExerciseDto`**
 ```json

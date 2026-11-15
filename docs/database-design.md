@@ -41,6 +41,7 @@ erDiagram
     USER ||--o{ WORKOUT : "owns"
     USER ||--o{ EXERCISE : "owns (custom exercises)"
     USER ||--o{ PASSWORD_RESET_TOKEN : "requests"
+    USER ||--|| USER_SETTINGS : "has"
     WORKOUT ||--o{ WORKOUT_EXERCISE : "contains"
     EXERCISE ||--o{ WORKOUT_EXERCISE : "performed as"
     WORKOUT_EXERCISE ||--o{ SET : "contains"
@@ -125,6 +126,15 @@ erDiagram
         datetime expires_at
     }
 
+    USER_SETTINGS {
+        string user_id PK, FK
+        string theme "light / dark"
+        string weight_unit "lbs / kg"
+        string distance_unit "meters / kilometers / miles"
+        string effort_type "rpe / rir"
+        bool show_one_rep_max
+    }
+
     REVOKED_TOKEN {
         int id PK
         string jti UK
@@ -148,6 +158,39 @@ and [`JwtService`](../backend/WorkoutLogAPI/WorkoutLogAPI/Services/JwtService.cs
 - `failed_login_attempts` / `is_locked` — basic brute-force lockout support
 - `password_changed_at`, `is_email_verified`, `is_admin`, `last_login_at`
 - `created_at` / `updated_at` — audited via `IAuditableEntity`
+
+### `user_settings`
+
+Per-user preferences for the units/theme/display options applied across
+the app — the current theme, the default `weight_unit`/`distance_unit`/
+`effort_type` pre-selected when adding a new exercise or changing an
+existing one's type (see
+[`frontend-architecture.md`](frontend-architecture.md#account--settings)),
+and whether to show the estimated one-rep max.
+
+- `user_id` (PK **and** FK to `users.id`, `ON DELETE CASCADE`) — a strict
+  1:1 with `users`, the only `ON DELETE CASCADE` relationship in the
+  schema (every other FK is `DeleteBehavior.Restrict` — see
+  [Why soft deletes?](#why-soft-deletes)); it's safe here because settings
+  have no standalone meaning once their user is gone, unlike a workout's
+  history.
+- `theme` — the `Theme` enum (`Light`/`Dark`), stored as its lowercase
+  string name via `LowercaseEnumConverter<Theme>` (see
+  [Migrations](#migrations) below)
+- `weight_unit`, `distance_unit`, `effort_type` — same enums/converters as
+  the identically-named columns on `workout_exercises`
+- `show_one_rep_max` (`bool`)
+
+Created automatically for every new user at registration time
+(`AuthService.CreateUserAsync`), with defaults `theme = dark`,
+`weight_unit = lbs`, `distance_unit = meters`, `effort_type = rpe`,
+`show_one_rep_max = true` — so every user has a row here immediately and
+`GET /api/users/me/settings` never needs to handle a "no settings yet"
+case. Updated via JSON merge-patch semantics
+(`PATCH /api/users/me/settings`, see
+[`api-reference.md`](api-reference.md#patch-settings)): a `null`/omitted
+field means "leave unchanged", distinguishing it from `PatchUserDto` only
+in that every field here already has a non-null default to fall back on.
 
 ### `exercises`
 
@@ -390,3 +433,15 @@ Notable migrations beyond the initial schema:
   `sets`, for the Time/Distance/Cardio exercise types. Also widened
   `workout_exercises.weight_unit` to nullable, since `Cardio` exercises
   have no weight.
+- `CreateUserSettingsTable` — added the `user_settings` table described
+  above. Also introduced a generic
+  [`LowercaseEnumConverter<TEnum>`](../backend/WorkoutLogAPI/WorkoutLogAPI/Data/Converters/LowercaseEnumConverter.cs)
+  value converter, registered once for every enum property via
+  `WorkoutDbContext.ConfigureConventions`, replacing three near-identical
+  inline lowercase-string converters that had previously been declared
+  per-property (`exercise_type`, `weight_unit`/`distance_unit`,
+  `effort_type`) — a pure refactor, with no column or data changes to the
+  existing tables. `user_settings.theme` uses a `HasSentinel(Theme.Dark)`
+  override on top of the convention, a quirk-fix for EF Core treating an
+  enum's default value (`Theme.Light == 0`) as "unset" and skipping it in
+  generated `INSERT`s otherwise.
